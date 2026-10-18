@@ -9,6 +9,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const legacySecurity = require('../modules/auth/legacy-security');
+const { withTenant } = require('../db/tenant-pool');
 
 const auth = async (req, res, next) => {
   try {
@@ -55,6 +56,9 @@ const auth = async (req, res, next) => {
     };
     req.daycareId = account.daycare_id ? Number(account.daycare_id) : null;
 
+    if (req.daycareId) {
+      return withTenant(req.daycareId, () => next());
+    }
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {

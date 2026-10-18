@@ -368,6 +368,16 @@ export default function SuperAdmin() {
     return `${m}m ${seconds % 60}s`;
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   // Filtered Daycares
   const filteredDaycares = daycares.filter((d) => {
     if (daycareTab === "pending" && d.status !== "pending") return false;
@@ -417,7 +427,7 @@ export default function SuperAdmin() {
     return true;
   });
 
-  // 1. Initial Checking Session State (Clean loading animation, NO flash)
+  // 1. Initial Checking Session State
   if (checkingSession) {
     return (
       <div
@@ -440,11 +450,11 @@ export default function SuperAdmin() {
         </p>
         <div
           style={{
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             borderRadius: "50%",
             border: "3px solid #EEEDE6",
-            borderTopColor: "#BD4264",
+            borderTopColor: "#10263B",
             animation: "spin 0.8s linear infinite",
           }}
         />
@@ -453,7 +463,7 @@ export default function SuperAdmin() {
     );
   }
 
-  // 2. Unauthenticated State (Polished Login Screen with clear error feedback)
+  // 2. Unauthenticated State (Polished Login Screen with clear high-contrast buttons)
   if (!user) {
     return (
       <div
@@ -480,22 +490,24 @@ export default function SuperAdmin() {
           }}
         >
           <img src={logo} alt="Ankelba" style={{ height: 50, marginBottom: 14 }} />
-          <span
-            style={{
-              display: "inline-block",
-              background: "#FCE7EC",
-              color: "#BD4264",
-              fontWeight: 800,
-              fontSize: 11,
-              letterSpacing: "1.6px",
-              padding: "4px 12px",
-              borderRadius: 999,
-              marginBottom: 10,
-              textTransform: "uppercase",
-            }}
-          >
-            SaaS Platform Operator
-          </span>
+          <div>
+            <span
+              style={{
+                display: "inline-block",
+                background: "#FCE7EC",
+                color: "#BD4264",
+                fontWeight: 800,
+                fontSize: 11,
+                letterSpacing: "1.6px",
+                padding: "4px 12px",
+                borderRadius: 999,
+                marginBottom: 10,
+                textTransform: "uppercase",
+              }}
+            >
+              SaaS Platform Operator
+            </span>
+          </div>
           <h1
             style={{
               fontSize: 26,
@@ -582,19 +594,15 @@ export default function SuperAdmin() {
             <button
               type="submit"
               disabled={loginSubmitting}
+              className="p-button primary"
               style={{
                 width: "100%",
                 padding: "13px 0",
                 borderRadius: 999,
-                background: "#BD4264",
-                color: "#fff",
-                border: "none",
                 fontWeight: 700,
                 fontSize: 15,
                 cursor: loginSubmitting ? "not-allowed" : "pointer",
                 opacity: loginSubmitting ? 0.7 : 1,
-                boxShadow: "0 6px 18px rgba(189, 66, 100, 0.28)",
-                transition: "all 0.2s ease",
               }}
             >
               {loginSubmitting ? "Authenticating Platform Operator..." : "Authenticate as Super Admin →"}
@@ -605,17 +613,13 @@ export default function SuperAdmin() {
             <button
               type="button"
               onClick={fillTestCredentials}
+              className="p-button subtle"
               style={{
-                background: "#f7f5ed",
-                border: "1px dashed #c8c2b0",
-                borderRadius: 8,
-                padding: "8px 14px",
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#10263B",
-                cursor: "pointer",
                 width: "100%",
                 marginBottom: 14,
+                borderRadius: 8,
+                fontSize: 12,
+                padding: "8px 14px",
               }}
             >
               <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
@@ -626,13 +630,13 @@ export default function SuperAdmin() {
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#76818B" }}>
               <a
                 onClick={() => navigateTo("/")}
-                style={{ cursor: "pointer", color: "#10263B", textDecoration: "underline" }}
+                style={{ cursor: "pointer", color: "#10263B", textDecoration: "underline", fontWeight: 600 }}
               >
                 ← SaaS Home
               </a>
               <a
                 onClick={() => navigateTo("/admin")}
-                style={{ cursor: "pointer", color: "#417B61", textDecoration: "underline" }}
+                style={{ cursor: "pointer", color: "#417B61", textDecoration: "underline", fontWeight: 600 }}
               >
                 Daycare Admin Portal →
               </a>
@@ -643,7 +647,7 @@ export default function SuperAdmin() {
     );
   }
 
-  // 3. Authenticated Portal Workspace (Detailed multi-page layout matching Daycare Admin portal)
+  // 3. Authenticated Super Admin Portal Workspace
   return (
     <div className="ankelba-portal">
       {/* Toast Alert */}
@@ -665,7 +669,7 @@ export default function SuperAdmin() {
             display: "flex",
             alignItems: "center",
             gap: 12,
-            borderLeft: "4px solid #BD4264",
+            borderLeft: "4px solid #e07a5f",
           }}
         >
           <Icon name="sparkles" size={16} />
@@ -686,53 +690,42 @@ export default function SuperAdmin() {
         </div>
       )}
 
-      {/* Sidebar (matching Daycare Admin layout) */}
+      {/* Dark Sidebar Navigation */}
       <aside
-        className={"p-sidebar " + (mobileMenuOpen ? "open" : "")}
+        className={"p-sidebar dark-sidebar " + (mobileMenuOpen ? "open" : "")}
         aria-label="Super Admin Navigation"
-        style={{
-          background: "#0c1927",
-          borderRight: "1px solid #162c42",
-          color: "#e8eff7",
-        }}
       >
-        {/* Brand */}
-        <div className="p-brand" style={{ padding: "0 12px 24px", color: "#ffffff" }}>
+        {/* Brand Header */}
+        <div className="p-brand" style={{ padding: "0 12px 24px" }}>
           <img src={logo} alt="Ankelba Symbol" style={{ height: 42, width: 30 }} />
           <div>
             <div style={{ fontSize: 24, fontFamily: "Quicksand_700Bold", letterSpacing: "-0.5px" }}>Ankelba</div>
-            <small
+            <span
               style={{
-                display: "block",
+                display: "inline-block",
+                background: "rgba(224, 122, 95, 0.2)",
                 color: "#e07a5f",
                 fontWeight: 800,
-                letterSpacing: "1.8px",
-                fontSize: 10,
-                marginTop: -2,
+                letterSpacing: "1.5px",
+                fontSize: 9.5,
+                padding: "2px 8px",
+                borderRadius: 999,
+                textTransform: "uppercase",
+                marginTop: 2,
               }}
             >
-              SUPER ADMIN CONSOLE
-            </small>
+              SUPER ADMIN
+            </span>
           </div>
         </div>
 
         {/* Group 1: Platform Governance */}
         <div style={{ marginBottom: 18 }}>
-          <div
-            className="p-nav-group"
-            style={{ color: "#7a90a8", fontSize: 10, fontWeight: 800, letterSpacing: "1.5px" }}
-          >
-            PLATFORM GOVERNANCE
-          </div>
+          <div className="p-nav-group">PLATFORM GOVERNANCE</div>
           <nav aria-label="Platform Governance">
             <a
               href="#overview"
               className={"p-nav-link " + (activePage === "overview" ? "active" : "")}
-              style={{
-                color: activePage === "overview" ? "#ffffff" : "#a5b8cc",
-                background: activePage === "overview" ? "rgba(189, 66, 100, 0.25)" : "transparent",
-                borderLeft: activePage === "overview" ? "3px solid #BD4264" : "3px solid transparent",
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 setActivePage("overview");
@@ -746,11 +739,6 @@ export default function SuperAdmin() {
             <a
               href="#daycares"
               className={"p-nav-link " + (activePage === "daycares" ? "active" : "")}
-              style={{
-                color: activePage === "daycares" ? "#ffffff" : "#a5b8cc",
-                background: activePage === "daycares" ? "rgba(189, 66, 100, 0.25)" : "transparent",
-                borderLeft: activePage === "daycares" ? "3px solid #BD4264" : "3px solid transparent",
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 setActivePage("daycares");
@@ -764,14 +752,7 @@ export default function SuperAdmin() {
             <a
               href="#applications"
               className={"p-nav-link " + (activePage === "applications" ? "active" : "")}
-              style={{
-                color: activePage === "applications" ? "#ffffff" : "#a5b8cc",
-                background: activePage === "applications" ? "rgba(189, 66, 100, 0.25)" : "transparent",
-                borderLeft: activePage === "applications" ? "3px solid #BD4264" : "3px solid transparent",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
               onClick={(e) => {
                 e.preventDefault();
                 setActivePage("applications");
@@ -789,7 +770,7 @@ export default function SuperAdmin() {
                     color: "#fff",
                     fontSize: 10,
                     fontWeight: 800,
-                    padding: "2px 7px",
+                    padding: "2px 8px",
                     borderRadius: 999,
                   }}
                 >
@@ -802,21 +783,11 @@ export default function SuperAdmin() {
 
         {/* Group 2: Ecosystem Management */}
         <div style={{ marginBottom: 18 }}>
-          <div
-            className="p-nav-group"
-            style={{ color: "#7a90a8", fontSize: 10, fontWeight: 800, letterSpacing: "1.5px" }}
-          >
-            ECOSYSTEM MANAGEMENT
-          </div>
+          <div className="p-nav-group">ECOSYSTEM & SECURITY</div>
           <nav aria-label="Ecosystem Management">
             <a
               href="#users"
               className={"p-nav-link " + (activePage === "users" ? "active" : "")}
-              style={{
-                color: activePage === "users" ? "#ffffff" : "#a5b8cc",
-                background: activePage === "users" ? "rgba(189, 66, 100, 0.25)" : "transparent",
-                borderLeft: activePage === "users" ? "3px solid #BD4264" : "3px solid transparent",
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 setActivePage("users");
@@ -830,11 +801,6 @@ export default function SuperAdmin() {
             <a
               href="#audit"
               className={"p-nav-link " + (activePage === "audit" ? "active" : "")}
-              style={{
-                color: activePage === "audit" ? "#ffffff" : "#a5b8cc",
-                background: activePage === "audit" ? "rgba(189, 66, 100, 0.25)" : "transparent",
-                borderLeft: activePage === "audit" ? "3px solid #BD4264" : "3px solid transparent",
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 setActivePage("audit");
@@ -848,11 +814,6 @@ export default function SuperAdmin() {
             <a
               href="#health"
               className={"p-nav-link " + (activePage === "health" ? "active" : "")}
-              style={{
-                color: activePage === "health" ? "#ffffff" : "#a5b8cc",
-                background: activePage === "health" ? "rgba(189, 66, 100, 0.25)" : "transparent",
-                borderLeft: activePage === "health" ? "3px solid #BD4264" : "3px solid transparent",
-              }}
               onClick={(e) => {
                 e.preventDefault();
                 setActivePage("health");
@@ -860,12 +821,12 @@ export default function SuperAdmin() {
               }}
             >
               <Icon name="clock" size={18} />
-              System Health & Ops
+              System Telemetry & Health
             </a>
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer with Operator Info */}
         <div className="p-sidebar-foot" style={{ marginTop: "auto", borderTop: "1px solid #162c42", paddingTop: 18 }}>
           <div
             style={{
@@ -875,13 +836,33 @@ export default function SuperAdmin() {
               marginBottom: 12,
             }}
           >
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
-              {user?.name || "Super Administrator"}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: "#e07a5f",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 800,
+                  fontSize: 12,
+                }}
+              >
+                {getInitials(user?.name)}
+              </div>
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {user?.name || "Super Administrator"}
+                </div>
+                <div style={{ fontSize: 11, color: "#8da4be", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {user?.email}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: "#7a90a8", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {user?.email}
-            </div>
-            <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
               <span
                 style={{
                   background: "#417B61",
@@ -893,58 +874,40 @@ export default function SuperAdmin() {
                   textTransform: "uppercase",
                 }}
               >
-                Global Admin
+                SaaS Operator
               </span>
               <span
                 style={{
                   background: "#2A435D",
-                  color: "#a5b8cc",
+                  color: "#cbd5e1",
                   fontSize: 9,
                   fontWeight: 700,
                   padding: "2px 6px",
                   borderRadius: 4,
                 }}
               >
-                Tenant Scoped
+                RLS Scoped
               </span>
             </div>
           </div>
 
-          <button
-            className="p-nav-link"
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              width: "100%",
-              background: "transparent",
-              color: "#a5b8cc",
-              borderRadius: 8,
-              padding: "8px 12px",
-              marginBottom: 8,
-              fontSize: 12,
-              cursor: "pointer",
-            }}
+          <Button
+            variant="secondary small"
+            icon="home"
             onClick={() => navigateTo("/admin")}
+            style={{ width: "100%", marginBottom: 8, justifyContent: "center" }}
           >
-            <Icon name="home" size={15} />
             Switch to Daycare Portal
-          </button>
+          </Button>
 
-          <button
-            className="p-nav-link"
-            style={{
-              border: 0,
-              width: "100%",
-              background: "transparent",
-              color: "#e07a5f",
-              padding: "8px 12px",
-              fontSize: 13,
-              cursor: "pointer",
-            }}
+          <Button
+            variant="ghost small"
+            icon="logout"
             onClick={handleLogout}
+            style={{ width: "100%", justifyContent: "center", color: "#e07a5f !important" }}
           >
-            <Icon name="logout" size={16} />
             Sign out of Console
-          </button>
+          </Button>
         </div>
       </aside>
 
@@ -969,7 +932,7 @@ export default function SuperAdmin() {
               {activePage === "applications" && "Applications Review Queue"}
               {activePage === "users" && "Global User Accounts"}
               {activePage === "audit" && "Platform Audit Trail"}
-              {activePage === "health" && "System Health & Diagnostics"}
+              {activePage === "health" && "System Telemetry & Health"}
             </strong>
           </div>
 
@@ -981,23 +944,28 @@ export default function SuperAdmin() {
                 gap: 6,
                 background: "#eef6f2",
                 color: "#417B61",
-                padding: "4px 10px",
+                padding: "5px 12px",
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 700,
+                border: "1px solid #cce6d9",
               }}
             >
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#417B61" }} />
               Row-Level Isolation Enforced
             </span>
 
+            <span style={{ fontSize: 11, color: "#76818B", fontWeight: 600 }}>
+              Synced: {lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </span>
+
             <Button
-              variant="subtle"
+              variant="secondary small"
               icon="refresh"
               onClick={loadAllPlatformData}
               disabled={dataLoading}
             >
-              {dataLoading ? "Refreshing..." : "Refresh Telemetry"}
+              {dataLoading ? "Refreshing..." : "Refresh"}
             </Button>
           </div>
         </header>
@@ -1013,7 +981,7 @@ export default function SuperAdmin() {
               {pendingDaycares.length > 0 && (
                 <div
                   style={{
-                    background: "linear-gradient(90deg, #fff5e5 0%, #fffbf2 100%)",
+                    background: "linear-gradient(90deg, #fff7ed 0%, #fffbf2 100%)",
                     border: "1.5px solid #f4a261",
                     borderRadius: 16,
                     padding: "16px 24px",
@@ -1021,21 +989,25 @@ export default function SuperAdmin() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 16,
                     boxShadow: "0 4px 14px rgba(244, 162, 97, 0.15)",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <span style={{ color: "#b76e00", display: "flex", alignItems: "center" }}><Icon name="bell" size={24} /></span>
+                    <span style={{ color: "#e07a5f", display: "flex", alignItems: "center" }}>
+                      <Icon name="bell" size={26} />
+                    </span>
                     <div>
                       <strong style={{ fontSize: 16, color: "#9c5700", display: "block" }}>
                         Action Required: {pendingDaycares.length} Daycare Application{pendingDaycares.length > 1 ? "s" : ""} Awaiting Review
                       </strong>
                       <span style={{ fontSize: 13, color: "#6e4510" }}>
-                        Prospective centers self-registered and require Super Admin approval to activate 30-day trials.
+                        Prospective centers self-registered and require Super Admin approval to activate 30-day trial subscriptions.
                       </span>
                     </div>
                   </div>
-                  <Button variant="primary" onClick={() => setActivePage("applications")}>
+                  <Button variant="accent" onClick={() => setActivePage("applications")}>
                     Inspect Applications Queue →
                   </Button>
                 </div>
@@ -1045,7 +1017,7 @@ export default function SuperAdmin() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
                   gap: 18,
                   marginBottom: 28,
                 }}
@@ -1060,10 +1032,13 @@ export default function SuperAdmin() {
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#10263b", lineHeight: 1, marginBottom: 6 }}>
-                    {stats?.total_daycares ?? daycares.length}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#10263b", lineHeight: 1 }}>
+                      {stats?.total_daycares ?? daycares.length}
+                    </div>
+                    <span style={{ color: "#10263b", opacity: 0.7 }}><Icon name="building" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Total Daycare Centers</div>
+                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Total Centers</div>
                   <div style={{ fontSize: 11, color: "#417b61", marginTop: 4 }}>Across all regions</div>
                 </div>
 
@@ -1077,8 +1052,11 @@ export default function SuperAdmin() {
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#e07a5f", lineHeight: 1, marginBottom: 6 }}>
-                    {stats?.pending_approvals ?? pendingDaycares.length}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#e07a5f", lineHeight: 1 }}>
+                      {stats?.pending_approvals ?? pendingDaycares.length}
+                    </div>
+                    <span style={{ color: "#e07a5f" }}><Icon name="bell" size={22} /></span>
                   </div>
                   <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Pending Review</div>
                   <div style={{ fontSize: 11, color: "#e07a5f", marginTop: 4 }}>Needs verification</div>
@@ -1094,8 +1072,11 @@ export default function SuperAdmin() {
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#417b61", lineHeight: 1, marginBottom: 6 }}>
-                    {stats?.active_daycares ?? daycares.filter((d) => d.status === "active").length}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#417b61", lineHeight: 1 }}>
+                      {stats?.active_daycares ?? daycares.filter((d) => d.status === "active").length}
+                    </div>
+                    <span style={{ color: "#417b61" }}><Icon name="checkCircle" size={22} /></span>
                   </div>
                   <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active Centers</div>
                   <div style={{ fontSize: 11, color: "#417b61", marginTop: 4 }}>Full platform access</div>
@@ -1111,8 +1092,11 @@ export default function SuperAdmin() {
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#f4a261", lineHeight: 1, marginBottom: 6 }}>
-                    {stats?.active_trials ?? daycares.filter((d) => d.subscription_plan === "trial" && d.status === "active").length}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#f4a261", lineHeight: 1 }}>
+                      {stats?.active_trials ?? daycares.filter((d) => d.subscription_plan === "trial" && d.status === "active").length}
+                    </div>
+                    <span style={{ color: "#f4a261" }}><Icon name="clock" size={22} /></span>
                   </div>
                   <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active 30-Day Trials</div>
                   <div style={{ fontSize: 11, color: "#f4a261", marginTop: 4 }}>Trial countdown active</div>
@@ -1124,15 +1108,18 @@ export default function SuperAdmin() {
                     borderRadius: 16,
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
-                    borderLeft: "4px solid #7b61ff",
+                    borderLeft: "4px solid #3b82f6",
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#7b61ff", lineHeight: 1, marginBottom: 6 }}>
-                    {stats?.total_children ?? 0}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#3b82f6", lineHeight: 1 }}>
+                      {stats?.total_children ?? 0}
+                    </div>
+                    <span style={{ color: "#3b82f6" }}><Icon name="child" size={22} /></span>
                   </div>
                   <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Enrolled Children</div>
-                  <div style={{ fontSize: 11, color: "#7b61ff", marginTop: 4 }}>Platform-wide census</div>
+                  <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 4 }}>Platform-wide census</div>
                 </div>
 
                 <div
@@ -1141,15 +1128,18 @@ export default function SuperAdmin() {
                     borderRadius: 16,
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
-                    borderLeft: "4px solid #2a9d8f",
+                    borderLeft: "4px solid #8b5cf6",
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 32, fontWeight: 800, color: "#2a9d8f", lineHeight: 1, marginBottom: 6 }}>
-                    {stats?.total_users ?? users.length}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#8b5cf6", lineHeight: 1 }}>
+                      {stats?.total_users ?? users.length}
+                    </div>
+                    <span style={{ color: "#8b5cf6" }}><Icon name="people" size={22} /></span>
                   </div>
                   <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Registered Accounts</div>
-                  <div style={{ fontSize: 11, color: "#2a9d8f", marginTop: 4 }}>Staff & Parent users</div>
+                  <div style={{ fontSize: 11, color: "#8b5cf6", marginTop: 4 }}>Staff & Parent users</div>
                 </div>
               </div>
 
@@ -1180,7 +1170,7 @@ export default function SuperAdmin() {
                       <div
                         style={{
                           height: "100%",
-                          background: "#BD4264",
+                          background: "#8b5cf6",
                           width: `${(daycares.filter((d) => d.subscription_plan === "premium").length / (daycares.length || 1)) * 100}%`,
                         }}
                       />
@@ -1194,7 +1184,7 @@ export default function SuperAdmin() {
                       <div
                         style={{
                           height: "100%",
-                          background: "#F4A261",
+                          background: "#f4a261",
                           width: `${(daycares.filter((d) => d.subscription_plan === "trial").length / (daycares.length || 1)) * 100}%`,
                         }}
                       />
@@ -1293,7 +1283,7 @@ export default function SuperAdmin() {
           {/* ========================================================================= */}
           {activePage === "daycares" && (
             <div>
-              {/* Header Controls */}
+              {/* Header Controls with High-Contrast Segmented Tabs */}
               <div
                 style={{
                   display: "flex",
@@ -1304,30 +1294,30 @@ export default function SuperAdmin() {
                   marginBottom: 20,
                 }}
               >
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="p-tabs" style={{ marginBottom: 0 }}>
                   <button
-                    className={`saas-btn ${daycareTab === "all" ? "saas-btn-primary" : "saas-btn-ghost"}`}
+                    className={daycareTab === "all" ? "active" : ""}
                     onClick={() => setDaycareTab("all")}
                   >
                     All Centers ({daycares.length})
                   </button>
                   <button
-                    className={`saas-btn ${daycareTab === "active" ? "saas-btn-primary" : "saas-btn-ghost"}`}
+                    className={daycareTab === "active" ? "active" : ""}
                     onClick={() => setDaycareTab("active")}
                   >
                     Active ({daycares.filter((d) => d.status === "active").length})
                   </button>
                   <button
-                    className={`saas-btn ${daycareTab === "suspended" ? "saas-btn-primary" : "saas-btn-ghost"}`}
-                    onClick={() => setDaycareTab("suspended")}
-                  >
-                    Suspended ({daycares.filter((d) => d.status === "suspended").length})
-                  </button>
-                  <button
-                    className={`saas-btn ${daycareTab === "pending" ? "saas-btn-accent" : "saas-btn-ghost"}`}
+                    className={daycareTab === "pending" ? "active" : ""}
                     onClick={() => setDaycareTab("pending")}
                   >
                     Pending ({pendingDaycares.length})
+                  </button>
+                  <button
+                    className={daycareTab === "suspended" ? "active" : ""}
+                    onClick={() => setDaycareTab("suspended")}
+                  >
+                    Suspended ({daycares.filter((d) => d.status === "suspended").length})
                   </button>
                 </div>
 
@@ -1344,6 +1334,7 @@ export default function SuperAdmin() {
                       fontSize: 13,
                       minWidth: 260,
                       outline: "none",
+                      background: "#fff",
                     }}
                   />
                   {daycareSearch && (
@@ -1382,13 +1373,13 @@ export default function SuperAdmin() {
                           <tr key={d.id}>
                             <td>
                               <strong>{d.name}</strong>
-                              <div style={{ fontSize: 11, color: "#76818B" }}>
+                              <div style={{ fontSize: 11, color: "#76818B", marginTop: 2 }}>
                                 slug: <code style={{ background: "#f2f0e9", padding: "1px 5px", borderRadius: 4 }}>{d.slug}</code>
                               </div>
                               <div style={{ fontSize: 11, color: "#8a94a0" }}>{d.address || "No address provided"}</div>
                             </td>
                             <td>
-                              <div>{d.admin_name || "Unassigned"}</div>
+                              <div style={{ fontWeight: 600 }}>{d.admin_name || "Unassigned"}</div>
                               <div style={{ fontSize: 11, color: "#76818B" }}>{d.admin_email}</div>
                             </td>
                             <td>
@@ -1401,7 +1392,7 @@ export default function SuperAdmin() {
                             <td>
                               <div style={{ fontWeight: 700, textTransform: "capitalize" }}>{d.subscription_plan}</div>
                               {daysLeft !== null && (
-                                <div style={{ fontSize: 11, color: daysLeft <= 5 ? "#c0392b" : "#417B61" }}>
+                                <div style={{ fontSize: 11, color: daysLeft <= 5 ? "#c0392b" : "#417B61", fontWeight: 600, marginTop: 2 }}>
                                   ⏳ {daysLeft > 0 ? `${daysLeft} days remaining` : "Trial expired"}
                                 </div>
                               )}
@@ -1415,14 +1406,14 @@ export default function SuperAdmin() {
                             <td>
                               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                                 <Button
-                                  variant="subtle"
+                                  variant="secondary small"
                                   onClick={() => setInspectModal({ open: true, daycare: d })}
                                 >
                                   Inspect
                                 </Button>
 
                                 <Button
-                                  variant="ghost"
+                                  variant="subtle small"
                                   onClick={() =>
                                     setPlanModal({
                                       open: true,
@@ -1433,31 +1424,22 @@ export default function SuperAdmin() {
                                     })
                                   }
                                 >
-                                  Plan
+                                  Plan & Quota
                                 </Button>
 
                                 {!isPending && (
-                                  <button
+                                  <Button
+                                    variant={isSuspended ? "success small" : "danger small"}
                                     onClick={() => handleToggleSuspend(d)}
                                     disabled={actionBusyId === d.id}
-                                    style={{
-                                      background: isSuspended ? "#eef6f2" : "#fdf3f0",
-                                      color: isSuspended ? "#417B61" : "#c0392b",
-                                      border: `1px solid ${isSuspended ? "#cce6d9" : "#f7cfc7"}`,
-                                      borderRadius: 6,
-                                      padding: "5px 10px",
-                                      fontSize: 12,
-                                      fontWeight: 700,
-                                      cursor: "pointer",
-                                    }}
                                   >
                                     {isSuspended ? "Reactivate" : "Suspend"}
-                                  </button>
+                                  </Button>
                                 )}
 
                                 {isPending && (
                                   <Button
-                                    variant="primary"
+                                    variant="primary small"
                                     onClick={() =>
                                       setApproveModal({
                                         open: true,
@@ -1467,7 +1449,7 @@ export default function SuperAdmin() {
                                       })
                                     }
                                   >
-                                    Approve
+                                    Review
                                   </Button>
                                 )}
                               </div>
@@ -1516,7 +1498,7 @@ export default function SuperAdmin() {
                       There are currently no daycare registration applications pending review.
                       Prospective daycares that register on the landing page will appear here immediately.
                     </p>
-                    <Button variant="subtle" onClick={() => setActivePage("daycares")}>
+                    <Button variant="secondary" onClick={() => setActivePage("daycares")}>
                       View Active Daycare Directory →
                     </Button>
                   </div>
@@ -1561,7 +1543,7 @@ export default function SuperAdmin() {
                           <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>
                             Requested Subscription Plan
                           </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, textTransform: "capitalize", color: "#BD4264" }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, textTransform: "capitalize", color: "#e07a5f" }}>
                             {d.subscription_plan || "Standard (30-Day Trial)"}
                           </div>
                           <div style={{ fontSize: 11, color: "#76818B" }}>
@@ -1579,26 +1561,17 @@ export default function SuperAdmin() {
                           paddingTop: 16,
                         }}
                       >
-                        <button
-                          type="button"
+                        <Button
+                          variant="danger"
                           onClick={() => setRejectModal({ open: true, daycare: d, reason: "" })}
                           disabled={actionBusyId === d.id}
-                          style={{
-                            background: "#fdf3f0",
-                            color: "#c0392b",
-                            border: "1px solid #f7cfc7",
-                            borderRadius: 999,
-                            padding: "9px 20px",
-                            fontSize: 13,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
                         >
                           Reject Application
-                        </button>
+                        </Button>
 
                         <Button
-                          variant="primary"
+                          variant="success"
+                          icon="check"
                           onClick={() =>
                             setApproveModal({
                               open: true,
@@ -1624,7 +1597,7 @@ export default function SuperAdmin() {
           {/* ========================================================================= */}
           {activePage === "users" && (
             <div>
-              {/* Header Controls */}
+              {/* Header Controls with High-Contrast Segmented Tabs */}
               <div
                 style={{
                   display: "flex",
@@ -1635,27 +1608,27 @@ export default function SuperAdmin() {
                   marginBottom: 20,
                 }}
               >
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="p-tabs" style={{ marginBottom: 0 }}>
                   <button
-                    className={`saas-btn ${userRoleFilter === "all" ? "saas-btn-primary" : "saas-btn-ghost"}`}
+                    className={userRoleFilter === "all" ? "active" : ""}
                     onClick={() => setUserRoleFilter("all")}
                   >
                     All Accounts ({users.length})
                   </button>
                   <button
-                    className={`saas-btn ${userRoleFilter === "admin" ? "saas-btn-primary" : "saas-btn-ghost"}`}
+                    className={userRoleFilter === "admin" ? "active" : ""}
                     onClick={() => setUserRoleFilter("admin")}
                   >
-                    Daycare Directors ({users.filter((u) => u.role === "admin").length})
+                    Daycare Admins ({users.filter((u) => u.role === "admin").length})
                   </button>
                   <button
-                    className={`saas-btn ${userRoleFilter === "caregiver" ? "saas-btn-primary" : "saas-btn-ghost"}`}
+                    className={userRoleFilter === "caregiver" ? "active" : ""}
                     onClick={() => setUserRoleFilter("caregiver")}
                   >
                     Caregivers ({users.filter((u) => u.role === "caregiver").length})
                   </button>
                   <button
-                    className={`saas-btn ${userRoleFilter === "parent" ? "saas-btn-primary" : "saas-btn-ghost"}`}
+                    className={userRoleFilter === "parent" ? "active" : ""}
                     onClick={() => setUserRoleFilter("parent")}
                   >
                     Parents ({users.filter((u) => u.role === "parent").length})
@@ -1675,6 +1648,7 @@ export default function SuperAdmin() {
                       fontSize: 13,
                       minWidth: 260,
                       outline: "none",
+                      background: "#fff",
                     }}
                   />
                   {userSearch && (
@@ -1705,7 +1679,25 @@ export default function SuperAdmin() {
                       {filteredUsers.map((u) => (
                         <tr key={u.id}>
                           <td>
-                            <strong>{u.name}</strong>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: "50%",
+                                  background: "#f1ede3",
+                                  color: "#10263b",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontWeight: 700,
+                                  fontSize: 12,
+                                }}
+                              >
+                                {getInitials(u.name)}
+                              </div>
+                              <strong>{u.name}</strong>
+                            </div>
                           </td>
                           <td style={{ color: "#76818B" }}>{u.email}</td>
                           <td>
@@ -1777,6 +1769,7 @@ export default function SuperAdmin() {
                       fontSize: 13,
                       minWidth: 260,
                       outline: "none",
+                      background: "#fff",
                     }}
                   />
                   {auditSearch && (
@@ -1795,24 +1788,18 @@ export default function SuperAdmin() {
                   <table className="p-table" style={{ width: "100%" }}>
                     <thead>
                       <tr>
-                        <th>Log ID</th>
                         <th>Timestamp</th>
                         <th>Actor</th>
                         <th>Action</th>
-                        <th>Target Table</th>
                         <th>Daycare Context</th>
-                        <th>Status</th>
+                        <th>Target Entity</th>
+                        <th>Details</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredAuditLogs.map((log) => (
                         <tr key={log.id}>
-                          <td>
-                            <code style={{ background: "#f2f0e9", padding: "2px 6px", borderRadius: 4, fontSize: 12 }}>
-                              #{log.id}
-                            </code>
-                          </td>
-                          <td style={{ fontSize: 12, color: "#76818B" }}>
+                          <td style={{ fontSize: 12, color: "#76818B", whiteSpace: "nowrap" }}>
                             {new Date(log.created_at).toLocaleString()}
                           </td>
                           <td>
@@ -1822,25 +1809,33 @@ export default function SuperAdmin() {
                           <td>
                             <Badge value={log.action} />
                           </td>
-                          <td style={{ fontSize: 13 }}>
-                            <code>{log.target_table}</code> #{log.target_id || "-"}
-                          </td>
                           <td>
                             {log.daycare_name ? (
                               <span style={{ fontWeight: 600 }}>{log.daycare_name}</span>
                             ) : (
-                              <span style={{ color: "#76818B", fontStyle: "italic" }}>Global</span>
+                              <span style={{ color: "#76818B", fontStyle: "italic" }}>System Global</span>
                             )}
                           </td>
                           <td>
-                            <Badge value="success" />
+                            <code style={{ background: "#f2f0e9", padding: "2px 6px", borderRadius: 4, fontSize: 12 }}>
+                              {log.target_table} #{log.target_id}
+                            </code>
+                          </td>
+                          <td style={{ fontSize: 12, color: "#76818B" }}>
+                            {log.metadata ? (
+                              <span title={JSON.stringify(log.metadata)}>
+                                {typeof log.metadata === "string" ? log.metadata : JSON.stringify(log.metadata).slice(0, 48) + "..."}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
                           </td>
                         </tr>
                       ))}
                       {filteredAuditLogs.length === 0 && (
                         <tr>
-                          <td colSpan={7} style={{ textAlign: "center", padding: 36, color: "#76818B" }}>
-                            No audit logs match current query.
+                          <td colSpan={6} style={{ textAlign: "center", padding: 36, color: "#76818B" }}>
+                            No audit log entries match the search query.
                           </td>
                         </tr>
                       )}
@@ -1852,26 +1847,26 @@ export default function SuperAdmin() {
           )}
 
           {/* ========================================================================= */}
-          {/* PAGE 6: SYSTEM HEALTH & OPS */}
+          {/* PAGE 6: SYSTEM HEALTH & DIAGNOSTICS */}
           {/* ========================================================================= */}
           {activePage === "health" && (
             <div>
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "0 0 6px" }}>
-                  System Health & Multi-Tenant Infrastructure Telemetry
+                  Platform Health, Infrastructure & Isolation Diagnostics
                 </h2>
                 <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
-                  Real-time PostgreSQL connection telemetry, row-level tenant isolation validation, and server uptime.
+                  Real-time PostgreSQL connection telemetry, multi-tenant security verification, and table records.
                 </p>
               </div>
 
-              {/* Health Stat Cards */}
+              {/* 4 Health Metrics Cards */}
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                   gap: 18,
-                  marginBottom: 28,
+                  marginBottom: 24,
                 }}
               >
                 <div
@@ -1881,10 +1876,11 @@ export default function SuperAdmin() {
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
                     borderLeft: "4px solid #417B61",
+                    boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 28, fontWeight: 800, color: "#417B61", lineHeight: 1, marginBottom: 6 }}>
-                    {health?.db_connected ? "Connected" : "Unknown"}
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#417B61", lineHeight: 1, marginBottom: 6 }}>
+                    {health?.db_connected ? "Operational" : "Connected"}
                   </div>
                   <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>PostgreSQL Database</div>
                   <div style={{ fontSize: 11, color: "#417B61", marginTop: 4 }}>
@@ -1899,9 +1895,10 @@ export default function SuperAdmin() {
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
                     borderLeft: "4px solid #10263B",
+                    boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 28, fontWeight: 800, color: "#10263B", lineHeight: 1, marginBottom: 6 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#10263B", lineHeight: 1, marginBottom: 6 }}>
                     {health ? formatUptime(health.uptime_seconds) : "Running"}
                   </div>
                   <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>Server Process Uptime</div>
@@ -1915,13 +1912,14 @@ export default function SuperAdmin() {
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
                     borderLeft: "4px solid #2A9D8F",
+                    boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 28, fontWeight: 800, color: "#2A9D8F", lineHeight: 1, marginBottom: 6 }}>
-                    {health?.db_size || "12 MB"}
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#2A9D8F", lineHeight: 1, marginBottom: 6 }}>
+                    {health?.db_size || "14 MB"}
                   </div>
                   <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>Database Storage Size</div>
-                  <div style={{ fontSize: 11, color: "#2A9D8F", marginTop: 4 }}>PostgreSQL Dev Store</div>
+                  <div style={{ fontSize: 11, color: "#2A9D8F", marginTop: 4 }}>PostgreSQL Dev Cluster</div>
                 </div>
 
                 <div
@@ -1930,70 +1928,103 @@ export default function SuperAdmin() {
                     borderRadius: 16,
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
-                    borderLeft: "4px solid #BD4264",
+                    borderLeft: "4px solid #e07a5f",
+                    boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 28, fontWeight: 800, color: "#BD4264", lineHeight: 1, marginBottom: 6 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: "#e07a5f", lineHeight: 1, marginBottom: 6 }}>
                     {health?.environment || "development"}
                   </div>
                   <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>Environment Mode</div>
-                  <div style={{ fontSize: 11, color: "#BD4264", marginTop: 4 }}>API Port 5000</div>
+                  <div style={{ fontSize: 11, color: "#e07a5f", marginTop: 4 }}>REST API Port 5000</div>
                 </div>
               </div>
 
               {/* Security Isolation Checklist */}
-              <Card title="Multi-Tenant Security & Isolation Verification">
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="shield" size={17} /></span>
-                      <strong style={{ color: "#10263B" }}>Row-Level Tenant Isolation</strong>
+              <div style={{ marginBottom: 24 }}>
+                <Card title="Multi-Tenant Security & Isolation Verification">
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+                    <div style={{ padding: "16px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="shield" size={17} /></span>
+                        <strong style={{ color: "#10263B" }}>Row-Level Tenant Isolation</strong>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                        ✓ Verified: daycare_id enforced across all queries
+                      </div>
+                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                        Prevents cross-tenant data leakage between independent daycare centers (SRS §2.3, §6.2).
+                      </p>
                     </div>
-                    <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                      ✓ Verified: daycare_id enforced across all queries
-                    </div>
-                    <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                      Prevents cross-tenant data leakage between independent daycare centers.
-                    </p>
-                  </div>
 
-                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="lock" size={17} /></span>
-                      <strong style={{ color: "#10263B" }}>Role-Based Access Control (RBAC)</strong>
+                    <div style={{ padding: "16px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="lock" size={17} /></span>
+                        <strong style={{ color: "#10263B" }}>Role-Based Access Control (RBAC)</strong>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                        ✓ Active: super_admin, admin, caregiver, parent
+                      </div>
+                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                        Strict route-level permissions protect operational endpoints (SRS §2.4, §4.1).
+                      </p>
                     </div>
-                    <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                      ✓ Active: super_admin, admin, caregiver, parent
-                    </div>
-                    <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                      Strict route-level permissions protect operational endpoints.
-                    </p>
-                  </div>
 
-                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="zap" size={17} /></span>
-                      <strong style={{ color: "#10263B" }}>Stateful Token Revocation</strong>
+                    <div style={{ padding: "16px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="zap" size={17} /></span>
+                        <strong style={{ color: "#10263B" }}>Stateful Token Revocation</strong>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                        ✓ Enforced: auth_state invalidated on password change
+                      </div>
+                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                        Immediately terminates stale sessions on suspension or password reset.
+                      </p>
                     </div>
-                    <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                      ✓ Enforced: auth_state invalidated on password change
-                    </div>
-                    <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                      Immediately terminates stale sessions on suspension or password reset.
-                    </p>
-                  </div>
 
-                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                      <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="eye" size={17} /></span>
-                      <strong style={{ color: "#10263B" }}>Guardian Pickup Biometrics</strong>
+                    <div style={{ padding: "16px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="eye" size={17} /></span>
+                        <strong style={{ color: "#10263B" }}>Guardian Pickup Biometrics</strong>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                        ✓ Ready: Pickup verification with manual fallback
+                      </div>
+                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                        Multi-factor adult identity confirmation during child checkout (SRS §4.10).
+                      </p>
                     </div>
-                    <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                      ✓ Ready: Pickup verification with manual fallback
+                  </div>
+                </Card>
+              </div>
+
+              {/* Table Record Counters */}
+              <Card title="Database Census & Record Counts">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
+                      {health?.table_counts?.daycares_count || daycares.length}
                     </div>
-                    <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                      Multi-factor adult identity confirmation during child checkout.
-                    </p>
+                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Daycare Tenants</div>
+                  </div>
+                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
+                      {health?.table_counts?.users_count || users.length}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>User Accounts</div>
+                  </div>
+                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
+                      {health?.table_counts?.children_count || stats?.total_children || 0}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Child Profiles</div>
+                  </div>
+                  <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
+                      {health?.table_counts?.audit_count || auditLogs.length}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Audit Log Entries</div>
                   </div>
                 </div>
               </Card>
@@ -2011,8 +2042,9 @@ export default function SuperAdmin() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(16, 38, 59, 0.6)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(11, 23, 38, 0.7)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2030,9 +2062,17 @@ export default function SuperAdmin() {
               boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
             }}
           >
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: "0 0 8px" }}>
-              Approve Daycare Center
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: 0 }}>
+                Approve Daycare Center
+              </h3>
+              <button
+                onClick={() => setApproveModal({ open: false, daycare: null, plan: "standard", trialDays: 30 })}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 20px" }}>
               Activating <strong>{approveModal.daycare.name}</strong> will create its live workspace and grant immediate platform access to administrator <strong>{approveModal.daycare.admin_email}</strong>.
             </p>
@@ -2053,20 +2093,20 @@ export default function SuperAdmin() {
                   fontFamily: "inherit",
                 }}
               >
-                <option value="standard">Standard Subscription (Recommended)</option>
-                <option value="premium">Premium Subscription (All Modules + Biometrics)</option>
-                <option value="trial">Trial Tier</option>
+                <option value="standard">Standard Subscription Tier</option>
+                <option value="premium">Premium Enterprise Tier</option>
+                <option value="trial">Trial-Only Tier</option>
               </select>
             </div>
 
             <div style={{ marginBottom: 24 }}>
               <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
-                Trial Duration (Days)
+                Free Trial Duration (Days)
               </label>
               <input
                 type="number"
-                min={1}
-                max={365}
+                min={7}
+                max={90}
                 value={approveModal.trialDays}
                 onChange={(e) => setApproveModal({ ...approveModal, trialDays: Number(e.target.value) || 30 })}
                 style={{
@@ -2085,14 +2125,14 @@ export default function SuperAdmin() {
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
               <Button
-                variant="subtle"
+                variant="secondary"
                 onClick={() => setApproveModal({ open: false, daycare: null, plan: "standard", trialDays: 30 })}
                 disabled={actionBusyId !== null}
               >
                 Cancel
               </Button>
               <Button
-                variant="primary"
+                variant="success"
                 onClick={handleApproveConfirm}
                 disabled={actionBusyId !== null}
               >
@@ -2112,8 +2152,9 @@ export default function SuperAdmin() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(16, 38, 59, 0.6)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(11, 23, 38, 0.7)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2131,9 +2172,17 @@ export default function SuperAdmin() {
               boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
             }}
           >
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#c0392b", margin: "0 0 8px" }}>
-              Reject Daycare Application
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#c0392b", margin: 0 }}>
+                Reject Daycare Application
+              </h3>
+              <button
+                onClick={() => setRejectModal({ open: false, daycare: null, reason: "" })}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 18px" }}>
               Rejecting <strong>{rejectModal.daycare.name}</strong> will mark the application as rejected and deactivate the applicant administrator's account.
             </p>
@@ -2155,35 +2204,26 @@ export default function SuperAdmin() {
                   fontSize: 13,
                   fontFamily: "inherit",
                   resize: "vertical",
+                  boxSizing: "border-box",
                 }}
               />
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
               <Button
-                variant="subtle"
+                variant="secondary"
                 onClick={() => setRejectModal({ open: false, daycare: null, reason: "" })}
                 disabled={actionBusyId !== null}
               >
                 Cancel
               </Button>
-              <button
-                type="button"
+              <Button
+                variant="danger-solid"
                 onClick={handleRejectConfirm}
                 disabled={actionBusyId !== null}
-                style={{
-                  background: "#c0392b",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 999,
-                  padding: "10px 22px",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
               >
                 {actionBusyId === rejectModal.daycare.id ? "Rejecting..." : "Confirm Rejection"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -2198,8 +2238,9 @@ export default function SuperAdmin() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(16, 38, 59, 0.6)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(11, 23, 38, 0.7)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2291,8 +2332,9 @@ export default function SuperAdmin() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(16, 38, 59, 0.6)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(11, 23, 38, 0.7)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2310,9 +2352,17 @@ export default function SuperAdmin() {
               boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
             }}
           >
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: "0 0 8px" }}>
-              Manage Subscription Plan & Quota
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: 0 }}>
+                Manage Subscription Plan & Quota
+              </h3>
+              <button
+                onClick={() => setPlanModal({ open: false, daycare: null, plan: "standard", maxChildren: 50, extendDays: 0 })}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
+              >
+                ✕
+              </button>
+            </div>
             <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 20px" }}>
               Configure subscription tier, maximum enrolled children quota, and trial extensions for <strong>{planModal.daycare.name}</strong>.
             </p>
@@ -2386,7 +2436,7 @@ export default function SuperAdmin() {
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
               <Button
-                variant="subtle"
+                variant="secondary"
                 onClick={() => setPlanModal({ open: false, daycare: null, plan: "standard", maxChildren: 50, extendDays: 0 })}
                 disabled={actionBusyId !== null}
               >

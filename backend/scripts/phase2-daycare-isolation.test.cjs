@@ -10,8 +10,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
+const { Client, Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { withIsolatedDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
+const { createTenantPool, withTenant } = require('../src/db/tenant-pool');
+const m18 = require('../src/db/migrations/018_profile_security_revisions');
+const m19 = require('../src/db/migrations/019_tenant_relationship_integrity');
+const m20 = require('../src/db/migrations/020_tenant_product_categories');
+const m21 = require('../src/db/migrations/021_runtime_rls');
 
 const password = 'Test-password-phase2!';
 const secret = 'synthetic-phase-two-jwt-secret-for-testing';
@@ -541,6 +547,214 @@ test('phase two: daycare isolation and permission enforcement', async (t) => {
       const actionsA = logsA.data.map(l => l.action);
       assert.ok(actionsA.includes('SECURITY_CHECK_A'));
       assert.ok(!actionsA.includes('SECURITY_CHECK_B'), 'Admin A must not see Daycare B audit logs');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 11. Restricted Database Role & RLS Enforcement (Fail-Closed & Isolation)
+    // ─────────────────────────────────────────────────────────────────────────
+    await t.test('restricted non-superuser role enforces RLS, fails closed without context, and isolates data', async (t2) => {
+      // 1. Apply forward migrations up to 021 (integrity constraints + runtime RLS)
+      await db.transaction(tx => m18.up(tx));
+      await db.transaction(tx => m19.up(tx));
+      await db.transaction(tx => m20.up(tx));
+      await db.transaction(tx => m21.up(tx));
+
+      // 2. Create non-superuser test role
+      const testRole = `test_tenant_role_${randomBytes(4).toString('hex')}`;
+      const rolePassword = 'TestRoleSecret2026!';
+      await db.raw(`CREATE ROLE "${testRole}" WITH LOGIN PASSWORD '${rolePassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS IN ROLE ankelba_tenant`);
+      await db.raw(`GRANT USAGE ON SCHEMA public TO "${testRole}"`);
+      await db.raw(`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "${testRole}"`);
+      await db.raw(`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO "${testRole}"`);
+
+      const dbHost = process.env.DB_HOST || 'localhost';
+      const dbPort = Number(process.env.DB_PORT || 5432);
+
+      const nonSuperClient = new Client({
+        host: dbHost,
+        port: dbPort,
+        database: name,
+        user: testRole,
+        password: rolePassword,
+      });
+      await nonSuperClient.connect();
+
+      try {
+        // Assert role is NOT superuser and has NO BYPASSRLS
+        const roleInfo = (await nonSuperClient.query(
+          'SELECT current_user, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user'
+        )).rows[0];
+        assert.equal(roleInfo.rolsuper, false, 'Runtime role must not be superuser');
+        assert.equal(roleInfo.rolbypassrls, false, 'Runtime role must not bypass RLS');
+
+        // (a) Fail closed without tenant context
+        await t2.test('un-contexted queries fail closed and return 0 rows under RLS', async () => {
+          const children = await nonSuperClient.query('SELECT * FROM children');
+          assert.equal(children.rows.length, 0, 'Children query without context must return 0 rows');
+
+          const users = await nonSuperClient.query('SELECT * FROM users');
+          assert.equal(users.rows.length, 0, 'Users query without context must return 0 rows');
+
+          const orders = await nonSuperClient.query('SELECT * FROM orders');
+          assert.equal(orders.rows.length, 0, 'Orders query without context must return 0 rows');
+
+          const products = await nonSuperClient.query('SELECT * FROM products');
+          assert.equal(products.rows.length, 0, 'Products query without context must return 0 rows');
+
+          const care = await nonSuperClient.query('SELECT * FROM care_instructions');
+          assert.equal(care.rows.length, 0, 'Care instructions query without context must return 0 rows');
+
+          const contacts = await nonSuperClient.query('SELECT * FROM emergency_contacts');
+          assert.equal(contacts.rows.length, 0, 'Emergency contacts query without context must return 0 rows');
+        });
+
+        // (b) Tenant context Daycare A returns only Daycare A rows
+        await t2.test('queries with Daycare A context return only Daycare A rows without WHERE clause', async () => {
+          await nonSuperClient.query('BEGIN');
+          await nonSuperClient.query("SELECT set_config('app.current_daycare_id', $1, true)", [String(f.daycareA.id)]);
+
+          const children = await nonSuperClient.query('SELECT id, full_name, daycare_id FROM children');
+          const childIds = children.rows.map(c => c.id);
+          assert.ok(childIds.includes(f.childA.id), 'Child A must be visible');
+          assert.ok(!childIds.includes(f.childB.id), 'Child B must NOT be visible under Daycare A context');
+          assert.ok(children.rows.every(c => c.daycare_id === f.daycareA.id));
+
+          const users = await nonSuperClient.query('SELECT id, name, daycare_id FROM users');
+          const userIds = users.rows.map(u => u.id);
+          assert.ok(userIds.includes(f.adminA.id));
+          assert.ok(userIds.includes(f.caregiverA.id));
+          assert.ok(userIds.includes(f.parentA.id));
+          assert.ok(!userIds.includes(f.adminB.id), 'Admin B must NOT be visible');
+          assert.ok(!userIds.includes(f.superAdmin.id), 'Super Admin must NOT be visible in tenant context');
+
+          await nonSuperClient.query('COMMIT');
+        });
+
+        // (c) Cross-tenant writes rejected by RLS WITH CHECK
+        await t2.test('direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy', async () => {
+          await nonSuperClient.query('BEGIN');
+          await nonSuperClient.query("SELECT set_config('app.current_daycare_id', $1, true)", [String(f.daycareA.id)]);
+
+          await assert.rejects(
+            () => nonSuperClient.query(
+              'INSERT INTO children (full_name, dob, gender, enrollment_status, daycare_id) VALUES ($1, $2, $3, $4, $5)',
+              ['Cross Daycare Injected', '2023-01-01', 'male', 'active', f.daycareB.id]
+            ),
+            err => err.code === '42501' || err.code === '23514',
+            'Inserting child with Daycare B id under Daycare A context must fail RLS WITH CHECK'
+          );
+
+          await nonSuperClient.query('ROLLBACK');
+        });
+
+        // (d) Cross-tenant writes to dependent tables rejected
+        await t2.test('direct SQL insert into dependent table for cross-tenant child is rejected by RLS', async () => {
+          await nonSuperClient.query('BEGIN');
+          await nonSuperClient.query("SELECT set_config('app.current_daycare_id', $1, true)", [String(f.daycareA.id)]);
+
+          await assert.rejects(
+            () => nonSuperClient.query(
+              'INSERT INTO care_instructions (child_id, category, instruction_text) VALUES ($1, $2, $3)',
+              [f.childB.id, 'allergy', 'Cross-tenant instruction']
+            ),
+            err => err.code === '42501' || err.code === '23514',
+            'Inserting care instruction for Child B under Daycare A context must be rejected'
+          );
+
+          await nonSuperClient.query('ROLLBACK');
+        });
+
+        // (e) Cross-tenant updates touch 0 rows
+        await t2.test('direct SQL update targeting Daycare B record under Daycare A context affects 0 rows', async () => {
+          await nonSuperClient.query('BEGIN');
+          await nonSuperClient.query("SELECT set_config('app.current_daycare_id', $1, true)", [String(f.daycareA.id)]);
+
+          const updateResult = await nonSuperClient.query(
+            'UPDATE children SET full_name = $1 WHERE id = $2',
+            ['Tampered Child Beta', f.childB.id]
+          );
+          assert.equal(updateResult.rowCount, 0, 'Cannot update record of another daycare');
+
+          await nonSuperClient.query('COMMIT');
+        });
+
+        // (f) Tenant context Daycare B returns only Daycare B rows
+        await t2.test('queries with Daycare B context return only Daycare B rows', async () => {
+          await nonSuperClient.query('BEGIN');
+          await nonSuperClient.query("SELECT set_config('app.current_daycare_id', $1, true)", [String(f.daycareB.id)]);
+
+          const children = await nonSuperClient.query('SELECT id, full_name, daycare_id FROM children');
+          const childIds = children.rows.map(c => c.id);
+          assert.ok(childIds.includes(f.childB.id));
+          assert.ok(!childIds.includes(f.childA.id));
+
+          await nonSuperClient.query('COMMIT');
+        });
+
+      } finally {
+        await nonSuperClient.end();
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      // 12. Tenant Context for Pooled Queries & Connection Reuse
+      // ─────────────────────────────────────────────────────────────────────────
+      await t2.test('tenant connection pool isolates context, prevents leakage across checkouts, and fails closed', async () => {
+        const testPool = new Pool({
+          host: dbHost,
+          port: dbPort,
+          database: name,
+          user: testRole,
+          password: rolePassword,
+          max: 5,
+          idleTimeoutMillis: 1000,
+        });
+
+        const tenantPool = createTenantPool(testPool);
+
+        try {
+          // 1. Query outside withTenant fails closed
+          const outside = await tenantPool.query('SELECT * FROM children');
+          assert.equal(outside.rows.length, 0, 'Pooled query without withTenant must return 0 rows');
+
+          // 2. Query inside withTenant(A) sees only A
+          await withTenant(f.daycareA.id, async () => {
+            const res = await tenantPool.query('SELECT id, full_name FROM children');
+            const ids = res.rows.map(r => r.id);
+            assert.ok(ids.includes(f.childA.id));
+            assert.ok(!ids.includes(f.childB.id));
+          });
+
+          // 3. Query inside withTenant(B) sees only B
+          await withTenant(f.daycareB.id, async () => {
+            const res = await tenantPool.query('SELECT id, full_name FROM children');
+            const ids = res.rows.map(r => r.id);
+            assert.ok(ids.includes(f.childB.id));
+            assert.ok(!ids.includes(f.childA.id));
+          });
+
+          // 4. Query after tenant blocks again fails closed (no connection state leakage)
+          const resetCheck = await tenantPool.query('SELECT * FROM children');
+          assert.equal(resetCheck.rows.length, 0, 'Returned connection must not retain previous tenant context');
+
+          // 5. Concurrent pooled execution across tenants maintains strict boundaries
+          const results = await Promise.all([
+            withTenant(f.daycareA.id, () => tenantPool.query('SELECT id FROM children')),
+            withTenant(f.daycareB.id, () => tenantPool.query('SELECT id FROM children')),
+            withTenant(f.daycareA.id, () => tenantPool.query('SELECT id FROM children')),
+            withTenant(f.daycareB.id, () => tenantPool.query('SELECT id FROM children')),
+            tenantPool.query('SELECT id FROM children'),
+          ]);
+
+          assert.deepEqual(results[0].rows.map(r => r.id), [f.childA.id]);
+          assert.deepEqual(results[1].rows.map(r => r.id), [f.childB.id]);
+          assert.deepEqual(results[2].rows.map(r => r.id), [f.childA.id]);
+          assert.deepEqual(results[3].rows.map(r => r.id), [f.childB.id]);
+          assert.equal(results[4].rows.length, 0, 'Concurrent un-scoped query must return 0 rows');
+
+        } finally {
+          await tenantPool.end();
+        }
+      });
     });
 
   });

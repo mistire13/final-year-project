@@ -124,46 +124,72 @@
 }
 
 .saas-btn-primary {
-  background: var(--navy);
-  color: #ffffff;
+  background: #10263b !important;
+  color: #ffffff !important;
   box-shadow: 0 4px 14px rgba(16, 38, 59, 0.2);
 }
 
 .saas-btn-primary:hover {
-  background: var(--navy-light);
+  background: #1b3a57 !important;
+  color: #ffffff !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(16, 38, 59, 0.28);
 }
 
 .saas-btn-accent {
-  background: var(--coral);
-  color: #ffffff;
+  background: #e07a5f !important;
+  color: #ffffff !important;
   box-shadow: 0 4px 14px rgba(224, 122, 95, 0.25);
 }
 
 .saas-btn-accent:hover {
-  background: #cf6e54;
+  background: #cf6e54 !important;
+  color: #ffffff !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(224, 122, 95, 0.35);
 }
 
 .saas-btn-outline {
-  background: transparent;
-  color: var(--navy);
-  border: 1.5px solid var(--navy);
+  background: transparent !important;
+  color: #10263b !important;
+  border: 1.5px solid #10263b !important;
 }
 
 .saas-btn-outline:hover {
-  background: rgba(16, 38, 59, 0.05);
+  background: rgba(16, 38, 59, 0.06) !important;
+  color: #10263b !important;
 }
 
 .saas-btn-ghost {
-  background: transparent;
-  color: var(--navy);
+  background: transparent !important;
+  color: #10263b !important;
 }
 
 .saas-btn-ghost:hover {
-  background: rgba(16, 38, 59, 0.05);
+  background: rgba(16, 38, 59, 0.06) !important;
+  color: #10263b !important;
+}
+
+.saas-btn-subtle {
+  background: #ede8dc !important;
+  color: #10263b !important;
+  border: 1px solid #d4ccba !important;
+}
+
+.saas-btn-subtle:hover {
+  background: #e2dccf !important;
+  color: #10263b !important;
+}
+
+.saas-btn-danger {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.saas-btn-danger:hover {
+  background: #fecaca !important;
+  color: #7f1d1d !important;
 }
 
 /* Hero Section */

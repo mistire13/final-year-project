@@ -70,6 +70,8 @@ export function Button({
   variant = "",
   disabled = false,
   type = "button",
+  style,
+  className = "",
 }: {
   children: ReactNode;
   icon?: string;
@@ -77,13 +79,16 @@ export function Button({
   variant?: string;
   disabled?: boolean;
   type?: "button" | "submit";
+  style?: React.CSSProperties;
+  className?: string;
 }) {
   return (
     <button
       type={type}
-      className={"p-button " + variant}
+      className={`p-button ${variant} ${className}`.trim()}
       onClick={onClick}
       disabled={disabled}
+      style={style}
     >
       {icon && <Icon name={icon} size={17} />} {children}
     </button>

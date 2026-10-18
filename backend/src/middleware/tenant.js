@@ -8,6 +8,8 @@
  * SRS Refs: FR-UAM-10, FR-UAM-11, FR-DB-09
  */
 
+const { withTenant } = require('../db/tenant-pool');
+
 const enforceTenant = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -16,6 +18,9 @@ const enforceTenant = (req, res, next) => {
   // Super Admin can access all daycares or optionally inspect a specific daycare via query ?daycare_id=X
   if (req.user.role === 'super_admin') {
     req.daycareId = req.query.daycare_id ? Number(req.query.daycare_id) : null;
+    if (req.daycareId) {
+      return withTenant(req.daycareId, () => next());
+    }
     return next();
   }
 
@@ -38,7 +43,7 @@ const enforceTenant = (req, res, next) => {
   }
 
   req.daycareId = Number(req.user.daycare_id);
-  next();
+  return withTenant(req.daycareId, () => next());
 };
 
 module.exports = { enforceTenant };

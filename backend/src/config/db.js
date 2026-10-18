@@ -24,9 +24,14 @@ const pool = new Pool({
   connectionTimeoutMillis: 3000, // fail fast if pool is exhausted
 });
 
+const { createTenantPool } = require('../db/tenant-pool');
+
 // Log unexpected pool errors without crashing the process (NFR-MNT-03)
 pool.on('error', (err) => {
   logger.error('Unexpected PostgreSQL pool error', { message: err.message });
 });
 
-module.exports = pool;
+const tenantPool = createTenantPool(pool);
+
+module.exports = tenantPool;
+

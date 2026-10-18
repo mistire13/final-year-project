@@ -119,8 +119,8 @@ async function migrateTo(db, name, maxVersion = 17, excluded = []) {
 async function migrateStandardSetup(db, name) {
   await assertTestConnection(db, name);
   assert.equal(standardMigrationConfig.directory, migrationDirectory);
-  // Reuse the application's migration loader, never its database connection.
-  return db.migrate.latest({ ...standardMigrationConfig });
+  const { directory, ...migrationConfig } = standardMigrationConfig;
+  return db.migrate.latest({ ...migrationConfig, migrationSource: new FoundationMigrationSource(17) });
 }
 
 async function prepareLegacyBaseline(db, name) {

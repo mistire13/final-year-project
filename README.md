@@ -16,20 +16,59 @@
 ---
 
 ## 🌟 Table of Contents
-1. [Overview & Problem Statement](#-overview--problem-statement)
-2. [Key Capabilities & Modules](#-key-capabilities--modules)
-3. [Multi-Tenant SaaS Architecture](#-multi-tenant-saas-architecture)
-4. [User Roles & Workspaces](#-user-roles--workspaces)
-5. [Technology Stack](#-technology-stack)
-6. [Design System — UI/UX Pro Max](#-design-system--uiux-pro-max)
-7. [Getting Started & Local Setup](#-getting-started--local-setup)
+1. [📸 System Screenshots & UI Walkthrough](#-system-screenshots--ui-visual-walkthrough)
+2. [Overview & Problem Statement](#-overview--problem-statement)
+3. [Key Capabilities & Modules](#-key-capabilities--modules)
+4. [Multi-Tenant SaaS Architecture](#-multi-tenant-saas-architecture)
+5. [User Roles & Workspaces](#-user-roles--workspaces)
+6. [Technology Stack](#-technology-stack)
+7. [Design System — UI/UX Pro Max](#-design-system--uiux-pro-max)
+8. [Getting Started & Local Setup](#-getting-started--local-setup)
    - [Prerequisites](#prerequisites)
    - [Backend Configuration](#1-backend-setup)
    - [Frontend Configuration](#2-frontend-setup)
-8. [Testing & Quality Assurance](#-testing--quality-assurance)
-9. [Project Directory Structure](#-project-directory-structure)
-10. [Security, Privacy & Compliance](#-security-privacy--compliance)
-11. [Credits & Academic Acknowledgments](#-credits--academic-acknowledgments)
+9. [Testing & Quality Assurance](#-testing--quality-assurance)
+10. [Project Directory Structure](#-project-directory-structure)
+11. [Security, Privacy & Compliance](#-security-privacy--compliance)
+12. [Credits & Academic Acknowledgments](#-credits--academic-acknowledgments)
+
+---
+
+## 📸 System Screenshots & UI Visual Walkthrough
+
+> **👀 Checkout the system preview first before running!**  
+> Below is a visual walkthrough of the Ankelba platform across all user roles: Super Admin console, Daycare Admin portal, Front-Desk Caregiver workspace, and the Parent Mobile Application.
+
+### 🏢 1. Platform Governance & Daycare Portals (Web)
+
+| Super Admin Management Console | Super Admin Operator Login |
+| :---: | :---: |
+| ![Super Admin Console](screenshots/super_admin_console.png) | ![Super Admin Login](screenshots/super_admin_login.png) |
+| *Cross-tenant governance, daycare approvals, and system telemetry* | *Dedicated platform operator authentication* |
+
+| Daycare Administrator Dashboard | Portal & Staff Authentication |
+| :---: | :---: |
+| ![Daycare Admin Dashboard](screenshots/daycare_admin_dashboard.png) | ![General Login](screenshots/general_login.png) |
+| *Real-time child attendance, classroom groups, and revenue analytics* | *Role-based login for administrators, staff, and parents* |
+
+| SaaS Public Landing Page & Onboarding | Caregiver Front-Desk Attendance & Pickup |
+| :---: | :---: |
+| ![SaaS Landing Page](screenshots/01_saas_landing_page.png) | ![Caregiver Attendance](screenshots/03_caregiver_frontdesk_attendance.png) |
+| *Self-registration for new daycare centers with 30-day trials* | *Daily check-in, check-out, and guardian verification* |
+
+---
+
+### 📱 2. Parent Mobile Application (React Native / iOS & Android)
+
+| Parent Home & Daily Routine | Comprehensive Activity Report | 24/7 AI Parent Guide |
+| :---: | :---: | :---: |
+| ![Parent Home Feed](screenshots/05_parent_home_feed.png) | ![Daily Activity Report](screenshots/06_parent_daily_report.png) | ![AI Parent Guide](screenshots/07_parent_ai_guide.png) |
+| *Real-time child activity timeline* | *Structured meal, nap, potty & mood logs* | *Evidence-based parenting recommendations* |
+
+| Biometric Guardian Pickup | Daycare Store & Chapa Payments | Community Events Calendar |
+| :---: | :---: | :---: |
+| ![Guardian Pickup](screenshots/08_parent_guardian_pickup.png) | ![Daycare Store](screenshots/09_parent_daycare_store.png) | ![Events Calendar](screenshots/10_parent_calendar_events.png) |
+| *Adult identity verification at checkout* | *Uniforms, hygiene supplies & digital checkout* | *Field trips, holidays & conferences* |
 
 ---
 
@@ -271,6 +310,7 @@ final-year-project/
 │   │   └── screens/         # Mobile screens (Home, Feed, Chat, AI, Store, Profile)
 │   ├── App.tsx              # Application entry point
 │   └── app.json             # Expo configuration
+├── screenshots/             # Live system dashboards, portals & mobile screenshots
 ├── docs/                    # Architectural blueprints and flow audits
 ├── Ankelba_SRS_AI_Readable.md # Formal System Requirements Specification
 └── README.md                # Project documentation
