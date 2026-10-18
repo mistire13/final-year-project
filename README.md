@@ -51,12 +51,7 @@
 | ![Daycare Admin Dashboard](screenshots/daycare_admin_dashboard.png) | ![General Login](screenshots/general_login.png) |
 | *Real-time child attendance, classroom groups, and revenue analytics* | *Role-based login for administrators, staff, and parents* |
 
-| SaaS Public Landing Page & Onboarding | Caregiver Front-Desk Attendance & Pickup |
-| :---: | :---: |
-| ![SaaS Landing Page](screenshots/01_saas_landing_page.png) | ![Caregiver Attendance](screenshots/03_caregiver_frontdesk_attendance.png) |
-| *Self-registration for new daycare centers with 30-day trials* | *Daily check-in, check-out, and guardian verification* |
 
----
 
 ### 📱 2. Parent Mobile Application (React Native / iOS & Android)
 
