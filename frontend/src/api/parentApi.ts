@@ -212,12 +212,20 @@ export interface StoreProduct {
   description?: string;
   price: number;
   stock_quantity: number;
+  stock_qty?: number;
   is_active: boolean;
+  available?: boolean;
+  image_url?: string;
 }
 
 export const getStoreProducts = async (): Promise<StoreProduct[]> => {
-  const res = await apiClient.get<{ data: StoreProduct[] }>('/store/products');
-  return res.data.data || [];
+  const res = await apiClient.get<any>('/store/products');
+  const items = res.data?.data || (Array.isArray(res.data) ? res.data : []);
+  return items.map((item: any) => ({
+    ...item,
+    stock_quantity: item.stock_qty ?? item.stock_quantity ?? 0,
+    is_active: item.available ?? item.is_active ?? true,
+  }));
 };
 
 /** Authorized Guardians */

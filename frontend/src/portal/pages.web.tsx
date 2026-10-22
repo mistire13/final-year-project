@@ -1718,7 +1718,46 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         <Table
           rows={search(data.products, query)}
           columns={[
-            { key: "name", title: "Product" },
+            {
+              key: "name",
+              title: "Product",
+              render: (r) => (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      backgroundColor: "#F3F4F6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden",
+                      border: "1px solid #E5E7EB",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {r.image_url ? (
+                      <img
+                        src={r.image_url}
+                        alt={r.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 18 }}>🛍️</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong style={{ color: "var(--navy)", display: "block" }}>{r.name}</strong>
+                    {r.description && (
+                      <small style={{ color: "var(--muted)", fontSize: 12 }}>
+                        {r.description.length > 50 ? r.description.slice(0, 50) + "…" : r.description}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              ),
+            },
             { key: "price", title: "Price", render: (r) => money(r.price) },
             {
               key: "stock_qty",

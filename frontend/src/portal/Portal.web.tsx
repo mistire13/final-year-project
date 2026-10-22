@@ -833,6 +833,7 @@ export default function Portal() {
           stock_qty: Number(values.stock_qty),
           available: !!values.available,
           description: values.description || "",
+          image_url: values.image_url ? values.image_url.trim() : null,
         };
         if (
           !Number.isInteger(body.stock_qty) ||
@@ -1718,11 +1719,15 @@ function PortalModal({
     submit = preview ? "Send in preview" : "Send message";
   } else if (kind === "product") {
     title = row.id ? "Edit product" : "Add daycare product";
-    initial = { available: true, stock_qty: 0, ...row };
+    initial = { available: true, stock_qty: 0, image_url: "", ...row };
     fields = [
       field("name", "Product name", "text", true, { wide: true }),
       field("price", "Price (ETB)", "number", true, { min: "0" }),
       field("stock_qty", "Stock quantity", "number", true, { min: "0" }),
+      field("image_url", "Product picture / Image URL", "text", false, {
+        wide: true,
+        hint: "Direct photo or illustration web link",
+      }),
       field("available", "Available in the store", "checkbox", false, {
         wide: true,
       }),

@@ -21,7 +21,7 @@ const listProducts = async (query = {}, user) => {
   const daycareId = user?.daycare_id || null;
 
   let sql = `
-    SELECT p.id, p.name, p.description, p.price, p.stock_qty, p.available, p.category_id, p.updated_at, p.daycare_id,
+    SELECT p.id, p.name, p.description, p.price, p.stock_qty, p.available, p.category_id, p.image_url, p.updated_at, p.daycare_id,
            pc.name AS category_name
     FROM products p
     LEFT JOIN product_categories pc ON pc.id = p.category_id
@@ -54,8 +54,8 @@ const createProduct = async (body, user) => {
   await assertCategory(body.category_id, user);
   const daycareId = user.role === 'super_admin' ? (body.daycare_id || null) : user.daycare_id;
   const { rows } = await db.query(
-    `INSERT INTO products (name, description, price, category_id, stock_qty, available, created_by, daycare_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO products (name, description, price, category_id, stock_qty, available, created_by, daycare_id, image_url)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
       body.name,
@@ -66,6 +66,7 @@ const createProduct = async (body, user) => {
       body.available ?? true,
       user.id,
       daycareId,
+      body.image_url || null,
     ]
   );
   return rows[0];
@@ -104,6 +105,7 @@ const updateProduct = async (productIdParam, body, user) => {
   if (body.category_id !== undefined) { fields.push(`category_id = $${idx++}`); vals.push(body.category_id || null); }
   if (body.stock_qty !== undefined) { fields.push(`stock_qty = $${idx++}`); vals.push(body.stock_qty); }
   if (body.available !== undefined) { fields.push(`available = $${idx++}`); vals.push(body.available); }
+  if (body.image_url !== undefined) { fields.push(`image_url = $${idx++}`); vals.push(body.image_url || null); }
 
   if (fields.length === 0) {
     const err = new Error('No fields provided for update');

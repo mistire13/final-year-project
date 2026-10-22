@@ -139,6 +139,27 @@ export function MotionPressable({
       useNativeDriver: nativeDriver,
     }).start();
   };
+  if (Platform.OS === "web") {
+    return (
+      <Pressable
+        {...props}
+        disabled={disabled}
+        onPressIn={(event) => {
+          setPressed(true);
+          onPressIn?.(event);
+        }}
+        onPressOut={(event) => {
+          setPressed(false);
+          onPressOut?.(event);
+        }}
+        style={(state) => [
+          typeof style === "function" ? style(state) : style,
+          !reduce && !disabled && state.pressed ? { transform: [{ scale: 0.98 }] } : null,
+        ]}
+      />
+    );
+  }
+
   return (
     <AnimatedPressable
       {...props}

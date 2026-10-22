@@ -201,7 +201,7 @@ export function DaycareStoreScreen({ navigation, route }: any) {
               >
                 <View style={{ width: "100%", aspectRatio: 1 }}>
                   <Image
-                    source={getProductArtwork(p.name)}
+                    source={p.image_url ? { uri: p.image_url } : getProductArtwork(p.name)}
                     style={{ width: "100%", height: "100%" }}
                     resizeMode="cover"
                   />

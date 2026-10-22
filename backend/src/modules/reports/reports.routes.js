@@ -13,7 +13,7 @@ const c = require('./reports.controller');
 
 router.get('/daily', auth, allowRoles('admin'), c.listReports);
 router.get('/daily/child/:id', auth, allowRoles('admin', 'caregiver', 'parent'), c.getChildReports);
-router.post('/daily', auth, allowRoles('caregiver'), validate(createReportSchema), c.createReport);
+router.post('/daily', auth, allowRoles('caregiver', 'admin'), validate(createReportSchema), c.createReport);
 router.get('/daily/:id', auth, allowRoles('admin', 'caregiver', 'parent'), c.getReport);
 
 module.exports = router;

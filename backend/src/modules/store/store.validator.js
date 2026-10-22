@@ -13,6 +13,7 @@ const createProductSchema = Joi.object({
   category_id: Joi.number().integer().allow(null),
   stock_qty: Joi.number().integer().min(0).default(0),
   available: Joi.boolean().default(true),
+  image_url: Joi.string().allow(null, ''),
 });
 
 const updateProductSchema = Joi.object({
@@ -22,6 +23,7 @@ const updateProductSchema = Joi.object({
   category_id: Joi.number().integer().allow(null),
   stock_qty: Joi.number().integer().min(0),
   available: Joi.boolean(),
+  image_url: Joi.string().allow(null, ''),
 }).min(1);
 
 const placeOrderSchema = Joi.object({

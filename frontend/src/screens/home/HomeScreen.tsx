@@ -324,7 +324,10 @@ export function HomeScreen({ navigation }: any) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="View Attendance History"
-                onPress={() => navigation.navigate("AttendanceHistory")}
+                onPress={(e: any) => {
+                  e?.stopPropagation?.();
+                  navigation.navigate("AttendanceHistory");
+                }}
               >
                 <Badge title={attendanceBadgeText} />
               </Pressable>
