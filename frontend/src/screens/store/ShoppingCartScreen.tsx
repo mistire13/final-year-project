@@ -19,7 +19,7 @@ export function ShoppingCartScreen({ navigation }: any) {
       subtitle="A few essentials for their day."
       back
       tabs
-      activeTab="Profile"
+      activeTab="Shop"
     >
       {cart.length === 0 ? (
         <Card>

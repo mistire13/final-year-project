@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
-import { View, useWindowDimensions, Pressable, Platform, Linking } from "react-native";
-import { SvgXml } from "react-native-svg";
+import { View, useWindowDimensions, Pressable, Platform, Linking, Image } from "react-native";
 import { ArrowRight, ShieldCheck } from "phosphor-react-native";
 import { Page, Text, Button, BrandMark } from "../../components/design/System";
-import { logoArtwork } from "../../theme/logoArtwork";
 import { useAuth } from "../../context/AuthContext";
+import { getWebPortalUrl } from "../../utils/host";
 
 export function SplashScreen({ navigation, route }: any) {
   const { user, isLoading, logout } = useAuth();
@@ -34,9 +33,22 @@ export function SplashScreen({ navigation, route }: any) {
         <BrandMark size={82} />
       </View>
       <View
-        style={{ alignItems: "center", marginHorizontal: -32, marginTop: 24 }}
+        style={{
+          alignItems: "center",
+          marginHorizontal: -32,
+          marginTop: 24,
+          justifyContent: "center",
+        }}
       >
-        <SvgXml xml={logoArtwork} width={size} height={(size * 416) / 390} />
+        <Image
+          source={require("../../../assets/ankelba-artwork.jpg")}
+          style={{
+            width: size * 0.88,
+            height: ((size * 0.88) * 360) / 480,
+            borderRadius: 24,
+          }}
+          resizeMode="contain"
+        />
       </View>
       <Text
         size={19}
@@ -110,7 +122,7 @@ export function SplashScreen({ navigation, route }: any) {
           if (Platform.OS === "web") {
             window.location.assign("/admin");
           } else {
-            Linking.openURL("http://192.168.8.114:8081/admin");
+            Linking.openURL(getWebPortalUrl("/admin"));
           }
         }}
         style={{

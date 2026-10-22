@@ -7,8 +7,19 @@
  */
 
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const db = require('../../config/db');
 const logger = require('../../config/logger');
+const security = require('../auth/legacy-security');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'ankelba_secret';
+
+let globalBroadcast = {
+  message: '',
+  level: 'info',
+  active: false,
+  updated_at: null,
+};
 
 /**
  * Generate a clean URL-friendly slug from a daycare name.
@@ -146,7 +157,7 @@ const registerDaycare = async (data) => {
  * Super Admin: Platform-wide summary KPIs.
  */
 const getPlatformStats = async () => {
-  const [daycaresCount, pendingCount, activeCount, suspendedCount, childrenCount, usersCount, trialCount] = await Promise.all([
+  const [daycaresCount, pendingCount, activeCount, suspendedCount, childrenCount, usersCount, trialCount, standardCount, premiumCount] = await Promise.all([
     db.query('SELECT COUNT(*)::int AS count FROM daycares'),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'pending'"),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'active'"),
@@ -154,7 +165,11 @@ const getPlatformStats = async () => {
     db.query('SELECT COUNT(*)::int AS count FROM children'),
     db.query('SELECT COUNT(*)::int AS count FROM users WHERE role_id != 0'),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_plan = 'trial' AND status = 'active' AND (trial_ends_at IS NULL OR trial_ends_at > NOW())"),
+    db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_plan = 'standard' AND status = 'active'"),
+    db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_plan = 'premium' AND status = 'active'"),
   ]);
+
+  const mockMrr = (standardCount.rows[0].count * 2500) + (premiumCount.rows[0].count * 6000);
 
   return {
     total_daycares: daycaresCount.rows[0].count,
@@ -164,6 +179,12 @@ const getPlatformStats = async () => {
     total_children: childrenCount.rows[0].count,
     total_users: usersCount.rows[0].count,
     active_trials: trialCount.rows[0].count,
+    mock_mrr: mockMrr,
+    plans: {
+      trial: trialCount.rows[0].count,
+      standard: standardCount.rows[0].count,
+      premium: premiumCount.rows[0].count,
+    },
   };
 };
 
@@ -380,7 +401,7 @@ const activateDaycare = async (id, actorId) => {
 /**
  * Super Admin: Update subscription plan or extend trial countdown.
  */
-const updateDaycarePlan = async (id, { plan, extendTrialDays }, actorId) => {
+const updateDaycarePlan = async (id, { plan, extendTrialDays, maxChildren }, actorId) => {
   let query = 'UPDATE daycares SET updated_at = NOW()';
   const params = [id];
 
@@ -415,6 +436,70 @@ const updateDaycarePlan = async (id, { plan, extendTrialDays }, actorId) => {
   );
 
   return rows[0];
+};
+
+/**
+ * Super Admin: Generate a scoped impersonation session to inspect a daycare's workspace directly.
+ */
+const impersonateDaycare = async (id, superAdminUser) => {
+  const { rows } = await db.query('SELECT * FROM daycares WHERE id = $1', [id]);
+  if (!rows[0]) {
+    const err = new Error('Daycare not found.');
+    err.status = 404;
+    throw err;
+  }
+  const daycare = rows[0];
+  const userAccount = await security.findAccount(db, { id: superAdminUser.id });
+  const token = jwt.sign(
+    {
+      userId: superAdminUser.id,
+      role: 'super_admin',
+      daycareId: daycare.id,
+      auth_state: security.authState(userAccount),
+      isImpersonating: true,
+    },
+    JWT_SECRET,
+    { algorithm: 'HS256', audience: 'ankelba-legacy', expiresIn: '8h' }
+  );
+
+  await db.query(
+    `INSERT INTO audit_logs (actor_id, action, target_table, target_id, daycare_id)
+     VALUES ($1, 'SUPER_ADMIN_IMPERSONATE', 'daycares', $2, $2)`,
+    [superAdminUser.id, daycare.id]
+  );
+
+  return {
+    token,
+    daycare,
+    user: {
+      id: superAdminUser.id,
+      name: `Super Admin (${daycare.name})`,
+      email: superAdminUser.email,
+      role: 'admin',
+      daycare_id: daycare.id,
+      daycare_name: daycare.name,
+      daycare_status: daycare.status,
+      subscription_plan: daycare.subscription_plan,
+      trial_ends_at: daycare.trial_ends_at,
+      is_impersonating: true,
+    },
+  };
+};
+
+/**
+ * Global Platform Broadcast Banner management.
+ */
+const getBroadcast = () => globalBroadcast;
+
+const setBroadcast = ({ message, level = 'info', active = true }, actorId) => {
+  globalBroadcast = {
+    message: message ? message.trim() : '',
+    level: ['info', 'warning', 'alert'].includes(level) ? level : 'info',
+    active: Boolean(active && message && message.trim()),
+    updated_at: new Date().toISOString(),
+  };
+  logger.info(`Platform broadcast updated by user ${actorId}: "${globalBroadcast.message}" [${globalBroadcast.active ? 'ACTIVE' : 'INACTIVE'}]`);
+  return globalBroadcast;
 };
 
 /**
@@ -540,6 +625,9 @@ module.exports = {
   suspendDaycare,
   activateDaycare,
   updateDaycarePlan,
+  impersonateDaycare,
+  getBroadcast,
+  setBroadcast,
   listUsers,
   listAuditLogs,
   getSystemHealth,

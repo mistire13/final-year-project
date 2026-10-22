@@ -40,7 +40,7 @@ interface ChatThreadSummary {
 
 export function MessagesScreen({ navigation }: any) {
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"Messages" | "Announcements">("Messages");
+  const [tab, setTab] = useState<"Messages" | "Announcements" | "Meal Plans">("Messages");
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [announcements, setAnnouncements] = useState<DaycareAnnouncement[]>([]);
   const [contacts, setContacts] = useState<CommunicationContact[]>([]);
@@ -151,8 +151,8 @@ export function MessagesScreen({ navigation }: any) {
         onChangeText={setSearch}
       />
 
-      <View style={{ flexDirection: "row", gap: 10, marginBottom: 22 }}>
-        {(["Messages", "Announcements"] as const).map((t) => (
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
+        {(["Messages", "Announcements", "Meal Plans"] as const).map((t) => (
           <Pressable
             key={t}
             accessibilityRole="button"
@@ -161,12 +161,13 @@ export function MessagesScreen({ navigation }: any) {
             style={{
               flex: 1,
               alignItems: "center",
-              padding: 12,
-              borderRadius: 22,
+              paddingVertical: 10,
+              paddingHorizontal: 6,
+              borderRadius: 20,
               backgroundColor: tab === t ? "#061224" : "#EEEDF0",
             }}
           >
-            <Text size={14} color={tab === t ? "white" : "#6C7380"} weight={tab === t ? "semibold" : "regular"}>
+            <Text size={13} color={tab === t ? "white" : "#6C7380"} weight={tab === t ? "semibold" : "regular"}>
               {t}
             </Text>
           </Pressable>
@@ -242,6 +243,85 @@ export function MessagesScreen({ navigation }: any) {
         ) : (
           empty
         )
+      ) : tab === "Meal Plans" ? (
+        <>
+          <Card
+            style={{
+              backgroundColor: "#FFF9E6",
+              borderColor: "#F2D8A7",
+              borderWidth: 1,
+              marginBottom: 16,
+              padding: 14,
+            }}
+          >
+            <Text size={13} weight="bold" color="#8C5300">
+              WEEKLY DAYCARE MENUS
+            </Text>
+            <Text size={12} color="#7A4B06" style={{ marginTop: 4, lineHeight: 18 }}>
+              Daycare administrators publish planned meals and snacks here to keep families informed of daily nutrition.
+            </Text>
+            <Button
+              title="💡 Ask AI for complementary home dinner ideas →"
+              variant="secondary"
+              onPress={() =>
+                navigation.navigate("AIGuide", {
+                  initialPrompt: "Based on our daycare's weekly menu, can you suggest easy, balanced dinner ideas to balance what my child eats during the day?",
+                })
+              }
+              style={{ marginTop: 10, minHeight: 36, paddingVertical: 6 }}
+            />
+          </Card>
+
+          {visibleAnnouncements.filter((a) =>
+            a.announcement_type === "meal_plan" ||
+            (a.title + " " + a.body).toLowerCase().includes("meal") ||
+            (a.title + " " + a.body).toLowerCase().includes("menu") ||
+            (a.title + " " + a.body).toLowerCase().includes("lunch") ||
+            (a.title + " " + a.body).toLowerCase().includes("snack")
+          ).length > 0 ? (
+            visibleAnnouncements
+              .filter((a) =>
+                a.announcement_type === "meal_plan" ||
+                (a.title + " " + a.body).toLowerCase().includes("meal") ||
+                (a.title + " " + a.body).toLowerCase().includes("menu") ||
+                (a.title + " " + a.body).toLowerCase().includes("lunch") ||
+                (a.title + " " + a.body).toLowerCase().includes("snack")
+              )
+              .map((a) => (
+                <Card key={a.id} tint="#F5F8F4" style={{ marginBottom: 14, padding: 18 }}>
+                  <View style={[s.row, { marginBottom: 8 }]}>
+                    <SpeakerHigh size={22} color="#3B7A57" />
+                    <Text size={17} weight="semibold" style={{ flex: 1, marginLeft: 6 }}>
+                      {a.title}
+                    </Text>
+                  </View>
+                  <Text color="#4D5663" size={14} style={{ marginBottom: 12, lineHeight: 20 }}>
+                    {a.body}
+                  </Text>
+                  <View style={[s.between, { borderTopWidth: 1, borderTopColor: "#ECEAE3", paddingTop: 10 }]}>
+                    <Text size={11} color="#828995">
+                      Daycare Nutrition Plan · {a.author_name || "Administration"}
+                    </Text>
+                    <Text size={11} color="#828995">
+                      {new Date(a.created_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                </Card>
+              ))
+          ) : (
+            <Card style={{ padding: 24, alignItems: "center" }}>
+              <Text size={16} weight="semibold">
+                No Special Meal Plan Announcements Posted
+              </Text>
+              <Text size={13} color="#747B84" style={{ textAlign: "center", marginTop: 6 }}>
+                Caregivers log individual daily meals in your child's Daily Reports. General nutrition updates from administrators will appear here.
+              </Text>
+            </Card>
+          )}
+        </>
       ) : visibleAnnouncements.length > 0 ? (
         visibleAnnouncements.map((a) => (
           <Card

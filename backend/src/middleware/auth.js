@@ -56,6 +56,20 @@ const auth = async (req, res, next) => {
     };
     req.daycareId = account.daycare_id ? Number(account.daycare_id) : null;
 
+    if (account.role === 'super_admin' && decoded.isImpersonating && decoded.daycareId) {
+      const dcRes = await db.query('SELECT name, status, subscription_plan, trial_ends_at FROM daycares WHERE id = $1', [decoded.daycareId]);
+      if (dcRes.rows[0]) {
+        req.user.role = 'admin';
+        req.user.daycare_id = decoded.daycareId;
+        req.user.daycare_name = dcRes.rows[0].name;
+        req.user.daycare_status = dcRes.rows[0].status;
+        req.user.subscription_plan = dcRes.rows[0].subscription_plan;
+        req.user.trial_ends_at = dcRes.rows[0].trial_ends_at;
+        req.user.is_impersonating = true;
+        req.daycareId = Number(decoded.daycareId);
+      }
+    }
+
     if (req.daycareId) {
       return withTenant(req.daycareId, () => next());
     }

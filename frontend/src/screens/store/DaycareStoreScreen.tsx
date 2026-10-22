@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, Pressable, Image, ActivityIndicator } from "react-native";
+import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform, Linking } from "react-native";
 import {
   ShoppingCart,
   MagnifyingGlass,
@@ -17,13 +17,17 @@ import {
   s,
 } from "../../components/design/System";
 import { useChild } from "../../context/ChildContext";
+import { useAuth } from "../../context/AuthContext";
 import { artwork } from "../../theme/assets";
 import { getStoreProducts, StoreProduct } from "../../api/parentApi";
+import { getWebPortalUrl } from "../../utils/host";
 
 export const formatMoney = (value: number) =>
   value.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ETB";
 
-export function DaycareStoreScreen({ navigation }: any) {
+export function DaycareStoreScreen({ navigation, route }: any) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const { cart, cartItemCount, cartTotal, addToCart } = useChild();
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,8 +108,8 @@ export function DaycareStoreScreen({ navigation }: any) {
       <View style={[s.between, { marginBottom: 16 }]}>
         <IconButton
           icon={ArrowLeft}
-          label="Go back"
-          onPress={() => navigation.goBack()}
+          label={route?.name === "Shop" ? "Go to Home" : "Go back"}
+          onPress={() => route?.name === "Shop" ? navigation.navigate("Home") : navigation.goBack()}
         />
         <Text size={26} weight="bold" style={{ flex: 1, marginLeft: 12 }}>
           Daycare Store
@@ -137,6 +141,33 @@ export function DaycareStoreScreen({ navigation }: any) {
           )}
         </View>
       </View>
+
+      {isAdmin && (
+        <Card tint="#EBF5FA" style={{ marginBottom: 16, padding: 14 }}>
+          <View style={s.between}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text size={11} weight="bold" color="#006579" style={{ letterSpacing: 0.6 }}>
+                👑 DAYCARE ADMINISTRATOR
+              </Text>
+              <Text size={13} color="#2B4657" style={{ marginTop: 3, lineHeight: 18 }}>
+                Manage catalog items, stock quantities, and customer order fulfillment in your workspace portal.
+              </Text>
+            </View>
+            <Button
+              title="Admin Portal"
+              variant="outline"
+              onPress={() => {
+                if (Platform.OS === "web") {
+                  window.location.assign("/admin/store");
+                } else {
+                  Linking.openURL(getWebPortalUrl("/admin/store"));
+                }
+              }}
+              style={{ minHeight: 34, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: "#FFFFFF" }}
+            />
+          </View>
+        </Card>
+      )}
 
       <Field
         icon={MagnifyingGlass}

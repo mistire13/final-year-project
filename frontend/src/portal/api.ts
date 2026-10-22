@@ -7,24 +7,10 @@ const currentPath = () => typeof window !== "undefined" ? window.location.pathna
 
 const PORTAL_TOKEN_KEY = "ankelba_portal_token";
 
-const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-  if (typeof window !== "undefined" && window.location && window.location.hostname) {
-    const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") {
-      return "http://localhost:5000/api";
-    }
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
-      return `http://${host}:5000/api`;
-    }
-    return "http://192.168.8.114:5000/api";
-  }
-  if (Platform.OS === "android") return "http://192.168.8.114:5000/api";
-  return "http://localhost:5000/api";
-};
+import { getApiBaseUrl } from "../utils/host";
 
 export const portalClient = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: getApiBaseUrl(),
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -155,6 +141,26 @@ export const portalApi = {
   },
   async getSuperAdminSystemHealth() {
     const { data } = await portalClient.get("/super-admin/system-health");
+    return data;
+  },
+  async impersonateDaycare(id: number | string) {
+    const { data } = await portalClient.post(`/super-admin/daycares/${id}/impersonate`);
+    return data;
+  },
+  async getBroadcast() {
+    const { data } = await portalClient.get("/saas/broadcast");
+    return data;
+  },
+  async setBroadcast(payload: { message: string; level?: string; active?: boolean }) {
+    const { data } = await portalClient.post("/super-admin/broadcast", payload);
+    return data;
+  },
+  async updateDaycareSettings(payload: any) {
+    const { data } = await portalClient.patch("/portal/settings", payload);
+    return data;
+  },
+  async renewDaycarePlan(payload: { plan?: string; days?: number; payment_method?: string }) {
+    const { data } = await portalClient.post("/portal/renew-plan", payload);
     return data;
   },
 };

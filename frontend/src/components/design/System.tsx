@@ -28,11 +28,14 @@ import {
   ChatCircle,
   CalendarBlank,
   User,
+  Storefront,
+  SquaresFour,
   ArrowRight,
   X,
 } from "phosphor-react-native";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { colors, fonts, radii, shadows } from "../../theme/tokens";
+import { useAuth } from "../../context/AuthContext";
 
 export const Text = ({
   style,
@@ -626,25 +629,35 @@ export const tabsConfig = [
   { name: "Home", Icon: House },
   { name: "Reports", Icon: ClipboardText },
   { name: "Messages", Icon: ChatCircle },
-  { name: "Calendar", Icon: CalendarBlank },
+  { name: "Shop", Icon: Storefront },
   { name: "Profile", Icon: User },
 ];
+export const tabsForRole = (role?: string) =>
+  tabsConfig.map((item) =>
+    (role === "admin" || role === "caregiver") && item.name === "Shop"
+      ? { name: "Workspace", Icon: SquaresFour, label: role === "admin" ? "Admin" : "Staff" }
+      : item,
+  );
 export function BottomNavigation({
   active,
   onSelect,
+  items,
 }: {
   active?: string;
   onSelect?: (name: string) => void;
+  items?: { name: string; Icon: typeof House; label?: string }[];
 }) {
   const nav = useNavigation<any>();
+  const { user } = useAuth();
+  const visibleItems = items || tabsForRole(user?.role);
   return (
     <SafeAreaView edges={["bottom"]} style={s.tabBar}>
       <View style={{ flexDirection: "row" }}>
-        {tabsConfig.map(({ name, Icon }) => (
+        {visibleItems.map(({ name, Icon, label }: { name: string; Icon: typeof House; label?: string }) => (
           <MotionPressable
             key={name}
             accessibilityRole="tab"
-            accessibilityLabel={name}
+            accessibilityLabel={label || name}
             accessibilityState={{ selected: name === active }}
             aria-selected={name === active}
             onPress={() =>
@@ -670,7 +683,7 @@ export function BottomNavigation({
                 weight={active === name ? "bold" : "medium"}
                 color={active === name ? colors.textPrimary : "#6B7280"}
               >
-                {name.toUpperCase()}
+                {(label || name).toUpperCase()}
               </Text>
             </View>
           </MotionPressable>
@@ -765,7 +778,7 @@ export const s = StyleSheet.create({
     gap: 4,
     borderRadius: 14,
     paddingVertical: 5,
-    minWidth: 55,
+    width: "100%",
   },
   menuRow: {
     minHeight: 58,

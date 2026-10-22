@@ -26,7 +26,7 @@ export function OrderConfirmationScreen({ navigation, route }: any) {
   const groupName = selectedChild?.group_name || "Early Learning";
 
   return (
-    <Page tabs activeTab="Profile">
+    <Page tabs activeTab="Shop">
       <View style={{ alignItems: "center", paddingVertical: 24 }}>
         <View
           style={{

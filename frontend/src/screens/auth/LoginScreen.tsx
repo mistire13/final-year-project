@@ -21,6 +21,7 @@ import {
   IconButton,
 } from "../../components/design/System";
 import { useAuth } from "../../context/AuthContext";
+import { getWebPortalUrl } from "../../utils/host";
 
 export function LoginScreen({ navigation, route }: any) {
   const { login } = useAuth();
@@ -56,7 +57,7 @@ export function LoginScreen({ navigation, route }: any) {
         if (Platform.OS === "web") {
           window.location.assign("/super-admin");
         } else {
-          const url = "http://192.168.8.114:8081/super-admin";
+          const url = getWebPortalUrl("/super-admin");
           try {
             await Linking.openURL(url);
           } catch {
@@ -65,19 +66,18 @@ export function LoginScreen({ navigation, route }: any) {
         }
         return;
       }
-      if (result.role === "admin" || result.role === "caregiver") {
-        const targetPath = result.role === "admin" ? "/admin" : "/staff";
-        if (Platform.OS === "web") {
-          window.location.assign(targetPath);
-        } else {
-          const url = `http://192.168.8.114:8081${targetPath}`;
-          try {
-            await Linking.openURL(url);
-          } catch {
-            setError(`Please open ${url} in your phone browser.`);
-          }
+      if (Platform.OS === "web") {
+        if (result.role === "admin") {
+          window.location.assign("/admin");
+          return;
         }
-      } else if (result.profileComplete === false) {
+        if (result.role === "caregiver") {
+          window.location.assign("/staff");
+          return;
+        }
+      }
+
+      if (result.role === "parent" && result.profileComplete === false) {
         navigation.replace("ChildProfileWizard");
       } else {
         navigation.replace("MainTabs");
@@ -236,33 +236,6 @@ export function LoginScreen({ navigation, route }: any) {
           <Text size={13} weight="bold" color="#10263D">How to get access</Text>
         </Pressable>
       </View>
-
-      {/* Staff Portal Link */}
-      <Pressable
-        accessibilityRole="link"
-        onPress={() => {
-          if (Platform.OS === "web") {
-            window.location.assign("/admin");
-          } else {
-            Linking.openURL("http://192.168.8.114:8081/admin");
-          }
-        }}
-        style={{
-          alignItems: "center",
-          paddingVertical: 10,
-          paddingHorizontal: 16,
-          marginTop: 14,
-          borderRadius: 20,
-          backgroundColor: "#E8F6F3",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <ShieldCheck size={16} color="#008794" weight="bold" />
-          <Text size={13} weight="bold" color="#008794">
-            Daycare Staff & Admin Portal →
-          </Text>
-        </View>
-      </Pressable>
     </Page>
   );
 }

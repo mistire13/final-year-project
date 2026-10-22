@@ -140,6 +140,36 @@ const getSystemHealth = async (req, res, next) => {
   }
 };
 
+// Super Admin: Impersonate / Jump into daycare workspace directly
+const impersonateDaycare = async (req, res, next) => {
+  try {
+    const session = await saasService.impersonateDaycare(req.params.id, req.user);
+    res.json(session);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Public/Daycare: Get active global broadcast banner
+const getBroadcast = async (req, res, next) => {
+  try {
+    const broadcast = saasService.getBroadcast();
+    res.json(broadcast);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Super Admin: Set global platform broadcast banner
+const setBroadcast = async (req, res, next) => {
+  try {
+    const broadcast = saasService.setBroadcast(req.body, req.user.id);
+    res.json(broadcast);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   registerDaycare,
   getStats,
@@ -150,6 +180,9 @@ module.exports = {
   suspendDaycare,
   activateDaycare,
   updatePlan,
+  impersonateDaycare,
+  getBroadcast,
+  setBroadcast,
   listUsers,
   listAuditLogs,
   getSystemHealth,

@@ -7,7 +7,7 @@ const knexFactory=require('knex');
 const db=require('../src/config/db');
 const schema='portal_test_'+Date.now();
 const connection={host:process.env.DB_HOST||'localhost',port:Number(process.env.DB_PORT||5432),database:process.env.DB_NAME||'ankelba_dev',user:process.env.DB_USER||'postgres',password:process.env.DB_PASSWORD};
-const admin={id:1,role:'admin'},staff={id:2,role:'caregiver'};
+const admin={id:1,role:'admin',daycare_id:1,daycareId:1},staff={id:2,role:'caregiver',daycare_id:1,daycareId:1};
 let knex,service,server,origin;
 before(async()=>{
  assert.ok(['localhost','127.0.0.1'].includes(connection.host),'Tests require a local database');
@@ -18,9 +18,11 @@ before(async()=>{
  const migrationKnex=knexFactory({client:'pg',connection,searchPath:[schema],pool:{min:0,max:2}});
  await migrationKnex.migrate.latest({directory:require('node:path').resolve(__dirname,'../src/db/migrations'),schemaName:schema});
  await migrationKnex.destroy();
- await db.query("INSERT INTO roles(id,name) VALUES(1,'admin'),(2,'caregiver'),(3,'parent')");
- await db.query("INSERT INTO users(id,name,email,password_hash,role_id) VALUES(1,'Admin','admin@test.invalid','test-only',1),(2,'Staff','staff@test.invalid','test-only',2),(3,'Guardian','guardian@test.invalid','test-only',3),(4,'Other staff','other@test.invalid','test-only',2)");
- await db.query("INSERT INTO groups(id,name) VALUES(1,'Group One'),(2,'Group Two')");
+ await db.query("INSERT INTO roles(id,name) VALUES(1,'admin'),(2,'caregiver'),(3,'parent') ON CONFLICT DO NOTHING");
+ await db.query("INSERT INTO daycares(id,name,slug,contact_email,status,subscription_plan) VALUES(1,'Test Daycare','test-daycare','test@daycare.invalid','active','premium') ON CONFLICT DO NOTHING");
+ await db.query("DELETE FROM users");
+ await db.query("INSERT INTO users(id,name,email,password_hash,role_id,daycare_id) VALUES(1,'Admin','admin@test.invalid','test-only',1,1),(2,'Staff','staff@test.invalid','test-only',2,1),(3,'Guardian','guardian@test.invalid','test-only',3,1),(4,'Other staff','other@test.invalid','test-only',2,1)");
+ await db.query("INSERT INTO groups(id,name,daycare_id) VALUES(1,'Group One',1),(2,'Group Two',1)");
  service=require('../src/modules/portal/portal.service');
  const app=require('../src/app');server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));origin='http://127.0.0.1:'+server.address().port;
 });
@@ -30,7 +32,7 @@ after(async()=>{
  if(knex){assert.match(schema,/^portal_test_\d+$/);await knex.raw('DROP SCHEMA IF EXISTS ?? CASCADE',[schema]);await knex.destroy();}
 });
 let childCounter=0;
-async function child(group=1,authorized=true){const id=++childCounter;await db.query("INSERT INTO children(id,full_name,dob,group_id,caregiver_id) VALUES($1,'Test child','2022-05-12',$2,2)",[id,group]);await db.query("INSERT INTO guardian_links(child_id,user_id,relationship,pickup_authorized,created_by) VALUES($1,3,'Parent',$2,1)",[id,authorized]);return id;}
+async function child(group=1,authorized=true){const id=++childCounter;await db.query("INSERT INTO children(id,full_name,dob,group_id,caregiver_id,daycare_id) VALUES($1,'Test child','2022-05-12',$2,2,1)",[id,group]);await db.query("INSERT INTO guardian_links(child_id,user_id,relationship,pickup_authorized,created_by,daycare_id) VALUES($1,3,'Parent',$2,1,1)",[id,authorized]);return id;}
 const shift=(staff_id=2,group_id=1)=>({staff_id,group_id,starts_at:new Date(Date.now()-60000).toISOString(),ends_at:new Date(Date.now()+3600000).toISOString(),can_attendance:true,can_pickup:true});
 test('duty assignment rejects overlap, invalid duration and inactive staff',async()=>{
  await service.saveDuty(shift(),admin);
@@ -74,9 +76,16 @@ test('revocation and expired shifts immediately prevent desk operations',async()
  await assert.rejects(service.recordAttendance({child_id:id,event_type:'checkin'},staff),e=>e.statusCode===403);
 });
 test('HTTP routes reject unauthenticated, parent and deactivated accounts',async()=>{
- const jwt=require('jsonwebtoken');const token=id=>jwt.sign({userId:id,role:'admin'},process.env.JWT_SECRET,{expiresIn:'10m'});
+ const jwt=require('jsonwebtoken');
+ const legacySecurity=require('../src/modules/auth/legacy-security');
+ const token=async id=>{
+  const account=await legacySecurity.findAccount(db,{id});
+  return jwt.sign({userId:id,role:account.role,daycareId:account.daycare_id,auth_state:legacySecurity.authState(account)},process.env.JWT_SECRET,{expiresIn:'10m',audience:'ankelba-legacy'});
+ };
  assert.equal((await fetch(origin+'/api/portal/snapshot')).status,401);
- assert.equal((await fetch(origin+'/api/portal/snapshot',{headers:{Authorization:'Bearer '+token(3)}})).status,403);
- await db.query("UPDATE users SET status='inactive' WHERE id=2");assert.equal((await fetch(origin+'/api/portal/workspace',{headers:{Authorization:'Bearer '+token(2)}})).status,401);
- assert.equal((await fetch(origin+'/api/portal/snapshot',{headers:{Authorization:'Bearer '+token(1)}})).status,200);
+ assert.equal((await fetch(origin+'/api/portal/snapshot',{headers:{Authorization:'Bearer '+(await token(3))}})).status,403);
+ const tok2=await token(2);
+ await db.query("UPDATE users SET status='inactive' WHERE id=2");
+ assert.equal((await fetch(origin+'/api/portal/workspace',{headers:{Authorization:'Bearer '+tok2}})).status,401);
+ assert.equal((await fetch(origin+'/api/portal/snapshot',{headers:{Authorization:'Bearer '+(await token(1))}})).status,200);
 });

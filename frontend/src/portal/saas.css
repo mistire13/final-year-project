@@ -693,13 +693,25 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (max-width: 992px) {
+  .saas-nav-links {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
-  .saas-nav { padding: 16px 20px; }
-  .saas-hero { padding: 50px 20px 40px; }
-  .saas-hero h1 { font-size: 34px; }
-  .saas-section { padding: 50px 20px; }
+  .saas-nav { padding: 12px 18px; }
+  .saas-nav-links { display: none; }
+  .saas-nav-actions { gap: 8px; }
+  .saas-btn { padding: 8px 14px; font-size: 13px; }
+  .saas-hero { padding: 40px 16px 36px; }
+  .saas-hero h1 { font-size: 30px; }
+  .saas-hero-actions { flex-direction: column; align-items: stretch; width: 100%; max-width: 360px; margin: 0 auto; gap: 10px; }
+  .saas-section { padding: 40px 16px; }
   .saas-form-grid { grid-template-columns: 1fr; }
   .saas-form-group.full { grid-column: span 1; }
   .saas-admin-header { padding: 14px 20px; }
   .saas-admin-body { padding: 20px; }
+  .saas-table-card { overflow-x: auto; }
 }
+

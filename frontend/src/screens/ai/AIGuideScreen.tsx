@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CaringBloom } from "../../components/design/Motion";
 import { View, Pressable, TextInput } from "react-native";
 import {
@@ -56,15 +56,21 @@ const topics = [
     prompt: "How can we make morning routines easier?",
   },
 ];
-export function AIGuideScreen({ navigation }: any) {
+export function AIGuideScreen({ navigation, route }: any) {
   const { token, user } = useAuth();
   const { selectedChild } = useChild();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(route?.params?.initialPrompt || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [messages, setMessages] = useState<{ mine: boolean; text: string }[]>(
     [],
   );
+
+  useEffect(() => {
+    if (route?.params?.initialPrompt) {
+      setInput(route.params.initialPrompt);
+    }
+  }, [route?.params?.initialPrompt]);
   const ask = async (question: string) => {
     if (!question.trim() || busy) return;
     setInput("");

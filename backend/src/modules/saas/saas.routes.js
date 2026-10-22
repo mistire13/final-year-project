@@ -93,4 +93,20 @@ router.get(
   saasController.getSystemHealth
 );
 
+router.post(
+  '/super-admin/daycares/:id/impersonate',
+  auth,
+  allowRoles('super_admin'),
+  saasController.impersonateDaycare
+);
+
+router.get('/broadcast', saasController.getBroadcast);
+
+router.post(
+  '/super-admin/broadcast',
+  auth,
+  allowRoles('super_admin'),
+  saasController.setBroadcast
+);
+
 module.exports = router;

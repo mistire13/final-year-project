@@ -16,6 +16,8 @@ import {
   ArrowBendUpLeft,
   Warning,
   Clock,
+  Heart,
+  SpeakerHigh,
 } from "phosphor-react-native";
 import {
   Page,
@@ -38,16 +40,18 @@ import {
   getDailyReport,
   getDaycareEvents,
   getDirectMessages,
+  getAnnouncements,
   AttendanceRecord,
   DailyReportSummary,
   DetailedDailyReport,
   CalendarEvent,
   DirectMessage,
+  DaycareAnnouncement,
 } from "../../api/parentApi";
 
 export function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
-  const { selectedChild } = useChild();
+  const { selectedChild, childrenList, setSelectedChild } = useChild();
 
   const childId = selectedChild?.id || 1;
   const childFirstName = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "Your Child";
@@ -69,6 +73,7 @@ export function HomeScreen({ navigation }: any) {
   const [todayReport, setTodayReport] = useState<DetailedDailyReport | null>(null);
   const [upcomingEvent, setUpcomingEvent] = useState<CalendarEvent | null>(null);
   const [latestMessage, setLatestMessage] = useState<DirectMessage | null>(null);
+  const [latestAnnouncement, setLatestAnnouncement] = useState<DaycareAnnouncement | null>(null);
 
   const formatEventTime = (isoString?: string) => {
     if (!isoString) return "";
@@ -111,6 +116,14 @@ export function HomeScreen({ navigation }: any) {
       } else {
         setLatestMessage(null);
       }
+
+      // 5. Fetch center announcements
+      const annList = await getAnnouncements().catch(() => []);
+      if (annList.length > 0) {
+        setLatestAnnouncement(annList[0]);
+      } else {
+        setLatestAnnouncement(null);
+      }
     } catch {
       // Silently handle network drops during background sync
     } finally {
@@ -135,7 +148,11 @@ export function HomeScreen({ navigation }: any) {
     loadDashboardData();
   };
 
-  const report = () => navigation.navigate("FullDailyReport", { reportId: todayReport?.id || 1 });
+  const report = () =>
+    navigation.navigate("FullDailyReport", {
+      reportId: todayReport?.id,
+      childId: selectedChild?.id,
+    });
 
   const actions = [
     {
@@ -146,6 +163,12 @@ export function HomeScreen({ navigation }: any) {
     },
     { label: "Report", Icon: FileText, bg: "#FFF0C7", run: report },
     {
+      label: "Health",
+      Icon: Heart,
+      bg: "#FFEAEA",
+      run: () => navigation.navigate("HealthNotices"),
+    },
+    {
       label: "Ask AI",
       Icon: Robot,
       bg: "#EBE8F6",
@@ -155,7 +178,7 @@ export function HomeScreen({ navigation }: any) {
       label: "Calendar",
       Icon: CalendarBlank,
       bg: "#FDEBD5",
-      run: () => navigation.navigate("Calendar"),
+      run: () => navigation.navigate("CalendarPage"),
     },
   ];
 
@@ -252,6 +275,37 @@ export function HomeScreen({ navigation }: any) {
         Here’s how {childFirstName}’s day is going.
       </Text>
 
+      {/* Multi-Child Switcher for families with multiple enrolled children */}
+      {childrenList && childrenList.length > 1 && (
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          {childrenList.map((c) => {
+            const isSelected = c.id === selectedChild?.id;
+            return (
+              <Pressable
+                key={c.id}
+                onPress={() => setSelectedChild(c)}
+                style={{
+                  paddingVertical: 7,
+                  paddingHorizontal: 14,
+                  borderRadius: 20,
+                  backgroundColor: isSelected ? "#061224" : "#EDEAE3",
+                  borderWidth: 1,
+                  borderColor: isSelected ? "#061224" : "#DCD7CC",
+                }}
+              >
+                <Text
+                  size={12}
+                  weight={isSelected ? "bold" : "medium"}
+                  color={isSelected ? "#FFFFFF" : "#444B54"}
+                >
+                  {c.full_name.split(" ")[0]} ({c.group_name || "Daycare"})
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
       {/* Child Status Hero Card */}
       <Card
         onPress={() =>
@@ -267,7 +321,13 @@ export function HomeScreen({ navigation }: any) {
               <Text size={18} weight="medium">
                 {selectedChild?.full_name || childFirstName}
               </Text>
-              <Badge title={attendanceBadgeText} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View Attendance History"
+                onPress={() => navigation.navigate("AttendanceHistory")}
+              >
+                <Badge title={attendanceBadgeText} />
+              </Pressable>
             </View>
             <Text size={13} color="#6A6F78" style={{ marginTop: 5 }}>
               {[formatAge(selectedChild?.dob), groupName].filter(Boolean).join(" · ")}
@@ -278,6 +338,42 @@ export function HomeScreen({ navigation }: any) {
           </View>
         </View>
       </Card>
+
+      {/* Latest Center Announcement Banner */}
+      {latestAnnouncement && (
+        <Card
+          tint="#FFFBEA"
+          style={{
+            borderColor: "#F6E4AC",
+            borderWidth: 1.5,
+            marginTop: 18,
+            padding: 16,
+            borderRadius: 20,
+          }}
+          onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
+        >
+          <View style={[s.row, { marginBottom: 6 }]}>
+            <SpeakerHigh size={18} color="#9C6B10" weight="fill" />
+            <Text size={11} color="#855B09" weight="bold" style={{ letterSpacing: 0.8, marginLeft: 6 }}>
+              DAYCARE ANNOUNCEMENT
+            </Text>
+          </View>
+          <Text size={16} weight="bold" color="#10263D">
+            {latestAnnouncement.title}
+          </Text>
+          <Text size={13} color="#454D57" numberOfLines={2} style={{ marginTop: 4, lineHeight: 18 }}>
+            {latestAnnouncement.body}
+          </Text>
+          <View style={[s.between, { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderColor: "#EFE0BF" }]}>
+            <Text size={11} color="#855B09">
+              Posted by {latestAnnouncement.author_name || "Center Administration"}
+            </Text>
+            <Text size={11} color="#855B09" weight="bold">
+              View announcement feed →
+            </Text>
+          </View>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       <View

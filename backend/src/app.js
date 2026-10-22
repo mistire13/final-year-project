@@ -155,7 +155,7 @@ app.use([
   '/api/store', '/api/events', '/api/groups', '/api/dashboard',
   '/api/notifications', '/api/search', '/api/users', '/api/audit',
 ], require('./middleware/auth'), (req, res, next) => {
-  if (!req.user?.daycare_id || !['admin', 'caregiver', 'parent'].includes(req.user.role)) {
+  if (!req.user?.daycare_id || (!['admin', 'caregiver', 'parent'].includes(req.user.role) && !req.user.is_impersonating)) {
     return res.status(403).json({ error: 'Daycare account required' });
   }
   next();

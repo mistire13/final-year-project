@@ -247,9 +247,9 @@ const getMyProfile = async (user) => {
 };
 
 /**
- * Self-service profile update (name, email)
+ * Self-service profile update (name, email, phone)
  */
-const updateMyProfile = async (user, { name, email }) => {
+const updateMyProfile = async (user, { name, email, phone }) => {
   if (email) {
     const existing = await db.query(
       `SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id != $2`,
@@ -262,15 +262,34 @@ const updateMyProfile = async (user, { name, email }) => {
     }
   }
 
-  const { rows } = await db.query(
-    `UPDATE users
+  const { rows: cols } = await db.query(
+    "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'phone'"
+  );
+  const hasPhone = cols.length > 0;
+
+  let updateSql;
+  let params;
+
+  if (hasPhone && phone !== undefined) {
+    updateSql = `UPDATE users
+     SET name = COALESCE($1, name),
+         email = COALESCE($2, email),
+         phone = $3,
+         updated_at = NOW()
+     WHERE id = $4
+     RETURNING id, name, email, phone, status, updated_at`;
+    params = [name ? name.trim() : null, email ? email.toLowerCase().trim() : null, phone ? phone.trim() : null, user.id];
+  } else {
+    updateSql = `UPDATE users
      SET name = COALESCE($1, name),
          email = COALESCE($2, email),
          updated_at = NOW()
      WHERE id = $3
-     RETURNING id, name, email, status, updated_at`,
-    [name ? name.trim() : null, email ? email.toLowerCase().trim() : null, user.id]
-  );
+     RETURNING id, name, email, status, updated_at`;
+    params = [name ? name.trim() : null, email ? email.toLowerCase().trim() : null, user.id];
+  }
+
+  const { rows } = await db.query(updateSql, params);
   if (!rows[0]) {
     const e = new Error('User not found');
     e.status = 404;

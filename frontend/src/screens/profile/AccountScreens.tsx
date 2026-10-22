@@ -26,6 +26,7 @@ import { formatMoney } from "../store/catalog";
 export function OrdersScreen({ navigation }: any) {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
 
   const loadOrders = useCallback(async () => {
     try {
@@ -77,7 +78,11 @@ export function OrdersScreen({ navigation }: any) {
         </View>
       ) : orders.length > 0 ? (
         orders.map((o) => (
-          <Card key={o.id} style={{ marginBottom: 14, padding: 18 }}>
+          <Card
+            key={o.id}
+            onPress={() => setSelectedOrder(o)}
+            style={{ marginBottom: 14, padding: 18, cursor: "pointer" }}
+          >
             <View style={[s.row, { alignItems: "flex-start" }]}>
               <View
                 style={{
@@ -120,6 +125,9 @@ export function OrdersScreen({ navigation }: any) {
                     {formatMoney(Number(o.total))}
                   </Text>
                 </View>
+                <Text size={11} color="#008794" weight="semibold" style={{ marginTop: 6 }}>
+                  Tap to view receipt & collection details →
+                </Text>
               </View>
             </View>
           </Card>
@@ -139,6 +147,91 @@ export function OrdersScreen({ navigation }: any) {
           />
         </Card>
       )}
+
+      {/* Selected Order Detailed Receipt Modal */}
+      {selectedOrder && (
+        <Card
+          tint="#FFFFFF"
+          style={{
+            marginTop: 16,
+            marginBottom: 24,
+            padding: 20,
+            borderRadius: 20,
+            borderWidth: 1.5,
+            borderColor: "#061224",
+          }}
+        >
+          <View style={s.between}>
+            <View>
+              <Text size={11} color="#7E8793" style={{ letterSpacing: 0.5 }}>
+                DAYCARE ORDER RECEIPT
+              </Text>
+              <Text size={20} weight="bold" color="#061224">
+                #ANK-{selectedOrder.id}
+              </Text>
+            </View>
+            <Badge
+              title={formatStatus(selectedOrder.order_status)}
+              tone={getStatusTone(selectedOrder.order_status)}
+            />
+          </View>
+
+          <View style={{ marginVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#EFECE6", paddingVertical: 10 }}>
+            <Text size={13} weight="semibold" color="#10263D" style={{ marginBottom: 6 }}>
+              Itemized Items:
+            </Text>
+            {(selectedOrder.items || []).map((item, idx) => (
+              <View key={idx} style={[s.between, { paddingVertical: 4 }]}>
+                <Text size={13} color="#454D57">
+                  {item.product_name} × {item.quantity}
+                </Text>
+                <Text size={13} weight="medium" color="#10263D">
+                  {formatMoney(Number(item.unit_price) * item.quantity)}
+                </Text>
+              </View>
+            ))}
+            <View style={[s.between, { marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderColor: "#EFECE6" }]}>
+              <Text size={14} weight="bold">Total Amount</Text>
+              <Text size={16} weight="bold" color="#10263D">
+                {formatMoney(Number(selectedOrder.total))}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ marginBottom: 14 }}>
+            <Text size={12} color="#6B7280" style={{ lineHeight: 17 }}>
+              📍 <strong>Pickup instructions:</strong> Present Order #ANK-{selectedOrder.id} at the daycare front office during operational pickup hours (07:30 - 18:00).
+            </Text>
+            <Text size={12} color={selectedOrder.payment_status === "paid" ? "#1E7E34" : "#B26B00"} weight="medium" style={{ marginTop: 4 }}>
+              Payment status: {selectedOrder.payment_status.toUpperCase()}
+              {selectedOrder.payment_status !== "paid" ? " (Pay at front desk or digitally)" : " (Cleared for collection)"}
+            </Text>
+          </View>
+
+          {selectedOrder.payment_status !== "paid" && (
+            <Button
+              title="Pay Digitally (Telebirr / CBE / Card)"
+              variant="outline"
+              onPress={() => {
+                const target = selectedOrder;
+                setSelectedOrder(null);
+                navigation.navigate("PaymentVerification", {
+                  orderId: target.id,
+                  orderRef: `#ANK-${target.id}`,
+                  totalAmount: Number(target.total),
+                });
+              }}
+              style={{ marginBottom: 8 }}
+            />
+          )}
+
+          <Button
+            title="Dismiss Receipt"
+            variant="secondary"
+            onPress={() => setSelectedOrder(null)}
+          />
+        </Card>
+      )}
     </Page>
   );
 }
@@ -151,6 +244,16 @@ export function NotificationsScreen({ navigation }: any) {
           title="Daily Activity Reports"
           icon={CalendarBlank}
           onPress={() => navigation.navigate("Reports")}
+        />
+        <MenuRow
+          title="Attendance History"
+          icon={Clock}
+          onPress={() => navigation.navigate("AttendanceHistory")}
+        />
+        <MenuRow
+          title="Health & Incident Notices"
+          icon={ChatCircle}
+          onPress={() => navigation.navigate("HealthNotices")}
         />
         <MenuRow
           title="Messages & Caregiver Chat"

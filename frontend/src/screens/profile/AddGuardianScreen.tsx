@@ -13,9 +13,14 @@ import {
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 import { useDesign } from "../../context/DesignContext";
+import { useChild } from "../../context/ChildContext";
 import { contactError } from "../../utils/contact";
 export function AddGuardianScreen({ navigation }: any) {
   const { saveGuardian } = useDesign();
+  const { selectedChild } = useChild();
+  const childFirst = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "your child";
+  const childGroup = selectedChild?.group_name || "Daycare Classroom";
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -38,25 +43,37 @@ export function AddGuardianScreen({ navigation }: any) {
       enrolled: false,
       photo: null,
     });
-    navigation.replace("GuardianDetails", { guardianId: id });
+    navigation.replace("GuardianDetails", {
+      guardianId: id,
+      guardian: {
+        guardian_link_id: id,
+        user_id: id,
+        name: name.trim(),
+        email: email.trim(),
+        relationship: relation,
+        pickup_authorized: false,
+        biometric_enrolled: false,
+        created_at: new Date().toISOString(),
+      },
+    });
   };
   return (
     <Page
       title="Add Guardian"
-      subtitle="Add a trusted adult for Liya."
+      subtitle={`Add a trusted adult for ${childFirst}.`}
       back
       tabs
       activeTab="Profile"
     >
       <Card tint="#FFFAEE" style={{ marginBottom: 22 }}>
         <View style={s.row}>
-          <Avatar source={artwork.guardianChild} />
+          <Avatar source={artwork.guardianChild} initials={childFirst.slice(0, 2).toUpperCase()} />
           <View>
             <Text size={20} weight="semibold">
-              Liya
+              {selectedChild?.full_name || childFirst}
             </Text>
             <Text size={12} color="#878D98">
-              4 years · Sunflower Group
+              {childGroup}
             </Text>
           </View>
         </View>

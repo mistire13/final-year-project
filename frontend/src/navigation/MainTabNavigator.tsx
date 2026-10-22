@@ -5,21 +5,29 @@ import { ReportsScreen } from "../screens/reports/ReportsScreen";
 import { MessagesScreen } from "../screens/messages/MessagesScreen";
 import { CalendarScreen } from "../screens/calendar/CalendarScreen";
 import { ProfileScreen } from "../screens/profile/ProfileScreen";
-import { BottomNavigation } from "../components/design/System";
+import { BottomNavigation, tabsForRole } from "../components/design/System";
+import { DaycareStoreScreen } from "../screens/store/DaycareStoreScreen";
+import { WorkspaceScreen } from "../screens/profile/WorkspaceScreen";
+import { useAuth } from "../context/AuthContext";
 export type MainTabParamList = {
   Home: undefined;
   Reports: undefined;
   Messages: undefined;
-  Calendar: undefined;
+  Shop: undefined;
+  Workspace: undefined;
   Profile: undefined;
 };
 const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabNavigator() {
+  const { user } = useAuth();
+  const staff = user?.role === "admin" || user?.role === "caregiver";
+  const items = tabsForRole(user?.role);
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
       tabBar={({ state, navigation }) => (
         <BottomNavigation
+          items={items}
           active={state.routes[state.index].name}
           onSelect={(name) => {
             const target = state.routes.find((r) => r.name === name);
@@ -37,7 +45,11 @@ export function MainTabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Reports" component={ReportsScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} />
+      {staff ? (
+        <Tab.Screen name="Workspace" component={WorkspaceScreen} />
+      ) : (
+        <Tab.Screen name="Shop" component={DaycareStoreScreen} />
+      )}
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

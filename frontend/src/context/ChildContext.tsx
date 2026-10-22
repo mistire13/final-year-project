@@ -8,10 +8,12 @@ import React, {
 import { useAuth } from "./AuthContext";
 import { ChildSummary, CartItem, Product } from "../types";
 import { clampQuantity } from "../utils/cart";
+import { getMyChildren } from "../api/parentApi";
 
 interface ChildContextType {
   selectedChild: ChildSummary | null;
   setSelectedChild: (child: ChildSummary) => void;
+  childrenList: ChildSummary[];
   // Shopping Cart state
   cart: CartItem[];
   addToCart: (product: Product, quantity?: number) => void;
@@ -41,14 +43,30 @@ export const ChildProvider: React.FC<{ children: ReactNode }> = ({
   const [selectedChild, setSelectedChild] = useState<ChildSummary | null>(
     DEFAULT_CHILD,
   );
+  const [childrenList, setChildrenList] = useState<ChildSummary[]>([DEFAULT_CHILD]);
   const [cart, setCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
     if (user?.linked_children && user.linked_children.length > 0) {
+      setChildrenList(user.linked_children);
       setSelectedChild(user.linked_children[0]);
     } else if (user) {
-      setSelectedChild(null);
+      getMyChildren()
+        .then((kids) => {
+          if (kids && kids.length > 0) {
+            setChildrenList(kids);
+            setSelectedChild(kids[0]);
+          } else {
+            setChildrenList([]);
+            setSelectedChild(null);
+          }
+        })
+        .catch(() => {
+          setChildrenList([]);
+          setSelectedChild(null);
+        });
     } else {
+      setChildrenList([DEFAULT_CHILD]);
       setSelectedChild(DEFAULT_CHILD);
     }
   }, [user]);
@@ -123,6 +141,7 @@ export const ChildProvider: React.FC<{ children: ReactNode }> = ({
       value={{
         selectedChild,
         setSelectedChild,
+        childrenList,
         cart,
         addToCart,
         removeFromCart,

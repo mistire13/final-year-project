@@ -28,38 +28,49 @@ import { ShoppingCartScreen } from "../screens/store/ShoppingCartScreen";
 import { CheckoutScreen } from "../screens/store/CheckoutScreen";
 import { OrderConfirmationScreen } from "../screens/store/OrderConfirmationScreen";
 import { EventDetailScreen } from "../screens/calendar/EventDetailScreen";
+import { CalendarScreen } from "../screens/calendar/CalendarScreen";
 import {
   OrdersScreen,
   NotificationsScreen,
   SecurityScreen,
 } from "../screens/profile/AccountScreens";
+import { HealthNoticesScreen } from "../screens/health/HealthNoticesScreen";
+import { AttendanceHistoryScreen } from "../screens/attendance/AttendanceHistoryScreen";
+import { PaymentVerificationScreen } from "../screens/store/PaymentVerificationScreen";
+import { ReportsHistoryScreen } from "../screens/reports/ReportsHistoryScreen";
+
 export type RootStackParamList = {
   Splash: { stay?: boolean } | undefined;
   Onboarding: undefined;
   Login: { mode?: "signin" | "register" } | undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  OTP: undefined;
+  OTP: { email?: string } | undefined;
   ChildProfileWizard: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
 
-  FullDailyReport: { reportId?: number } | undefined;
+  FullDailyReport: { reportId?: number; childId?: number } | undefined;
+  ReportsHistory: { childId?: number } | undefined;
   ChildProfile: { childId?: number } | undefined;
   ParentProfile: undefined;
   AuthorizedGuardians: undefined;
-  GuardianDetails: { guardianId: number };
+  GuardianDetails: { guardianId: number; guardian?: any };
   AddGuardian: undefined;
   PickupVerification: { guardianId?: number } | undefined;
-  CaregiverChat: { threadId?: number } | undefined;
-  AIGuide: undefined;
+  CaregiverChat: { threadId?: number; recipientId?: number; name?: string } | undefined;
+  AIGuide: { initialPrompt?: string } | undefined;
   DaycareStore: undefined;
   ShoppingCart: undefined;
   Checkout: undefined;
-  OrderConfirmation: { orderRef?: string; totalAmount?: number } | undefined;
+  PaymentVerification: { orderId?: number; orderRef?: string; totalAmount?: number } | undefined;
+  OrderConfirmation: { orderRef?: string; totalAmount?: number; paymentVerified?: boolean } | undefined;
   EventDetail: { eventId?: number } | undefined;
   Orders: undefined;
   Notifications: undefined;
   Security: undefined;
+  CalendarPage: undefined;
+  HealthNotices: { childId?: number } | undefined;
+  AttendanceHistory: { childId?: number } | undefined;
 };
 const Stack = createStackNavigator<RootStackParamList>();
 export function RootNavigator() {
@@ -90,6 +101,7 @@ export function RootNavigator() {
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="CalendarPage" component={CalendarScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
@@ -122,6 +134,10 @@ export function RootNavigator() {
         <Stack.Screen name="ShoppingCart" component={ShoppingCartScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen
+          name="PaymentVerification"
+          component={PaymentVerificationScreen}
+        />
+        <Stack.Screen
           name="OrderConfirmation"
           component={OrderConfirmationScreen}
         />
@@ -129,6 +145,9 @@ export function RootNavigator() {
         <Stack.Screen name="Orders" component={OrdersScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Security" component={SecurityScreen} />
+        <Stack.Screen name="HealthNotices" component={HealthNoticesScreen} />
+        <Stack.Screen name="AttendanceHistory" component={AttendanceHistoryScreen} />
+        <Stack.Screen name="ReportsHistory" component={ReportsHistoryScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

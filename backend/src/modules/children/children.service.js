@@ -597,6 +597,56 @@ const enrollFamily = async (body, actor) => {
   }
 };
 
+const assignCaregiver = async (body, actor) => {
+  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
+  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
+  const caregiverId = body.caregiver_id ? parseInt(body.caregiver_id, 10) : null;
+  const groupId = body.group_id ? parseInt(body.group_id, 10) : null;
+  const childIds = Array.isArray(body.child_ids) ? body.child_ids.map(Number) : [];
+
+  if (caregiverId) {
+    const { rows: cg } = await db.query(
+      `SELECT id FROM users WHERE id = $1 AND role_id = 2 AND status = 'active' AND ($2::boolean OR daycare_id = $3)`,
+      [caregiverId, isSuperAdmin, daycareId]
+    );
+    if (cg.length === 0) {
+      const err = new Error('Caregiver not found or inactive');
+      err.statusCode = 422;
+      throw err;
+    }
+  }
+
+  return auditedWrite(actor, 'CAREGIVER_ASSIGNED', 'children', async client => {
+    let updatedCount = 0;
+
+    // 1. If group_id is provided, assign all active children in that group
+    if (groupId) {
+      const res = await client.query(
+        `UPDATE children SET caregiver_id = $1 WHERE group_id = $2 AND ($3::boolean OR daycare_id = $4) RETURNING id`,
+        [caregiverId, groupId, isSuperAdmin, daycareId]
+      );
+      updatedCount += res.rowCount;
+
+      // Also set lead_caregiver_id on the group
+      await client.query(
+        `UPDATE groups SET lead_caregiver_id = $1 WHERE id = $2 AND ($3::boolean OR daycare_id = $4)`,
+        [caregiverId, groupId, isSuperAdmin, daycareId]
+      );
+    }
+
+    // 2. If specific child_ids are provided
+    if (childIds.length > 0) {
+      const res = await client.query(
+        `UPDATE children SET caregiver_id = $1 WHERE id = ANY($2::int[]) AND ($3::boolean OR daycare_id = $4) RETURNING id`,
+        [caregiverId, childIds, isSuperAdmin, daycareId]
+      );
+      updatedCount += res.rowCount;
+    }
+
+    return { success: true, updated_count: updatedCount, caregiver_id: caregiverId };
+  });
+};
+
 module.exports = {
   isParentLinked,
   listChildren,
@@ -607,4 +657,5 @@ module.exports = {
   getGuardians,
   removeGuardian,
   enrollFamily,
+  assignCaregiver,
 };

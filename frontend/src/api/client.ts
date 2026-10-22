@@ -2,20 +2,12 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { getApiBaseUrl } from '../utils/host';
+
 const TOKEN_KEY = 'ankelba_auth_token';
 
-// In development: Android emulator uses 10.0.2.2, Web uses localhost, real device uses LAN IP
-const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-  if (Platform.OS === 'web') {
-    return 'http://localhost:5000/api';
-  }
-  // Physical mobile phone via Expo Go (LAN address)
-  return 'http://192.168.8.114:5000/api';
-};
-
 export const apiClient = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: getApiBaseUrl(),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

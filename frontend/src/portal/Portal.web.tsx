@@ -9,13 +9,14 @@ import {
   dayOf,
   dutyError,
   metrics,
+  money,
   label,
   localDay,
   makePreview,
   emptyDataset,
   today,
 } from "./model";
-import { portalApi, apiError } from "./api";
+import { portalApi, portalClient, apiError } from "./api";
 import { isPortalPreviewPath } from "./previewPolicy";
 import {
   Analytics,
@@ -30,6 +31,7 @@ import {
   Registry,
   Reports,
   childName,
+  groupName,
   userName,
 } from "./pages.web";
 import {
@@ -73,12 +75,14 @@ const nav = [
       ["store", "Products & stock", "store"],
       ["orders", "Orders & payments", "file"],
       ["audit", "Audit history", "audit"],
+      ["settings", "Center profile & plan", "leaf"],
     ],
   },
 ];
 const subtitles: Record<string, string> = {
   dashboard: "A thoughtful overview of your daycare, all in one place.",
   analytics: "Understand the patterns behind each day of care.",
+  settings: "Manage daycare center profile, contact details and subscription plan tier.",
   children: "Enrolled children, their linked families, emergency contacts, and care plans.",
   caregivers: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
   users: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
@@ -160,6 +164,7 @@ export default function Portal() {
   const [modal, setModal] = useState<{ kind: string; row: Row } | null>(null);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [broadcast, setBroadcast] = useState<{ message: string; level: string; active: boolean } | null>(null);
   const loadingRequest = useRef(0);
   const staff = actor?.role === "caregiver";
   const base = `/${staff ? "staff" : "admin"}${preview ? "/preview" : ""}`;
@@ -224,6 +229,9 @@ export default function Portal() {
         if (active) setChecking(false);
       }
     })();
+    portalApi.getBroadcast().then((b) => {
+      if (active && b && b.active) setBroadcast(b);
+    }).catch(() => {});
     return () => {
       active = false;
     };
@@ -348,12 +356,12 @@ export default function Portal() {
     await refresh();
     setToast("Saved successfully.");
   };
-  const upsert = (key: keyof Dataset, row: Row) => (d: Dataset) => ({
+  const upsert = (key: Exclude<keyof Dataset, "daycare">, row: Row) => (d: Dataset) => ({
     ...d,
     [key]:
-      row.id && d[key].some((r) => r.id === row.id)
-        ? d[key].map((r) => (r.id === row.id ? { ...r, ...row } : r))
-        : [{ ...row, id: row.id || Date.now() }, ...d[key]],
+      row.id && ((d[key] as Row[]) || []).some((r: Row) => r.id === row.id)
+        ? ((d[key] as Row[]) || []).map((r: Row) => (r.id === row.id ? { ...r, ...row } : r))
+        : [{ ...row, id: row.id || Date.now() }, ...(((d[key] as Row[]) || []))],
   });
   const save = async (values: Record<string, any>) => {
     if (!modal || saving) return;
@@ -414,6 +422,24 @@ export default function Portal() {
         if (!preview && String(values.parent_password || "").length < 8)
           throw Error("Set a parent app password of at least 8 characters.");
 
+        let assignedGroupId = num(values.child_group_id);
+        if (values.new_group_name?.trim()) {
+          if (preview) {
+            const newGId = Date.now();
+            setData((d) => ({
+              ...d,
+              groups: [{ id: newGId, name: values.new_group_name.trim(), description: "Classroom group" }, ...d.groups],
+            }));
+            assignedGroupId = newGId;
+          } else {
+            const newG = await portalClient
+              .post("/groups", { name: values.new_group_name.trim(), description: "Classroom group" })
+              .then((r) => r.data)
+              .catch(() => null);
+            if (newG?.id) assignedGroupId = newG.id;
+          }
+        }
+
         const payload = {
           parent: {
             name: values.parent_name.trim(),
@@ -426,7 +452,7 @@ export default function Portal() {
             full_name: values.child_full_name.trim(),
             dob: values.child_dob,
             gender: values.child_gender || null,
-            group_id: num(values.child_group_id),
+            group_id: assignedGroupId,
             caregiver_id: num(values.child_caregiver_id),
             enrollment_status: "active",
           },
@@ -495,6 +521,73 @@ export default function Portal() {
         setToast(`Enrolled ${payload.child.full_name} and linked ${payload.parent.name} successfully.`);
         setModal(null);
         return;
+      } else if (kind === "assign-caregiver") {
+        const childIds = values.child_ids as number[];
+        if (preview) {
+          setData((d) => ({
+            ...d,
+            children: d.children.map((c) =>
+              childIds.includes(c.id)
+                ? { ...c, caregiver_id: row.id }
+                : c.caregiver_id === row.id
+                ? { ...c, caregiver_id: null }
+                : c
+            ),
+          }));
+          setToast(`Assigned ${childIds.length} students to ${row.name} (preview).`);
+          setModal(null);
+          return;
+        }
+        await portalClient.post("/children/assign-caregiver", {
+          caregiver_id: row.id,
+          child_ids: childIds,
+          group_id: values.group_id || null,
+        });
+        await refresh();
+        setToast(`Updated student assignments for ${row.name} successfully.`);
+        setModal(null);
+        return;
+      } else if (kind === "assign-child-caregiver") {
+        if (preview) {
+          setData((d) => ({
+            ...d,
+            children: d.children.map((c) =>
+              c.id === row.id ? { ...c, caregiver_id: values.caregiver_id, group_id: values.group_id } : c
+            ),
+          }));
+          setToast(`Updated assignment for ${row.full_name} (preview).`);
+          setModal(null);
+          return;
+        }
+        await portalClient.patch(`/children/${row.id}`, {
+          caregiver_id: values.caregiver_id,
+          group_id: values.group_id,
+        });
+        await refresh();
+        setToast(`Updated assignment for ${row.full_name}.`);
+        setModal(null);
+        return;
+      } else if (kind === "assign-group-caregiver") {
+        if (preview) {
+          setData((d) => ({
+            ...d,
+            groups: d.groups.map((g) => (g.id === row.id ? { ...g, lead_caregiver_id: values.lead_caregiver_id } : g)),
+            children: values.assign_children && values.lead_caregiver_id
+              ? d.children.map((c) => (c.group_id === row.id ? { ...c, caregiver_id: values.lead_caregiver_id } : c))
+              : d.children,
+          }));
+          setToast(`Assigned caregiver to group ${row.name} (preview).`);
+          setModal(null);
+          return;
+        }
+        await portalClient.patch(`/groups/${row.id}`, {
+          lead_caregiver_id: values.lead_caregiver_id,
+          assign_children: values.assign_children,
+        });
+        await refresh();
+        setToast(`Assigned caregiver to group ${row.name}.`);
+        setModal(null);
+        return;
       } else if (kind === "user-status") {
         const status = row.status === "active" ? "inactive" : "active";
         await mutate(
@@ -548,9 +641,11 @@ export default function Portal() {
           upsert("guardians", { id: 0, child_id: row.id, ...body }),
         );
       } else if (kind === "group") {
-        const body = {
+        const body: any = {
           name: values.name.trim(),
           description: values.description || "",
+          lead_caregiver_id: num(values.lead_caregiver_id),
+          assign_children: !!values.assign_children,
         };
         await mutate(
           "/groups" + (row.id ? "/" + row.id : ""),
@@ -558,6 +653,14 @@ export default function Portal() {
           upsert("groups", { id: row.id, ...body }),
           row.id ? "patch" : "post",
         );
+        if (body.assign_children && body.lead_caregiver_id) {
+          setData((prev) => ({
+            ...prev,
+            children: prev.children.map((c) =>
+              c.group_id === row.id ? { ...c, caregiver_id: body.lead_caregiver_id } : c,
+            ),
+          }));
+        }
       } else if (kind === "duty") {
         const body = {
           staff_id: Number(values.staff_id),
@@ -745,13 +848,33 @@ export default function Portal() {
           row.id ? "patch" : "post",
         );
       } else if (kind === "order") {
-        const body = { order_status: values.order_status };
+        const body: any = { order_status: values.order_status };
+        if (values.payment_status) body.payment_status = values.payment_status;
         await mutate(
           "/store/orders/" + row.id + "/status",
           body,
           upsert("orders", { ...row, ...body }),
           "patch",
         );
+      } else if (kind === "edit-settings") {
+        const body = {
+          name: values.name?.trim(),
+          license_number: values.license_number?.trim(),
+          contact_email: values.contact_email?.trim(),
+          contact_phone: values.contact_phone?.trim(),
+          address: values.address?.trim(),
+        };
+        const updated = await portalApi.updateDaycareSettings(body);
+        setData((old) => ({ ...old, daycare: updated }));
+        setToast("Daycare settings updated successfully.");
+      } else if (kind === "renew-plan") {
+        const updated = await portalApi.renewDaycarePlan({
+          plan: values.plan,
+          days: Number(values.days) || 365,
+          payment_method: values.payment_method || "mock_chapa",
+        });
+        setData((old) => ({ ...old, daycare: updated }));
+        setToast(`Subscription renewed successfully for ${values.plan} tier!`);
       }
       setModal(null);
     } catch (error: any) {
@@ -873,7 +996,6 @@ export default function Portal() {
             </form>
             <footer>
               <a href="/">SaaS Landing & Free Trial</a>
-              <a href="/super-admin">Super Admin Portal</a>
               <a href="/app">Parent Mobile App</a>
               {__DEV__ && (
                 <a href="/admin/preview/dashboard">Explore admin preview</a>
@@ -1021,6 +1143,48 @@ export default function Portal() {
           </div>
         </header>
         <div className="p-content" key={selected}>
+          {broadcast?.active && broadcast?.message && (
+            <div
+              style={{
+                background:
+                  broadcast.level === "alert"
+                    ? "#FEF2F2"
+                    : broadcast.level === "warning"
+                    ? "#FFFBEB"
+                    : "#EFF6FF",
+                border: `1.5px solid ${
+                  broadcast.level === "alert"
+                    ? "#F87171"
+                    : broadcast.level === "warning"
+                    ? "#FCD34D"
+                    : "#93C5FD"
+                }`,
+                color:
+                  broadcast.level === "alert"
+                    ? "#991B1B"
+                    : broadcast.level === "warning"
+                    ? "#92400E"
+                    : "#1E40AF",
+                padding: "12px 18px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                marginBottom: 20,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              }}
+            >
+              <span style={{ fontSize: 22 }}>
+                {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
+              </span>
+              <div style={{ flex: 1 }}>
+                <strong style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Platform Notice ({broadcast.level})
+                </strong>
+                <span style={{ fontSize: 13.5, fontWeight: 500 }}>{broadcast.message}</span>
+              </div>
+            </div>
+          )}
           {preview && (
             <div className="p-preview">
               <span>
@@ -1154,6 +1318,39 @@ function PortalModal({
         close={close}
       />
     );
+  } else if (kind === "assign-caregiver") {
+    return (
+      <AssignCaregiverModal
+        caregiver={row}
+        data={data}
+        busy={busy}
+        error={error}
+        close={close}
+        onSave={(child_ids, group_id) => save({ child_ids, group_id })}
+      />
+    );
+  } else if (kind === "assign-child-caregiver") {
+    return (
+      <AssignChildModal
+        child={row}
+        data={data}
+        busy={busy}
+        error={error}
+        close={close}
+        onSave={(caregiver_id, group_id) => save({ caregiver_id, group_id })}
+      />
+    );
+  } else if (kind === "assign-group-caregiver") {
+    return (
+      <AssignGroupCaregiverModal
+        group={row}
+        data={data}
+        busy={busy}
+        error={error}
+        close={close}
+        onSave={(lead_caregiver_id, assign_children) => save({ lead_caregiver_id, assign_children })}
+      />
+    );
   } else if (kind === "caregiver" || (kind === "user" && row.role === "caregiver")) {
     title = row.id ? "Edit Caregiver Profile" : "Register Caregiver";
     initial = {
@@ -1245,6 +1442,24 @@ function PortalModal({
   } else if (kind === "child-profile") {
     return <Modal title={row.full_name + " · profile"} onClose={close}>
       <Person name={row.full_name} sub={"Born "+dayOf(row.dob)+" · "+label(row.enrollment_status)} />
+      <section className="p-profile-section">
+        <div className="p-card-head">
+          <h3>Classroom & Assigned Caregiver</h3>
+          <Button variant="secondary" onClick={() => ctx.open("assign-child-caregiver", row)}>
+            Change Assignment
+          </Button>
+        </div>
+        <div className="p-profile-row" style={{ display: "flex", gap: 32 }}>
+          <div>
+            <div style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", fontWeight: 700 }}>Classroom Group</div>
+            <strong style={{ fontSize: 14, color: "var(--navy)" }}>{groupName(data, row.group_id) || "Not assigned to a group"}</strong>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", fontWeight: 700 }}>Primary Caregiver</div>
+            <strong style={{ fontSize: 14, color: "var(--navy)" }}>{userName(data, row.caregiver_id) || "Unassigned"}</strong>
+          </div>
+        </div>
+      </section>
       <section className="p-profile-section"><h3>Family & pickup</h3>
         {data.guardians.filter(g=>g.child_id===row.id).map(g=><div className="p-profile-row" key={g.id}><Person name={userName(data,g.user_id)} sub={g.relationship}/><Badge value={g.pickup_authorized?"Approved":"Not authorized"}/></div>)}
         {!data.guardians.some(g=>g.child_id===row.id)&&<p>No linked guardians yet.</p>}
@@ -1294,9 +1509,29 @@ function PortalModal({
     );
   } else if (kind === "group") {
     title = row.id ? "Edit group" : "Create a group";
+    initial = {
+      name: row.name || "",
+      description: row.description || "",
+      lead_caregiver_id: row.lead_caregiver_id ? String(row.lead_caregiver_id) : "",
+      assign_children: true,
+    };
     fields = [
       field("name", "Group name", "text", true, { wide: true }),
       field("description", "Description", "textarea", false, { wide: true }),
+      field("lead_caregiver_id", "Lead Teacher / Assigned Caregiver", "select", false, {
+        wide: true,
+        options: [
+          { value: "", label: "No lead teacher assigned" },
+          ...data.users
+            .filter((u) => u.role === "caregiver" && u.status === "active")
+            .map((u) => ({ value: String(u.id), label: `${u.name}${u.title ? ` (${u.title})` : ""}` })),
+        ],
+        hint: "Select the primary educator responsible for this classroom group.",
+      }),
+      field("assign_children", "Assign all active children in this group to this caregiver", "checkbox", false, {
+        wide: true,
+        hint: "Automatically sets this caregiver as the primary caregiver for all students in this group.",
+      }),
     ];
   } else if (kind === "duty") {
     title = "Assign front-desk duty";
@@ -1316,8 +1551,12 @@ function PortalModal({
         ),
       }),
       field("date", "Duty date", "date"),
-      field("start", "Start time · Addis Ababa", "time"),
-      field("end", "End time · Addis Ababa", "time"),
+      field("start", "Start time · Addis Ababa", "time", true, {
+        hint: "Standard shifts: Morning 07:30 or Afternoon 13:00",
+      }),
+      field("end", "End time · Addis Ababa", "time", true, {
+        hint: "Standard shifts: Morning 13:00 or Afternoon 18:30",
+      }),
       field("group_id", "Group scope", "select", false, {
         wide: true,
         options: options(data.groups),
@@ -1381,9 +1620,9 @@ function PortalModal({
           })),
         },
       ),
-      field("reason", "Manual identity check performed", "textarea", true, {
+      field("reason", "Manual identity check performed (min. 12 chars)", "textarea", true, {
         wide: true,
-        hint: "Record the check and why manual verification is used. Do not enter an ID document number.",
+        hint: "Describe verification method for audit trail (e.g. verified photo ID / parent signature). Minimum 12 characters.",
       }),
       field(
         "identity_confirmed",
@@ -1491,6 +1730,10 @@ function PortalModal({
     ];
   } else if (kind === "order") {
     title = "Update order #ANK-" + row.id;
+    initial = {
+      order_status: row.order_status || "placed",
+      payment_status: row.payment_status || "unpaid",
+    };
     fields = [
       field("order_status", "Fulfillment status", "select", true, {
         wide: true,
@@ -1502,13 +1745,73 @@ function PortalModal({
           "cancelled",
         ].map((v) => ({ value: v, label: label(v) })),
       }),
+      field("payment_status", "Payment status", "select", true, {
+        wide: true,
+        options: [
+          { value: "unpaid", label: "Unpaid (Pending daycare collection)" },
+          { value: "paid", label: "Paid (Received at front desk / digital)" },
+          { value: "failed", label: "Payment Failed / Cancelled" },
+        ],
+      }),
     ];
     detail = (
       <div className="p-notice">
-        Payment: <Badge value={row.payment_status} /> Payment verification is
-        handled separately.
+        Order Total: <strong>{money(row.total)}</strong> · Placed by {userName(data, row.parent_id)}
       </div>
     );
+  } else if (kind === "edit-settings") {
+    title = "Edit Daycare Center Profile";
+    initial = {
+      name: data.daycare?.name || row.name || "",
+      license_number: data.daycare?.license_number || row.license_number || "",
+      contact_email: data.daycare?.contact_email || row.contact_email || "",
+      contact_phone: data.daycare?.contact_phone || row.contact_phone || "",
+      address: data.daycare?.address || row.address || "",
+    };
+    fields = [
+      field("name", "Center Legal Name", "text", true, { wide: true }),
+      field("license_number", "Official License Number", "text", false, { wide: true }),
+      field("contact_email", "Official Contact Email", "text", true),
+      field("contact_phone", "Official Contact Phone", "text", false),
+      field("address", "Physical Center Address", "text", false, { wide: true }),
+    ];
+    submit = "Save Center Profile";
+  } else if (kind === "renew-plan") {
+    title = "Upgrade or Renew Subscription Plan";
+    initial = {
+      plan: data.daycare?.subscription_plan || "standard",
+      days: 365,
+      payment_method: "mock_chapa",
+    };
+    fields = [
+      field("plan", "Select Subscription Tier", "select", true, {
+        wide: true,
+        options: [
+          { value: "standard", label: "Standard Care Plan (2,500 ETB / mo)" },
+          { value: "premium", label: "Enterprise Academy Plan (6,000 ETB / mo)" },
+        ],
+      }),
+      field("days", "Billing Cycle Duration", "select", true, {
+        wide: true,
+        options: [
+          { value: "30", label: "1 Month (30 Days)" },
+          { value: "365", label: "1 Full Year (365 Days) — 15% Discount" },
+        ],
+      }),
+      field("payment_method", "Payment Provider", "select", true, {
+        wide: true,
+        options: [
+          { value: "mock_chapa", label: "Chapa Payment Gateway (Simulated Instant)" },
+          { value: "direct_transfer", label: "Bank Wire Transfer / Pay at Daycare" },
+        ],
+      }),
+    ];
+    detail = (
+      <div className="p-notice" style={{ background: "#eef6f2", borderColor: "#cce6d9", color: "#417b61" }}>
+        ✨ Upgrading or renewing instantly extends your center's capacity and unlocks full platform features.
+      </div>
+    );
+    submit = "Process Subscription Payment";
   } else if (kind === "child-profile") {
     const guardian = data.guardians.find((g) => g.child_id === row.id);
     const parentUser = guardian ? data.users.find((u) => u.id === guardian.user_id) : null;
@@ -1686,6 +1989,8 @@ function FamilyEnrollmentModal({
   close: () => void;
 }) {
   const { data, preview } = ctx;
+  const [isNewGroup, setIsNewGroup] = useState(data.groups.length === 0);
+  const [newGroupName, setNewGroupName] = useState("");
   const [formData, setFormData] = useState({
     parent_name: "",
     parent_email: "",
@@ -1710,7 +2015,10 @@ function FamilyEnrollmentModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    save(formData);
+    save({
+      ...formData,
+      new_group_name: isNewGroup ? newGroupName.trim() : "",
+    });
   };
 
   return (
@@ -1826,20 +2134,48 @@ function FamilyEnrollmentModal({
                 <option value="other">Other</option>
               </select>
             </label>
-            <label>
-              Classroom group
-              <select
-                value={formData.child_group_id}
-                onChange={(e) => handleChange("child_group_id", e.target.value)}
-              >
-                <option value="">Select classroom group</option>
-                {data.groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--navy)" }}>Classroom group</span>
+                <button
+                  type="button"
+                  onClick={() => setIsNewGroup(!isNewGroup)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#008794",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                >
+                  {isNewGroup ? "← Choose existing" : "+ Create new group here"}
+                </button>
+              </div>
+              {isNewGroup ? (
+                <input
+                  required
+                  placeholder="e.g., Little Sprouts (Toddler Room)"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #D1D5DB" }}
+                />
+              ) : (
+                <select
+                  value={formData.child_group_id}
+                  onChange={(e) => handleChange("child_group_id", e.target.value)}
+                >
+                  <option value="">Select classroom group</option>
+                  {data.groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <label style={{ gridColumn: "1 / -1" }}>
               Assigned primary caregiver (optional)
               <select
@@ -1918,6 +2254,339 @@ function FamilyEnrollmentModal({
           </Button>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+function AssignCaregiverModal({
+  caregiver,
+  data,
+  busy,
+  error,
+  close,
+  onSave,
+}: {
+  caregiver: Row;
+  data: Dataset;
+  busy: boolean;
+  error: string;
+  close: () => void;
+  onSave: (childIds: number[], groupId?: number) => void;
+}) {
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const initialAssigned = useMemo(
+    () => new Set(data.children.filter((c) => c.caregiver_id === caregiver.id && c.enrollment_status === "active").map((c) => c.id)),
+    [data.children, caregiver.id]
+  );
+  const [selectedChildren, setSelectedChildren] = useState<Set<number>>(initialAssigned);
+  const [searchFilter, setSearchFilter] = useState("");
+
+  const handleGroupSelect = (grpId: string) => {
+    setSelectedGroup(grpId);
+    if (!grpId) return;
+    const gId = Number(grpId);
+    const inGroup = data.children.filter((c) => c.group_id === gId && c.enrollment_status === "active").map((c) => c.id);
+    setSelectedChildren((prev) => {
+      const next = new Set(prev);
+      inGroup.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const toggleChild = (id: number) => {
+    setSelectedChildren((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedChildren(new Set(data.children.filter((c) => c.enrollment_status === "active").map((c) => c.id)));
+  };
+
+  const clearAll = () => {
+    setSelectedChildren(new Set());
+  };
+
+  const filteredChildren = data.children.filter(
+    (c) =>
+      c.enrollment_status === "active" &&
+      (!searchFilter || c.full_name.toLowerCase().includes(searchFilter.toLowerCase()))
+  );
+
+  return (
+    <Modal title={`Assign Students to ${caregiver.name}`} onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
+          Select children or an entire classroom to assign to <strong>{caregiver.name}</strong> ({caregiver.title || "Caregiver"}). Assigned caregivers record daily activities, naps, meals, and attendance.
+        </p>
+
+        {/* Quick Group Bulk-Assign */}
+        <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+          <strong style={{ fontSize: 13, color: "var(--navy)", display: "block", marginBottom: 6 }}>
+            Quick Assign Entire Classroom Group
+          </strong>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <select
+              style={{ flex: 1 }}
+              value={selectedGroup}
+              onChange={(e) => handleGroupSelect(e.target.value)}
+            >
+              <option value="">Choose a classroom to select all its students…</option>
+              {data.groups.map((g) => {
+                const count = data.children.filter((c) => c.group_id === g.id && c.enrollment_status === "active").length;
+                return (
+                  <option key={g.id} value={g.id}>
+                    {g.name} ({count} active children)
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        {/* Individual Student Selection */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <strong style={{ fontSize: 13, color: "var(--navy)" }}>
+              Assigned Students ({selectedChildren.size} selected)
+            </strong>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button variant="quiet small" type="button" onClick={selectAll}>Select All</Button>
+              <Button variant="quiet small" type="button" onClick={clearAll}>Deselect All</Button>
+            </div>
+          </div>
+
+          <input
+            type="search"
+            placeholder="Search students by name…"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            style={{ marginBottom: 10, width: "100%" }}
+          />
+
+          <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {filteredChildren.length === 0 ? (
+              <div style={{ padding: 12, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>No active students found</div>
+            ) : (
+              filteredChildren.map((c) => {
+                const checked = selectedChildren.has(c.id);
+                const currentCaregiver = data.users.find((u) => u.id === c.caregiver_id);
+                const group = data.groups.find((g) => g.id === c.group_id);
+                return (
+                  <label
+                    key={c.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      background: checked ? "#eff6ff" : "#fff",
+                      cursor: "pointer",
+                      border: checked ? "1px solid #bfdbfe" : "1px solid #f1f5f9",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleChild(c.id)}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)" }}>{c.full_name}</div>
+                      <div style={{ fontSize: 11, color: "#64748b" }}>
+                        {group?.name || "No classroom"} · {currentCaregiver ? (currentCaregiver.id === caregiver.id ? "✓ Currently assigned to this caregiver" : `Assigned to: ${currentCaregiver.name}`) : "Unassigned"}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div role="alert" className="p-error">
+            {error}
+          </div>
+        )}
+
+        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(Array.from(selectedChildren), selectedGroup ? Number(selectedGroup) : undefined)}
+          >
+            {busy ? "Saving…" : `Save Assignments (${selectedChildren.size} children)`}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function AssignChildModal({
+  child,
+  data,
+  busy,
+  error,
+  close,
+  onSave,
+}: {
+  child: Row;
+  data: Dataset;
+  busy: boolean;
+  error: string;
+  close: () => void;
+  onSave: (caregiverId: number | null, groupId: number | null) => void;
+}) {
+  const [caregiverId, setCaregiverId] = useState<string>(child.caregiver_id ? String(child.caregiver_id) : "");
+  const [groupId, setGroupId] = useState<string>(child.group_id ? String(child.group_id) : "");
+
+  return (
+    <Modal title={`Assign Caregiver & Group: ${child.full_name}`} onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
+          Set the assigned educator and classroom for <strong>{child.full_name}</strong>.
+        </p>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--navy)" }}>
+          Primary Caregiver / Educator
+          <select
+            value={caregiverId}
+            onChange={(e) => setCaregiverId(e.target.value)}
+          >
+            <option value="">Unassigned (No caregiver)</option>
+            {data.users
+              .filter((u) => u.role === "caregiver" && u.status === "active")
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} {u.title ? `(${u.title})` : ""}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--navy)" }}>
+          Classroom Group
+          <select
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+          >
+            <option value="">Unassigned (No classroom group)</option>
+            {data.groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="p-notice" style={{ margin: 0 }}>
+          Assigned caregivers have direct access to log daily reports, health observations, and front-desk attendance for this child.
+        </div>
+
+        {error && (
+          <div role="alert" className="p-error">
+            {error}
+          </div>
+        )}
+
+        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(caregiverId ? Number(caregiverId) : null, groupId ? Number(groupId) : null)}
+          >
+            {busy ? "Saving…" : "Save Assignment"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function AssignGroupCaregiverModal({
+  group,
+  data,
+  busy,
+  error,
+  close,
+  onSave,
+}: {
+  group: Row;
+  data: Dataset;
+  busy: boolean;
+  error: string;
+  close: () => void;
+  onSave: (caregiverId: number | null, assignChildren: boolean) => void;
+}) {
+  const [caregiverId, setCaregiverId] = useState<string>(group.lead_caregiver_id ? String(group.lead_caregiver_id) : "");
+  const [assignChildren, setAssignChildren] = useState(true);
+  const activeChildrenCount = data.children.filter((c) => c.group_id === group.id && c.enrollment_status === "active").length;
+
+  return (
+    <Modal title={`Assign Lead Caregiver to ${group.name}`} onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
+          Select the lead teacher or educator responsible for the <strong>{group.name}</strong> classroom.
+        </p>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--navy)" }}>
+          Lead Teacher / Primary Caregiver
+          <select
+            value={caregiverId}
+            onChange={(e) => setCaregiverId(e.target.value)}
+          >
+            <option value="">Unassigned (No lead caregiver)</option>
+            {data.users
+              .filter((u) => u.role === "caregiver" && u.status === "active")
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} {u.title ? `(${u.title})` : ""}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13 }}>
+          <input
+            type="checkbox"
+            checked={assignChildren}
+            onChange={(e) => setAssignChildren(e.target.checked)}
+          />
+          <span>
+            Also assign all <strong>{activeChildrenCount} active children</strong> in this group to this caregiver
+          </span>
+        </label>
+
+        {error && (
+          <div role="alert" className="p-error">
+            {error}
+          </div>
+        )}
+
+        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(caregiverId ? Number(caregiverId) : null, assignChildren)}
+          >
+            {busy ? "Saving…" : "Save Group Assignment"}
+          </Button>
+        </div>
+      </div>
     </Modal>
   );
 }

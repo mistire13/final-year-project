@@ -809,12 +809,18 @@ export function Caregivers(ctx: PageContext) {
             key: "linked",
             title: "Assigned Children",
             render: (r) => {
-              const count = data.children.filter((c) => c.caregiver_id === r.id).length;
+              const assigned = data.children.filter((c) => c.caregiver_id === r.id && c.enrollment_status === "active");
+              const count = assigned.length;
               return (
-                <Badge
-                  value={`${count} ${count === 1 ? "child" : "children"}`}
-                  tone={count > 0 ? "green" : "quiet"}
-                />
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Badge
+                    value={`${count} ${count === 1 ? "child" : "children"}`}
+                    tone={count > 0 ? "green" : "quiet"}
+                  />
+                  <Button variant="quiet small" onClick={() => open("assign-caregiver", r)}>
+                    Assign
+                  </Button>
+                </div>
               );
             },
           },
@@ -840,6 +846,9 @@ export function Caregivers(ctx: PageContext) {
             title: "Actions",
             render: (r) => (
               <div className="p-row-actions">
+                <Button variant="secondary small" onClick={() => open("assign-caregiver", r)}>
+                  Assign Students
+                </Button>
                 <Button variant="quiet" onClick={() => open("caregiver", r)}>
                   Edit Profile
                 </Button>
@@ -966,7 +975,19 @@ export function Children(ctx: PageContext) {
           {
             key: "caregiver_id",
             title: "Caregiver",
-            render: (r) => userName(data, r.caregiver_id),
+            render: (r) => {
+              const name = userName(data, r.caregiver_id);
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: "13px", fontWeight: name ? 600 : 400, color: name ? "var(--navy)" : "#9CA3AF" }}>
+                    {name || "Unassigned"}
+                  </span>
+                  <Button variant="quiet small" onClick={() => open("assign-child-caregiver", r)}>
+                    Edit
+                  </Button>
+                </div>
+              );
+            },
           },
           {
             key: "enrollment_status",
@@ -979,6 +1000,9 @@ export function Children(ctx: PageContext) {
             render: (r) => (
               <div className="p-row-actions">
                 <Button variant="quiet" onClick={() => open("child-profile", r)}>Profile</Button>
+                <Button variant="secondary small" onClick={() => open("assign-child-caregiver", r)}>
+                  Caregiver
+                </Button>
                 <Button variant="quiet" onClick={() => open("child", r)}>
                   Edit
                 </Button>
@@ -1025,6 +1049,17 @@ export function Groups(ctx: PageContext) {
               <p style={{ fontSize: 12 }}>
                 {g.description || "Learning and growing, together."}
               </p>
+              <div style={{ marginTop: 10, marginBottom: 12, padding: "8px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>
+                  Lead Teacher / Caregiver
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--navy)", marginTop: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>{g.lead_caregiver_name || userName(data, g.lead_caregiver_id) || "Not assigned"}</span>
+                  <Button variant="quiet small" onClick={() => open("assign-group-caregiver", g)}>
+                    Assign
+                  </Button>
+                </div>
+              </div>
               <div className="p-detail-grid">
                 <div>
                   <small>Active children</small>
@@ -1050,9 +1085,14 @@ export function Groups(ctx: PageContext) {
                   />
                 </div>
               </div>
-              <Button variant="secondary" onClick={() => ctx.go("children")}>
-                Manage roster
-              </Button>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <Button variant="secondary" style={{ flex: 1 }} onClick={() => open("assign-group-caregiver", g)}>
+                  Assign Caregiver
+                </Button>
+                <Button variant="quiet" onClick={() => ctx.go("children")}>
+                  Manage Roster
+                </Button>
+              </div>
             </Card>
           );
         })}
@@ -1795,10 +1835,132 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         />
       </Card>
     );
+  if (page === "settings")
+    return <DaycareSettings {...ctx} />;
   return (
     <Empty
       title="Page unavailable"
       text="Choose a section from the navigation."
     />
+  );
+}
+
+export function DaycareSettings(ctx: PageContext) {
+  const { data, open, actor } = ctx;
+  const dc: Row = data.daycare || {
+    id: 1,
+    name: actor.daycare_name || "Ankelba Daycare Center",
+    slug: "ankelba-main",
+    license_number: "",
+    contact_email: "contact@daycare.com",
+    contact_phone: "",
+    address: "Addis Ababa, Ethiopia",
+    subscription_plan: actor.subscription_plan || "standard",
+    trial_ends_at: actor.trial_ends_at,
+    max_children: 50,
+    status: "active",
+  };
+  const daysLeft = dc.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(dc.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null;
+  const childCount = data.children?.length || 0;
+  const maxCap = dc.max_children || 50;
+  const capPct = Math.min(100, Math.round((childCount / maxCap) * 100));
+  const staffCount = data.users?.filter((u) => ["admin", "caregiver"].includes(u.role)).length || 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
+      {/* Subscription & Quota Card */}
+      <Card>
+        <div className="p-card-head">
+          <div>
+            <h2>Subscription Plan & Enrollment Capacity</h2>
+            <p>Your daycare tier, trial duration and child enrollment quota.</p>
+          </div>
+          <Badge
+            value={dc.subscription_plan}
+            tone={dc.subscription_plan === "premium" ? "green" : "gold"}
+          />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, margin: "16px 0" }}>
+          <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
+            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Active Plan</small>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#10263B", textTransform: "capitalize", margin: "4px 0" }}>
+              {dc.subscription_plan} Care
+            </div>
+            <div style={{ fontSize: 13, color: daysLeft !== null && daysLeft <= 5 ? "#c0392b" : "#417B61", fontWeight: 600 }}>
+              {daysLeft !== null ? `⏱️ ${daysLeft} days remaining on trial` : "● Active Subscription"}
+            </div>
+          </div>
+
+          <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
+            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Enrolled Children</small>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
+              {childCount} / {maxCap} ({capPct}%)
+            </div>
+            <div style={{ background: "#e8e5dc", borderRadius: 999, height: 6, width: "100%", overflow: "hidden", marginTop: 6 }}>
+              <div style={{ background: capPct > 90 ? "#e07a5f" : "#417B61", height: "100%", width: `${capPct}%` }} />
+            </div>
+          </div>
+
+          <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
+            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Active Staff Team</small>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
+              {staffCount} Staff Accounts
+            </div>
+            <div style={{ fontSize: 13, color: "#76818B" }}>
+              {data.groups?.length || 0} Classroom Groups
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 10 }}>
+          <Button icon="sparkles" onClick={() => open("renew-plan", dc)}>
+            💳 Upgrade or Renew Plan
+          </Button>
+        </div>
+      </Card>
+
+      {/* Daycare Profile & Organization Card */}
+      <Card>
+        <div className="p-card-head">
+          <div>
+            <h2>Daycare Center Profile</h2>
+            <p>Official registration and contact information for your center.</p>
+          </div>
+          <Button variant="secondary" icon="pencil" onClick={() => open("edit-settings", dc)}>
+            Edit Center Profile
+          </Button>
+        </div>
+
+        <div className="p-detail-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+          <div>
+            <small>Center Legal Name</small>
+            <p><strong>{dc.name}</strong></p>
+          </div>
+          <div>
+            <small>Operating Slug / Tenant ID</small>
+            <p><code>{dc.slug || "ankelba-main"}</code> (#{dc.id || 1})</p>
+          </div>
+          <div>
+            <small>Official License Number</small>
+            <p>{dc.license_number || "Pending Regulatory Verification"}</p>
+          </div>
+          <div>
+            <small>Center Contact Email</small>
+            <p>{dc.contact_email || "contact@daycare.com"}</p>
+          </div>
+          <div>
+            <small>Contact Phone</small>
+            <p>{dc.contact_phone || "Not configured"}</p>
+          </div>
+          <div>
+            <small>Physical Address</small>
+            <p>{dc.address || "Addis Ababa, Ethiopia"}</p>
+          </div>
+        </div>
+      </Card>
+    </div>
   );
 }

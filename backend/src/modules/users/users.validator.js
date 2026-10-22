@@ -30,6 +30,7 @@ const updateStatusSchema = Joi.object({
 const updateMyProfileSchema = Joi.object({
   name:  Joi.string().trim().max(150),
   email: Joi.string().trim().lowercase().email({ tlds: { allow: false } }).max(255),
+  phone: Joi.string().trim().max(50).allow('', null),
 }).min(1);
 
 module.exports = { createUserSchema, updateUserSchema, updateStatusSchema, updateMyProfileSchema };

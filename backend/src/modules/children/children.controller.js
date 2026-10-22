@@ -18,5 +18,6 @@ const addInstruction    = async (req, res, next) => { try { res.status(201).json
 const updateInstruction = async (req, res, next) => { try { res.json(await careSvc.updateInstruction(req.params.iid, req.body, req.user)); } catch(e) { next(e); } };
 const deleteInstruction = async (req, res, next) => { try { res.json(await careSvc.deleteInstruction(req.params.iid, req.user)); } catch(e) { next(e); } };
 const enrollFamily   = async (req, res, next) => { try { res.status(201).json(await svc.enrollFamily(req.body, req.user)); } catch(e) { next(e); } };
-module.exports = { listChildren, createChild, getChild, updateChild, addGuardian, getGuardians, removeGuardian, enrollFamily, addContact, updateContact, deleteContact, addInstruction, updateInstruction, deleteInstruction };
+const assignCaregiver = async (req, res, next) => { try { res.json(await svc.assignCaregiver(req.body, req.user)); } catch(e) { next(e); } };
+module.exports = { listChildren, createChild, getChild, updateChild, addGuardian, getGuardians, removeGuardian, enrollFamily, assignCaregiver, addContact, updateContact, deleteContact, addInstruction, updateInstruction, deleteInstruction };
 

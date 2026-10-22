@@ -78,7 +78,6 @@ export default function LandingPage() {
           <a className="saas-nav-link" href="#features">Features</a>
           <a className="saas-nav-link" href="#plans">30-Day Trial</a>
           <a className="saas-nav-link" href="#security">Tenant Isolation</a>
-          <a className="saas-nav-link" onClick={() => navigateTo("/super-admin")}>Super Admin</a>
           <a className="saas-nav-link" onClick={() => navigateTo("/app")}>Parent Mobile App</a>
         </div>
 
@@ -193,7 +192,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="saas-feature-card">
+          <div id="security" className="saas-feature-card" style={{ scrollMarginTop: "100px" }}>
             <div className="saas-card-icon saas-icon-amber"><Icon name="lock" size={24} /></div>
             <h3>Multi-Tenant Cloud Security</h3>
             <p>
@@ -314,9 +313,12 @@ export default function LandingPage() {
                   Thank you for applying to join Ankelba, <strong>{successResult.name}</strong>! Your application is in review. 
                   Once approved by the Super Administrator, your 30-day trial will activate and you can log in directly.
                 </p>
-                <div style={{ display: "flex", justifyContent: "center", gap: 14 }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
                   <button className="saas-btn saas-btn-primary" onClick={() => { setModalOpen(false); navigateTo("/super-admin"); }}>
                     Go to Super Admin (To Review)
+                  </button>
+                  <button className="saas-btn saas-btn-accent" onClick={() => { setModalOpen(false); navigateTo("/admin"); }}>
+                    Daycare Login
                   </button>
                   <button className="saas-btn saas-btn-outline" onClick={() => setModalOpen(false)}>
                     Close

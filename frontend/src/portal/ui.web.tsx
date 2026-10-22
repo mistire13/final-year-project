@@ -214,7 +214,7 @@ export function Table({
   );
   return (
     <>
-      <div className="p-table-wrap">
+      <div className="p-table-wrap" style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table className="p-table">
           <thead>
             <tr>

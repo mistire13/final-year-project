@@ -133,19 +133,22 @@ const runAudit = async () => {
   // ─────────────────────────────────────────────────────────────────────────
   console.log('\n─── 3. AUTHENTICATION & RECOVERY FLOW ───');
   // Admin Login
-  let adminRes = await req('POST', '/api/auth/login', { email: 'admin@ankelba.dev', password: 'Admin@123!' });
+  let adminRes = await req('POST', '/api/auth/login', { email: 'admin@ankelba.dev', password: '1234' });
+  if (adminRes.status !== 200) adminRes = await req('POST', '/api/auth/login', { email: 'admin@ankelba.dev', password: 'Admin@123!' });
   const adminToken = adminRes.body?.token;
   const adminCookie = adminRes.cookie;
   record('Auth', 'Admin authentication (JWT Bearer & HttpOnly Cookie)', adminRes.status === 200 && !!adminToken && !!adminCookie);
   record('Auth', 'Admin user payload role is admin', adminRes.body?.user?.role === 'admin');
 
   // Caregiver Login
-  let careRes = await req('POST', '/api/auth/login', { email: 'caregiver@ankelba.dev', password: 'Care@123!' });
+  let careRes = await req('POST', '/api/auth/login', { email: 'caregiver@ankelba.dev', password: '1234' });
+  if (careRes.status !== 200) careRes = await req('POST', '/api/auth/login', { email: 'caregiver@ankelba.dev', password: 'Care@123!' });
   const careToken = careRes.body?.token;
   record('Auth', 'Caregiver authentication returns 200 OK', careRes.status === 200 && !!careToken);
 
   // Parent Login
-  let parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123!' });
+  let parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: '1234' });
+  if (parentRes.status !== 200) parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123!' });
   const parentToken = parentRes.body?.token;
   record('Auth', 'Parent authentication returns 200 OK', parentRes.status === 200 && !!parentToken);
 
@@ -178,7 +181,7 @@ const runAudit = async () => {
 
   // Restore parent password via login + change-password
   let newLogin = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@999!' });
-  let changeRes = await req('PATCH', '/api/auth/change-password', { current_password: 'Parent@999!', new_password: 'Parent@123!' }, newLogin.body?.token);
+  let changeRes = await req('PATCH', '/api/auth/change-password', { current_password: 'Parent@999!', new_password: '1234' }, newLogin.body?.token);
   record('Auth', 'Authenticated change-password restored default password', changeRes.status === 200);
 
   // ─────────────────────────────────────────────────────────────────────────

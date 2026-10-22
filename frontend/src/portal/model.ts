@@ -1,5 +1,6 @@
 export type Row = { id: number; [key: string]: any };
 export type Dataset = {
+  daycare?: Row | null;
   users: Row[];
   children: Row[];
   groups: Row[];
@@ -16,7 +17,7 @@ export type Dataset = {
   verifications: Row[];
   messages: Row[];
 };
-export const emptyDataset = (): Dataset => ({ users: [], children: [], groups: [], duties: [], attendance: [], reports: [], health: [], guardians: [], events: [], announcements: [], products: [], orders: [], audit: [], verifications: [], messages: [] });
+export const emptyDataset = (): Dataset => ({ daycare: null, users: [], children: [], groups: [], duties: [], attendance: [], reports: [], health: [], guardians: [], events: [], announcements: [], products: [], orders: [], audit: [], verifications: [], messages: [] });
 export const today = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Addis_Ababa",

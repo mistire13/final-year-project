@@ -11,12 +11,14 @@ const listGroups = async (user = null) => {
   const daycareId = user ? user.daycare_id : null;
 
   const { rows } = await db.query(
-    `SELECT g.id, g.name, g.description, g.daycare_id,
+    `SELECT g.id, g.name, g.description, g.daycare_id, g.lead_caregiver_id,
+            u.name AS lead_caregiver_name,
             COUNT(c.id) FILTER (WHERE c.enrollment_status = 'active') AS active_children_count
      FROM groups g
+     LEFT JOIN users u ON u.id = g.lead_caregiver_id
      LEFT JOIN children c ON c.group_id = g.id
      WHERE ($1::boolean OR g.daycare_id = $2)
-     GROUP BY g.id, g.name, g.description, g.daycare_id
+     GROUP BY g.id, g.name, g.description, g.daycare_id, g.lead_caregiver_id, u.name
      ORDER BY g.name ASC`,
     [isSuperAdmin, daycareId]
   );
@@ -24,11 +26,26 @@ const listGroups = async (user = null) => {
 };
 
 const createGroup = async (body, user = null) => {
+  const isSuperAdmin = user && user.role === 'super_admin';
   const daycareId = user ? user.daycare_id : null;
+  const leadCaregiverId = body.lead_caregiver_id ? parseInt(body.lead_caregiver_id, 10) : null;
+
+  if (leadCaregiverId) {
+    const { rows: cgRows } = await db.query(
+      `SELECT id FROM users WHERE id = $1 AND ($2::boolean OR daycare_id = $3) AND role_id = (SELECT id FROM roles WHERE name = 'caregiver') AND status = 'active'`,
+      [leadCaregiverId, isSuperAdmin, daycareId]
+    );
+    if (cgRows.length === 0) {
+      const err = new Error('Selected lead caregiver not found or is not an active caregiver in this daycare');
+      err.statusCode = 422;
+      throw err;
+    }
+  }
+
   try {
     const { rows } = await db.query(
-      `INSERT INTO groups (name, description, daycare_id) VALUES ($1, $2, $3) RETURNING *`,
-      [body.name, body.description || null, daycareId]
+      `INSERT INTO groups (name, description, lead_caregiver_id, daycare_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [body.name.trim(), body.description?.trim() || null, leadCaregiverId, daycareId]
     );
     return rows[0];
   } catch (err) {
@@ -50,8 +67,30 @@ const updateGroup = async (groupIdParam, body, user = null) => {
   const vals = [];
   let idx = 1;
 
-  if (body.name !== undefined) { fields.push(`name = $${idx++}`); vals.push(body.name); }
-  if (body.description !== undefined) { fields.push(`description = $${idx++}`); vals.push(body.description || null); }
+  if (body.name !== undefined) {
+    fields.push(`name = $${idx++}`);
+    vals.push(body.name.trim());
+  }
+  if (body.description !== undefined) {
+    fields.push(`description = $${idx++}`);
+    vals.push(body.description?.trim() || null);
+  }
+  if (body.lead_caregiver_id !== undefined) {
+    const leadCaregiverId = body.lead_caregiver_id ? parseInt(body.lead_caregiver_id, 10) : null;
+    if (leadCaregiverId) {
+      const { rows: cgRows } = await db.query(
+        `SELECT id FROM users WHERE id = $1 AND ($2::boolean OR daycare_id = $3) AND role_id = (SELECT id FROM roles WHERE name = 'caregiver') AND status = 'active'`,
+        [leadCaregiverId, isSuperAdmin, daycareId]
+      );
+      if (cgRows.length === 0) {
+        const err = new Error('Selected lead caregiver not found or is not an active caregiver in this daycare');
+        err.statusCode = 422;
+        throw err;
+      }
+    }
+    fields.push(`lead_caregiver_id = $${idx++}`);
+    vals.push(leadCaregiverId);
+  }
 
   if (fields.length === 0) {
     const err = new Error('No fields provided for update');
@@ -76,6 +115,16 @@ const updateGroup = async (groupIdParam, body, user = null) => {
     err.statusCode = 404;
     throw err;
   }
+
+  // If assign_children is requested, propagate lead caregiver to all active children in this group
+  if (body.assign_children) {
+    const targetCaregiverId = body.lead_caregiver_id ? parseInt(body.lead_caregiver_id, 10) : null;
+    await db.query(
+      `UPDATE children SET caregiver_id = $1 WHERE group_id = $2 AND ($3::boolean OR daycare_id = $4)`,
+      [targetCaregiverId, groupId, isSuperAdmin, daycareId]
+    );
+  }
+
   return rows[0];
 };
 

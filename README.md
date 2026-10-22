@@ -1,4 +1,4 @@
-# Ankelba (አንከልባ) 👶✨
+# Ankelba (አንቀልባ) 👶✨
 
 > **Parent Communication, Child Activity Reporting & Multi-Tenant SaaS Platform for Daycare Centers**  
 > *HiLCoE — School of Computer Science and Technology | Senior Project 2026*  

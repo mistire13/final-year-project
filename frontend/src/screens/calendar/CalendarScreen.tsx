@@ -18,7 +18,7 @@ import {
 } from "../../components/design/System";
 import { getDaycareEvents, CalendarEvent } from "../../api/parentApi";
 
-export function CalendarScreen({ navigation }: any) {
+export function CalendarScreen({ navigation, route }: any) {
   const [eventsList, setEventsList] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +71,7 @@ export function CalendarScreen({ navigation }: any) {
   });
 
   return (
-    <Page title="Calendar" subtitle="Daycare activities and schedule.">
+    <Page title="Calendar" back={route?.name === "CalendarPage"} subtitle="Daycare activities and schedule.">
       <View style={[s.row, { marginBottom: 20, flexWrap: "wrap", gap: 8 }]}>
         {["All", "Special", "Meeting", "Program"].map((f) => (
           <Pressable

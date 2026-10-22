@@ -62,10 +62,18 @@ export function CheckoutScreen({ navigation }: any) {
       });
 
       clearCart();
-      navigation.replace("OrderConfirmation", {
-        orderRef: reference,
-        totalAmount: Number(created.total),
-      });
+      if (method === "digital") {
+        navigation.replace("PaymentVerification", {
+          orderId: created.id,
+          orderRef: reference,
+          totalAmount: Number(created.total),
+        });
+      } else {
+        navigation.replace("OrderConfirmation", {
+          orderRef: reference,
+          totalAmount: Number(created.total),
+        });
+      }
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
@@ -83,7 +91,7 @@ export function CheckoutScreen({ navigation }: any) {
       subtitle="Review your items and payment preference."
       back
       tabs
-      activeTab="Profile"
+      activeTab="Shop"
     >
       <Card style={{ marginBottom: 20 }}>
         <View style={s.row}>

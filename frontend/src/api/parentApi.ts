@@ -30,16 +30,32 @@ export interface FullChildProfile {
   emergency_contacts: EmergencyContact[];
 }
 
-/** GET /api/parent/children — list this parent's linked children */
+/** GET /api/parent/children — list this parent's linked children (or daycare classroom children for caregivers/admins) */
 export const getMyChildren = async (): Promise<ChildSummary[]> => {
-  const res = await apiClient.get<{ children: ChildSummary[] }>('/parent/children');
-  return res.data.children;
+  try {
+    const res = await apiClient.get<any>('/parent/children');
+    return res.data?.children || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+  } catch (err: any) {
+    if (err.response?.status === 403) {
+      const res = await apiClient.get<any>('/children');
+      return res.data?.children || res.data?.data || (Array.isArray(res.data) ? res.data : []);
+    }
+    throw err;
+  }
 };
 
 /** GET /api/parent/children/:id — full child profile with care data */
 export const getMyChild = async (childId: number): Promise<FullChildProfile> => {
-  const res = await apiClient.get<{ child: FullChildProfile }>(`/parent/children/${childId}`);
-  return res.data.child;
+  try {
+    const res = await apiClient.get<any>(`/parent/children/${childId}`);
+    return res.data?.child || res.data;
+  } catch (err: any) {
+    if (err.response?.status === 403) {
+      const res = await apiClient.get<any>(`/children/${childId}`);
+      return res.data?.child || res.data;
+    }
+    throw err;
+  }
 };
 
 /** PUT /api/parent/children/:id/care — replace all care instructions */
@@ -98,8 +114,8 @@ export interface DailyReportSummary {
 }
 
 export const getChildReports = async (childId: number): Promise<DailyReportSummary[]> => {
-  const res = await apiClient.get<{ data: DailyReportSummary[] }>(`/reports/daily/child/${childId}`);
-  return res.data.data || [];
+  const res = await apiClient.get<any>(`/reports/daily/child/${childId}`);
+  return res.data?.data || (Array.isArray(res.data) ? res.data : []);
 };
 
 export interface DetailedDailyReport {
@@ -119,8 +135,8 @@ export interface DetailedDailyReport {
 }
 
 export const getDailyReport = async (reportId: number): Promise<DetailedDailyReport> => {
-  const res = await apiClient.get<DetailedDailyReport>(`/reports/daily/${reportId}`);
-  return res.data;
+  const res = await apiClient.get<any>(`/reports/daily/${reportId}`);
+  return res.data?.report || res.data;
 };
 
 /** Events */
@@ -264,8 +280,8 @@ export const placeStoreOrder = async (items: Array<{ product_id: number; quantit
 };
 
 export const getMyOrders = async (): Promise<OrderRecord[]> => {
-  const res = await apiClient.get<{ data: OrderRecord[] }>('/store/orders/my');
-  return res.data.data || [];
+  const res = await apiClient.get<any>('/store/orders/my');
+  return res.data?.data || (Array.isArray(res.data) ? res.data : []);
 };
 
 /** Groups */
@@ -299,5 +315,44 @@ export const updateChildProfile = async (
   const res = await apiClient.put<{ child: ChildSummary }>(`/parent/children/${childId}/profile`, data);
   return res.data.child;
 };
+
+/** Health & Incident Reporting (FR-HIR-01 to FR-HIR-06) */
+export interface HealthRecord {
+  id: number;
+  child_id: number;
+  record_type: 'health' | 'health_observation' | 'incident';
+  description: string;
+  severity?: 'low' | 'moderate' | 'high';
+  parent_notified: boolean;
+  recorded_at: string;
+  recorded_by_name?: string;
+  daycare_id?: number;
+}
+
+export interface HealthResponse {
+  child_id: number;
+  disclaimer: string;
+  total: number;
+  data: HealthRecord[];
+}
+
+export const getChildHealth = async (childId: number, recordType?: string): Promise<HealthResponse> => {
+  const url = recordType ? `/health/child/${childId}?record_type=${recordType}` : `/health/child/${childId}`;
+  const res = await apiClient.get<HealthResponse>(url);
+  return res.data;
+};
+
+/** User Self-Service Profile Update (FR-UAM-04) */
+export interface UpdateMyProfileInput {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
+export const updateMyProfile = async (data: UpdateMyProfileInput): Promise<any> => {
+  const res = await apiClient.patch('/users/profile/me', data);
+  return res.data;
+};
+
 
 

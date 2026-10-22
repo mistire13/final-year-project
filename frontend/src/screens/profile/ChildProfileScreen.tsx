@@ -43,9 +43,13 @@ export function ChildProfileScreen({ route, navigation }: any) {
     setError("");
     try {
       const data = await getMyChild(childId);
-      setProfile(data);
+      if (data && data.full_name) {
+        setProfile(data);
+      } else {
+        setError("Unable to find child profile details.");
+      }
     } catch (e: any) {
-      setError("Unable to load child profile.");
+      setError(e?.response?.data?.error || "Unable to load child profile.");
     } finally {
       setLoading(false);
     }
@@ -110,7 +114,7 @@ export function ChildProfileScreen({ route, navigation }: any) {
                 title="Report"
                 icon={CalendarBlank}
                 onPress={() =>
-                  navigation.navigate("FullDailyReport", { reportId: 1 })
+                  navigation.navigate("FullDailyReport", { childId: childId })
                 }
                 style={{ flex: 1, minHeight: 45, paddingHorizontal: 10 }}
               />

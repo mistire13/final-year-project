@@ -89,7 +89,8 @@ type SuperAdminPage =
   | "applications"
   | "users"
   | "audit"
-  | "health";
+  | "health"
+  | "broadcast";
 
 export default function SuperAdmin() {
   // Auth state
@@ -120,6 +121,14 @@ export default function SuperAdmin() {
   const [userRoleFilter, setUserRoleFilter] = useState<"all" | "admin" | "caregiver" | "parent">("all");
   const [userSearch, setUserSearch] = useState("");
   const [auditSearch, setAuditSearch] = useState("");
+
+  // Platform Broadcast Banner State
+  const [broadcast, setBroadcast] = useState<{ message: string; level: "info" | "warning" | "alert"; active: boolean }>({
+    message: "",
+    level: "info",
+    active: false,
+  });
+  const [broadcastSaving, setBroadcastSaving] = useState(false);
 
   // Modals state
   const [approveModal, setApproveModal] = useState<{
@@ -204,23 +213,38 @@ export default function SuperAdmin() {
   const loadAllPlatformData = async () => {
     setDataLoading(true);
     try {
-      const [s, d, u, a, h] = await Promise.all([
+      const [s, d, u, a, h, b] = await Promise.all([
         portalApi.getSuperAdminStats().catch(() => null),
         portalApi.getSuperAdminDaycares().catch(() => []),
         portalApi.getSuperAdminUsers().catch(() => []),
         portalApi.getSuperAdminAuditLogs().catch(() => []),
         portalApi.getSuperAdminSystemHealth().catch(() => null),
+        portalApi.getBroadcast().catch(() => null),
       ]);
       if (s) setStats(s);
       if (d) setDaycares(d);
       if (u) setUsers(u);
       if (a) setAuditLogs(a);
       if (h) setHealth(h);
+      if (b) setBroadcast({ message: b.message || "", level: b.level || "info", active: !!b.active });
       setLastRefreshed(new Date());
     } catch (err) {
       showToast(apiError(err));
     } finally {
       setDataLoading(false);
+    }
+  };
+
+  const handleSaveBroadcast = async () => {
+    setBroadcastSaving(true);
+    try {
+      const res = await portalApi.setBroadcast(broadcast);
+      setBroadcast({ message: res.message || "", level: res.level || "info", active: !!res.active });
+      showToast(res.active ? "📢 Platform broadcast is now live across all workspaces." : "Broadcast banner disabled.");
+    } catch (err: any) {
+      showToast(apiError(err));
+    } finally {
+      setBroadcastSaving(false);
     }
   };
 
@@ -823,6 +847,32 @@ export default function SuperAdmin() {
               <Icon name="clock" size={18} />
               System Telemetry & Health
             </a>
+
+            <a
+              href="#broadcast"
+              className={"p-nav-link " + (activePage === "broadcast" ? "active" : "")}
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+              onClick={(e) => {
+                e.preventDefault();
+                setActivePage("broadcast");
+                setMobileMenuOpen(false);
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Icon name="bell" size={18} />
+                Broadcast Banner
+              </span>
+              {broadcast.active && (
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: broadcast.level === "alert" ? "#ef4444" : broadcast.level === "warning" ? "#f59e0b" : "#3b82f6",
+                  }}
+                />
+              )}
+            </a>
           </nav>
         </div>
 
@@ -972,6 +1022,68 @@ export default function SuperAdmin() {
 
         {/* Content Container */}
         <div style={{ padding: "30px 36px", maxWidth: 1400, margin: "0 auto" }}>
+          {/* Active Global Broadcast Banner */}
+          {broadcast.active && broadcast.message && (
+            <div
+              style={{
+                background:
+                  broadcast.level === "alert"
+                    ? "#FEF2F2"
+                    : broadcast.level === "warning"
+                    ? "#FFFBEB"
+                    : "#EFF6FF",
+                border: `1.5px solid ${
+                  broadcast.level === "alert"
+                    ? "#F87171"
+                    : broadcast.level === "warning"
+                    ? "#FCD34D"
+                    : "#93C5FD"
+                }`,
+                color:
+                  broadcast.level === "alert"
+                    ? "#991B1B"
+                    : broadcast.level === "warning"
+                    ? "#92400E"
+                    : "#1E40AF",
+                padding: "12px 18px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+                marginBottom: 24,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 20 }}>
+                  {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
+                </span>
+                <div>
+                  <strong style={{ display: "block", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Platform Broadcast ({broadcast.level})
+                  </strong>
+                  <span style={{ fontSize: 14 }}>{broadcast.message}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePage("broadcast")}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 8,
+                  border: "1px solid currentColor",
+                  background: "transparent",
+                  color: "inherit",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Manage Broadcast →
+              </button>
+            </div>
+          )}
           {/* ========================================================================= */}
           {/* PAGE 1: EXECUTIVE OVERVIEW */}
           {/* ========================================================================= */}
@@ -2030,6 +2142,192 @@ export default function SuperAdmin() {
               </Card>
             </div>
           )}
+
+          {/* ========================================================================= */}
+          {/* PAGE 7: PLATFORM BROADCAST BANNER MANAGER */}
+          {/* ========================================================================= */}
+          {activePage === "broadcast" && (
+            <div>
+              <div style={{ marginBottom: 28 }}>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: "#10263b", margin: "0 0 6px" }}>
+                  Platform-Wide Broadcast Announcements
+                </h2>
+                <p style={{ color: "#76818b", fontSize: 14, margin: 0 }}>
+                  Transmit real-time system notices, maintenance schedules, or service bulletins across all daycare workspaces.
+                </p>
+              </div>
+
+              {/* Live Preview Card */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#76818B", textTransform: "uppercase", marginBottom: 8 }}>
+                  Live Tenant Preview (How Daycares See This)
+                </div>
+                <div
+                  style={{
+                    background:
+                      broadcast.level === "alert"
+                        ? "#FEF2F2"
+                        : broadcast.level === "warning"
+                        ? "#FFFBEB"
+                        : "#EFF6FF",
+                    border: `1.5px solid ${
+                      broadcast.level === "alert"
+                        ? "#F87171"
+                        : broadcast.level === "warning"
+                        ? "#FCD34D"
+                        : "#93C5FD"
+                    }`,
+                    color:
+                      broadcast.level === "alert"
+                        ? "#991B1B"
+                        : broadcast.level === "warning"
+                        ? "#92400E"
+                        : "#1E40AF",
+                    padding: "16px 20px",
+                    borderRadius: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                    opacity: broadcast.active ? 1 : 0.45,
+                    filter: broadcast.active ? "none" : "grayscale(0.6)",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  <span style={{ fontSize: 24 }}>
+                    {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                      <strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Platform Notice • {broadcast.level}
+                      </strong>
+                      {!broadcast.active && (
+                        <span style={{ fontSize: 11, background: "#94a3b8", color: "#fff", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                          Currently Inactive / Draft
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>
+                      {broadcast.message.trim() || "(No announcement message written yet. Enter text below to preview.)"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Editor Card */}
+              <Card title="Broadcast Composer">
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+                      Announcement Text
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={broadcast.message}
+                      onChange={(e) => setBroadcast({ ...broadcast, message: e.target.value })}
+                      placeholder="e.g. Scheduled platform maintenance is planned for tonight from 11:00 PM to 11:30 PM EAT. Workspaces will remain accessible."
+                      style={{
+                        width: "100%",
+                        padding: "12px 14px",
+                        borderRadius: 10,
+                        border: "1.5px solid #dcd8cc",
+                        fontSize: 14,
+                        fontFamily: "inherit",
+                        resize: "vertical",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#76818B", marginTop: 4 }}>
+                      <span>Keep messages clear, friendly, and actionable for daycare operators.</span>
+                      <span>{broadcast.message.length} characters</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+                        Notice Urgency Level
+                      </label>
+                      <select
+                        value={broadcast.level}
+                        onChange={(e) => setBroadcast({ ...broadcast, level: e.target.value as any })}
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          border: "1.5px solid #dcd8cc",
+                          fontSize: 14,
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <option value="info">Info (Blue) - General updates & features</option>
+                        <option value="warning">Warning (Amber) - Scheduled maintenance</option>
+                        <option value="alert">Alert (Crimson) - Urgent service notice</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+                        Broadcast Status
+                      </label>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <button
+                          type="button"
+                          onClick={() => setBroadcast({ ...broadcast, active: true })}
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            borderRadius: 10,
+                            border: broadcast.active ? "2px solid #417B61" : "1.5px solid #dcd8cc",
+                            background: broadcast.active ? "#eef6f2" : "#fbfaf7",
+                            color: broadcast.active ? "#417B61" : "#76818B",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          🟢 Active / Visible
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBroadcast({ ...broadcast, active: false })}
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            borderRadius: 10,
+                            border: !broadcast.active ? "2px solid #BD4264" : "1.5px solid #dcd8cc",
+                            background: !broadcast.active ? "#fdf2f4" : "#fbfaf7",
+                            color: !broadcast.active ? "#BD4264" : "#76818B",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          ⚪ Disabled / Hidden
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, borderTop: "1px solid #eeece6", paddingTop: 18 }}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setBroadcast({ message: "", level: "info", active: false })}
+                      disabled={broadcastSaving}
+                    >
+                      Clear Draft
+                    </Button>
+                    <Button
+                      variant="primary"
+                      icon="sparkles"
+                      onClick={handleSaveBroadcast}
+                      disabled={broadcastSaving}
+                    >
+                      {broadcastSaving ? "Saving Broadcast..." : "Save & Publish Broadcast"}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
       </main>
 
@@ -2308,16 +2606,87 @@ export default function SuperAdmin() {
               <div>
                 <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Capacity & Headcount</div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>
-                  {inspectModal.daycare.children_count} / {inspectModal.daycare.max_children || 50} Children
+                  {inspectModal.daycare.children_count} / {inspectModal.daycare.max_children || 50} Children ({Math.min(100, Math.round(((inspectModal.daycare.children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%)
                 </div>
-                <div style={{ fontSize: 12, color: "#76818B" }}>{inspectModal.daycare.staff_count} Staff Members</div>
+                <div style={{ background: "#eeece6", borderRadius: 999, height: 6, width: "100%", marginTop: 4, overflow: "hidden" }}>
+                  <div style={{ background: "#417B61", height: "100%", width: `${Math.min(100, Math.round(((inspectModal.daycare.children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%` }} />
+                </div>
+                <div style={{ fontSize: 12, color: "#76818B", marginTop: 4 }}>{inspectModal.daycare.staff_count} Staff Members</div>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <Button variant="primary" onClick={() => setInspectModal({ open: false, daycare: null })}>
-                Close Inspection
-              </Button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#10263B" }}>⏱️ Quick Extend:</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await portalApi.updateDaycarePlan(inspectModal.daycare!.id, inspectModal.daycare!.subscription_plan, inspectModal.daycare!.max_children, 15);
+                      showToast(`Added +15 days to ${inspectModal.daycare!.name}'s trial!`);
+                      setInspectModal({ open: false, daycare: null });
+                      await loadAllPlatformData();
+                    } catch (err: any) {
+                      showToast(apiError(err));
+                    }
+                  }}
+                  style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #dcd8cc", background: "#f8f6f0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  +15d
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await portalApi.updateDaycarePlan(inspectModal.daycare!.id, inspectModal.daycare!.subscription_plan, inspectModal.daycare!.max_children, 30);
+                      showToast(`Added +30 days to ${inspectModal.daycare!.name}'s trial!`);
+                      setInspectModal({ open: false, daycare: null });
+                      await loadAllPlatformData();
+                    } catch (err: any) {
+                      showToast(apiError(err));
+                    }
+                  }}
+                  style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #dcd8cc", background: "#f8f6f0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  +30d
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await portalApi.updateDaycarePlan(inspectModal.daycare!.id, inspectModal.daycare!.subscription_plan, inspectModal.daycare!.max_children, 60);
+                      showToast(`Added +60 days to ${inspectModal.daycare!.name}'s trial!`);
+                      setInspectModal({ open: false, daycare: null });
+                      await loadAllPlatformData();
+                    } catch (err: any) {
+                      showToast(apiError(err));
+                    }
+                  }}
+                  style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #dcd8cc", background: "#f8f6f0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                >
+                  +60d
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    try {
+                      const res = await portalApi.impersonateDaycare(inspectModal.daycare!.id);
+                      showToast(`Switching into ${inspectModal.daycare!.name} workspace...`);
+                      navigateTo("/admin/dashboard");
+                    } catch (err: any) {
+                      showToast(apiError(err));
+                    }
+                  }}
+                >
+                  🚀 Jump into Workspace
+                </Button>
+                <Button variant="primary" onClick={() => setInspectModal({ open: false, daycare: null })}>
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>

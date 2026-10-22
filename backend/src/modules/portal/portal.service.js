@@ -15,8 +15,12 @@ async function audit(client, actor, action, table, id, metadata={}, explicitDayc
 }
 async function activeActor(client,user,adminOnly=false) {
  const [actor]=await queryRows(client,'SELECT u.id,u.status,u.daycare_id,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 FOR SHARE OF u',[user.id]);
- if(!actor||actor.status!=='active'||!actor.daycare_id)throw failure('Your account is inactive.',403);
- if(adminOnly?(!['admin'].includes(actor.role)):!['admin','caregiver'].includes(actor.role))throw failure('Staff access required.',403);
+ if(!actor||actor.status!=='active')throw failure('Your account is inactive.',403);
+ if(actor.role!=='super_admin' && !actor.daycare_id)throw failure('No daycare assigned to your account.',403);
+ if(actor.role==='super_admin' && (user.daycareId || user.daycare_id)) {
+   actor.daycare_id = user.daycareId || user.daycare_id;
+ }
+ if(adminOnly?(!['admin','super_admin'].includes(actor.role)):!['admin','caregiver','super_admin'].includes(actor.role))throw failure('Staff access required.',403);
  return actor;
 }
 async function assertScope(client,user,child,action,regular=false) {
@@ -88,15 +92,15 @@ async function checkout(body,user) {return transaction(async client=>{
 async function snapshot(date,days,user,staffOnly=false) {
  return transaction(async client=>{
   const actor=await activeActor(client,user,!staffOnly);
-  const daycareId = actor.role === 'super_admin' ? (user.queryDaycareId || null) : actor.daycare_id;
+  const daycareId = actor.role === 'super_admin' ? (actor.daycare_id || user.queryDaycareId || null) : actor.daycare_id;
   if(staffOnly){date=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());days=1;}
   const duties=await queryRows(client,`SELECT * FROM front_desk_assignments WHERE ($1::integer IS NULL OR staff_id=$1) AND ($2::integer IS NULL OR daycare_id=$2) ORDER BY starts_at DESC`,[staffOnly?actor.id:null,daycareId]);
   const children=await queryRows(client,staffOnly?`SELECT c.* FROM children c WHERE c.enrollment_status='active' AND ($2::integer IS NULL OR c.daycare_id=$2) AND (c.caregiver_id=$1 OR EXISTS (SELECT 1 FROM front_desk_assignments d WHERE d.staff_id=$1 AND d.daycare_id=c.daycare_id AND d.status='active' AND d.starts_at<=clock_timestamp() AND d.ends_at>clock_timestamp() AND (d.can_attendance OR d.can_pickup) AND (d.group_id IS NULL OR d.group_id=c.group_id))) ORDER BY c.full_name`:`SELECT * FROM children WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY full_name`,staffOnly?[actor.id,daycareId]:[daycareId]);
   const ids=children.map(c=>c.id);
-  const userCols = await queryRows(client, "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name IN ('phone', 'title', 'qualifications', 'emergency_contact', 'shift')");
+  const userCols = await queryRows(client, "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'users' AND column_name IN ('phone', 'title', 'qualifications', 'emergency_contact', 'shift')");
   const hasExtraCols = userCols.length > 0;
   const extraColsSql = hasExtraCols ? ', u.phone, u.title, u.qualifications, u.emergency_contact, u.shift' : '';
-  const parentPhoneSql = hasExtraCols ? ', u.phone AS parent_phone' : '';
+  const parentPhoneSql = userCols.some(c => c.column_name === 'phone') ? ', u.phone AS parent_phone' : '';
   if(ids.length > 0) {
    const contacts=await queryRows(client,'SELECT * FROM emergency_contacts WHERE child_id=ANY($1::int[]) ORDER BY id',[ids]);
    const instructions=await queryRows(client,'SELECT * FROM care_instructions WHERE child_id=ANY($1::int[]) ORDER BY id',[ids]);
@@ -112,21 +116,75 @@ async function snapshot(date,days,user,staffOnly=false) {
      child.parent_phone=primary?.parent_phone||null;
    });
   }
-  const base={children,duties,groups:await queryRows(client,'SELECT * FROM groups WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY name',[daycareId])};
+  const base={children,duties,groups:await queryRows(client,'SELECT g.*, u.name AS lead_caregiver_name FROM groups g LEFT JOIN users u ON u.id = g.lead_caregiver_id WHERE ($1::integer IS NULL OR g.daycare_id=$1) ORDER BY g.name',[daycareId])};
   const attendance=await queryRows(client,`SELECT * FROM attendance WHERE child_id=ANY($1::int[]) AND ${zoneDay} BETWEEN $2::date-($3::int-1) AND $2::date ORDER BY event_time DESC`,[ids,date,days]);
   const guardians=await queryRows(client,'SELECT gl.*,EXISTS(SELECT 1 FROM biometric_references br WHERE br.guardian_link_id=gl.id AND br.active) AS enrolled FROM guardian_links gl WHERE child_id=ANY($1::int[])',[ids]);
   const users=await queryRows(client,staffOnly?`SELECT u.id,u.name,u.email,u.status,r.name AS role${extraColsSql} FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 OR u.id=ANY($2::int[])`:`SELECT u.id,u.name,u.email,u.status,r.name AS role,u.created_at${extraColsSql} FROM users u JOIN roles r ON r.id=u.role_id WHERE ($1::integer IS NULL OR u.daycare_id=$1) ORDER BY u.name`,staffOnly?[actor.id,guardians.map(g=>g.user_id)]:[daycareId]);
   const verifications=await queryRows(client,"SELECT id,child_id,guardian_user_id,verified_by,result,method,verified_at,attendance_id FROM guardian_verification_events WHERE child_id=ANY($1::int[]) AND (verified_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $2::date-($3::int-1) AND $2::date",[ids,date,days]);
-  if(staffOnly)return {...base,attendance,guardians,users,verifications,reports:[],health:[],events:[],announcements:[],products:[],orders:[],audit:[],messages:[]};
-  return {...base,attendance,guardians,users,verifications,
-   reports:await queryRows(client,'SELECT * FROM daily_reports WHERE ($3::integer IS NULL OR daycare_id=$3) AND report_date BETWEEN $1::date-($2::int-1) AND $1::date',[date,days,daycareId]),
-   health:await queryRows(client,"SELECT * FROM health_records WHERE ($3::integer IS NULL OR daycare_id=$3) AND (recorded_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date",[date,days,daycareId]),
-   events:await queryRows(client,'SELECT * FROM events WHERE ($2::integer IS NULL OR daycare_id=$2) AND event_date >= $1::date-30 ORDER BY event_date',[date,daycareId]),
-   announcements:await queryRows(client,'SELECT * FROM announcements WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY created_at DESC LIMIT 100',[daycareId]),
-   products:await queryRows(client,'SELECT * FROM products WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY name',[daycareId]),
-   orders:await queryRows(client,"SELECT * FROM orders WHERE ($3::integer IS NULL OR daycare_id=$3) AND (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date ORDER BY created_at DESC",[date,days,daycareId]),
-   audit:await queryRows(client,'SELECT * FROM audit_logs WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY created_at DESC LIMIT 200',[daycareId]),
-   messages:await queryRows(client,'SELECT m.id,m.subject,m.body,m.sender_id,m.recipient_id,m.read_at,m.created_at FROM messages m WHERE sender_id=$1 OR recipient_id=$1 ORDER BY created_at DESC LIMIT 100',[actor.id])};
+  const [daycare] = daycareId ? await queryRows(client, 'SELECT id, name, slug, contact_email, contact_phone, address, license_number, status, subscription_plan, trial_ends_at, max_children, created_at FROM daycares WHERE id=$1', [daycareId]) : [null];
+  if(staffOnly)return {...base,daycare,attendance,guardians,users,verifications,reports:[],health:[],events:[],announcements:[],products:[],orders:[],audit:[],messages:[]};
+  return {...base,daycare,attendance,guardians,users,verifications,
+    reports:await queryRows(client,'SELECT * FROM daily_reports WHERE ($3::integer IS NULL OR daycare_id=$3) AND report_date BETWEEN $1::date-($2::int-1) AND $1::date',[date,days,daycareId]),
+    health:await queryRows(client,"SELECT * FROM health_records WHERE ($3::integer IS NULL OR daycare_id=$3) AND (recorded_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date",[date,days,daycareId]),
+    events:await queryRows(client,'SELECT * FROM events WHERE ($2::integer IS NULL OR daycare_id=$2) AND event_date >= $1::date-30 ORDER BY event_date',[date,daycareId]),
+    announcements:await queryRows(client,'SELECT * FROM announcements WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY created_at DESC LIMIT 100',[daycareId]),
+    products:await queryRows(client,'SELECT * FROM products WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY name',[daycareId]),
+    orders:await queryRows(client,"SELECT * FROM orders WHERE ($3::integer IS NULL OR daycare_id=$3) AND (created_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date ORDER BY created_at DESC",[date,days,daycareId]),
+    audit:await queryRows(client,'SELECT * FROM audit_logs WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY created_at DESC LIMIT 200',[daycareId]),
+    messages:await queryRows(client,'SELECT m.id,m.subject,m.body,m.sender_id,m.recipient_id,m.read_at,m.created_at FROM messages m WHERE sender_id=$1 OR recipient_id=$1 ORDER BY created_at DESC LIMIT 100',[actor.id])};
  });
 }
-module.exports={saveDuty,revokeDuty,recordAttendance,checkout,snapshot};
+
+async function updateSettings(body, user) {
+  return transaction(async client => {
+    const actor = await activeActor(client, user, true);
+    const dcId = actor.daycare_id;
+    if (!dcId) throw failure('No daycare associated with your account.', 400);
+
+    const { name, contact_email, contact_phone, address, license_number } = body;
+    const [updated] = await queryRows(
+      client,
+      `UPDATE daycares
+       SET name = COALESCE($1, name),
+           contact_email = COALESCE($2, contact_email),
+           contact_phone = COALESCE($3, contact_phone),
+           address = COALESCE($4, address),
+           license_number = COALESCE($5, license_number),
+           updated_at = NOW()
+       WHERE id = $6
+       RETURNING *`,
+      [name, contact_email, contact_phone, address, license_number, dcId]
+    );
+
+    await audit(client, actor, 'DAYCARE_SETTINGS_UPDATED', 'daycares', dcId, body, dcId);
+    return updated;
+  });
+}
+
+async function renewPlan(body, user) {
+  return transaction(async client => {
+    const actor = await activeActor(client, user, true);
+    const dcId = actor.daycare_id;
+    if (!dcId) throw failure('No daycare associated with your account.', 400);
+
+    const requestedPlan = ['standard', 'premium'].includes(body.plan) ? body.plan : 'standard';
+    const durationDays = Number(body.days) || 365;
+
+    const [updated] = await queryRows(
+      client,
+      `UPDATE daycares
+       SET subscription_plan = $1,
+           status = 'active',
+           trial_ends_at = GREATEST(COALESCE(trial_ends_at, NOW()), NOW()) + ($2 || ' days')::interval,
+           updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [requestedPlan, durationDays, dcId]
+    );
+
+    await audit(client, actor, 'DAYCARE_SUBSCRIPTION_RENEWED', 'daycares', dcId, { plan: requestedPlan, durationDays, method: body.payment_method || 'mock_chapa' }, dcId);
+    return updated;
+  });
+}
+
+module.exports={saveDuty,revokeDuty,recordAttendance,checkout,snapshot,updateSettings,renewPlan};

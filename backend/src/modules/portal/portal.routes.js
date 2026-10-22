@@ -16,4 +16,6 @@ router.post('/assignments',allowRoles('admin'),validate(shift),wrap(req=>service
 router.patch('/assignments/:id/revoke',allowRoles('admin'),wrap(req=>service.revokeDuty(req.params.id,req.user)));
 router.post('/attendance',allowRoles('admin','caregiver'),validate(attendance),wrap(req=>service.recordAttendance(req.body,req.user)));
 router.post('/checkout',allowRoles('admin','caregiver'),validate(pickup),wrap(req=>service.checkout(req.body,req.user)));
+router.patch('/settings',allowRoles('admin'),wrap(req=>service.updateSettings(req.body,req.user)));
+router.post('/renew-plan',allowRoles('admin'),wrap(req=>service.renewPlan(req.body,req.user)));
 module.exports=router;

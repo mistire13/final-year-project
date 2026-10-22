@@ -15,6 +15,7 @@ export type PreviewOrder = {
   method: "pay_at_daycare" | "digital";
   items: { name: string; quantity: number; price: number }[];
   note: string;
+  payment_status?: string;
 };
 type State = {
   reminders: number[];

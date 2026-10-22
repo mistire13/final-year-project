@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Switch, Pressable } from "react-native";
+import { View, Switch, Pressable, Linking } from "react-native";
 import {
   PencilSimple,
   UsersThree,
@@ -28,6 +28,7 @@ import { artwork } from "../../theme/assets";
 import { useAuth } from "../../context/AuthContext";
 import { useDesign } from "../../context/DesignContext";
 import { useChild } from "../../context/ChildContext";
+import { getWebPortalUrl } from "../../utils/host";
 
 export function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
@@ -74,9 +75,29 @@ export function ProfileScreen({ navigation }: any) {
           </Pressable>
         </View>
       </Card>
+      {(user?.role === "caregiver" || user?.role === "admin") && (
+        <Card style={{ marginTop: 14, backgroundColor: "#E8F6F3", borderColor: "#B2E2D8", borderWidth: 1 }}>
+          <View style={s.between}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text weight="bold" color="#006C75">
+                {user.role === "admin" ? "Daycare Admin Portal" : "Caregiver Staff Workspace"}
+              </Text>
+              <Text size={12} color="#008794" style={{ marginTop: 3 }}>
+                Open full desktop management tools in your browser.
+              </Text>
+            </View>
+            <Button
+              title="Open Portal"
+              variant="secondary"
+              onPress={() => Linking.openURL(getWebPortalUrl(user.role === "admin" ? "/admin" : "/staff"))}
+              style={{ minHeight: 36, paddingVertical: 6, paddingHorizontal: 12 }}
+            />
+          </View>
+        </Card>
+      )}
 
       <Text size={19} weight="semibold" style={{ marginVertical: 20 }}>
-        My Children
+        {user?.role === "caregiver" ? "Classroom Children" : user?.role === "admin" ? "Enrolled Children" : "My Children"}
       </Text>
 
       {childrenList.length > 0 ? (
@@ -111,7 +132,11 @@ export function ProfileScreen({ navigation }: any) {
       ) : (
         <Card style={{ padding: 18 }}>
           <Text size={14} color="#7E8490">
-            No children currently linked to this parent account.
+            {user?.role === "caregiver"
+              ? "Classroom children and activity logs are synced with your daycare center."
+              : user?.role === "admin"
+              ? "Enrolled center children will appear here."
+              : "No children currently linked to this parent account."}
           </Text>
         </Card>
       )}
@@ -221,6 +246,20 @@ export function ProfileScreen({ navigation }: any) {
           icon={Package}
           onPress={() => navigation.navigate("DaycareStore")}
         />
+        {[
+          ["Attendance History", "AttendanceHistory"],
+          ["Health & Incidents", "HealthNotices"],
+          ["Report Archive", "ReportsHistory"],
+          ["Pickup Pass & Status", "PickupVerification"],
+          ["Shopping Cart", "ShoppingCart"],
+          ["Order History", "Orders"],
+          ["Calendar & Events", "CalendarPage"],
+          ["Notifications", "Notifications"],
+          ["AI Parent Guide", "AIGuide"],
+        ].map(([title, route]) => (
+          <MenuRow key={route} title={title} icon={CaretRight}
+            onPress={() => navigation.navigate(route)} />
+        ))}
         <MenuRow
           title="Help & Support"
           icon={Question}
