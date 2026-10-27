@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { CaringBloom } from "../../components/design/Motion";
 import { View, Pressable, TextInput } from "react-native";
-import {
-  ArrowLeft,
-  PaperPlaneRight,
-  Info,
-  Lightbulb,
-  ForkKnife,
-  TShirt,
-  Backpack,
-  Clock,
-} from "phosphor-react-native";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { PaperPlaneRight } from "phosphor-react-native/src/icons/PaperPlaneRight";
+import { Info } from "phosphor-react-native/src/icons/Info";
+import { Lightbulb } from "phosphor-react-native/src/icons/Lightbulb";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { TShirt } from "phosphor-react-native/src/icons/TShirt";
+import { Backpack } from "phosphor-react-native/src/icons/Backpack";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
 import {
   Page,
   Text,
@@ -149,7 +147,7 @@ export function AIGuideScreen({ navigation, route }: any) {
       }
     >
       <Text color="#7D818B" size={13} style={{ marginBottom: 24 }}>
-        Helpful everyday guidance for your family.
+        Prepared guidance for activities and routines. A generative AI provider is not connected.
       </Text>
       <Card tint="#FAF8F9" style={{ padding: 24 }}>
         <View style={s.row}>
@@ -164,7 +162,7 @@ export function AIGuideScreen({ navigation, route }: any) {
       </Card>
       <Card style={{ marginTop: 20, padding: 16 }}>
         <View style={s.row}>
-          <Avatar source={artwork.child} initials={selectedChild?.full_name ? selectedChild.full_name.slice(0, 2).toUpperCase() : "CH"} />
+          <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={selectedChild?.full_name ? selectedChild.full_name.slice(0, 2).toUpperCase() : "CH"} />
           <View style={{ marginLeft: 10 }}>
             <Text size={10} color="#818690" style={{ letterSpacing: 1 }}>
               GUIDANCE FOR
@@ -239,7 +237,7 @@ export function AIGuideScreen({ navigation, route }: any) {
             }}
           >
             <Text size={14} color="#526D89">
-              Try a color-sorting game with safe household objects. Let Liya
+              Example guidance: try a color-sorting game with safe household objects. Let your child
               group them by color, then name each one. Keep it short and
               playful.
             </Text>

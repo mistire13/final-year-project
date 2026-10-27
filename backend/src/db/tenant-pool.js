@@ -10,23 +10,25 @@ function currentTenant() {
 }
 function createTenantPool(pool) {
   async function connect() {
-    const client = await pool.connect();
     const daycare = context.getStore()?.daycareId;
+    const client = await pool.connect();
     let transaction = false;
     let released = false;
+    let pending = 0;
+    let queue = Promise.resolve();
     const establish = () => client.query(
       "SELECT set_config('app.daycare_id',$1,true), set_config('app.current_daycare_id',$1,true)",
       [daycare ? String(daycare) : '']
     );
-    return {
-      async query(sql, values) {
+    async function execute(sql, values) {
         if (released) throw new Error('Client already released');
         const rawSql = typeof sql === 'string' ? sql : (sql && sql.text ? sql.text : '');
         const command = rawSql.trim().replace(/;$/, '').toUpperCase();
-        if (command === 'BEGIN' || command.startsWith('BEGIN ')) {
+        if (command === 'BEGIN' || command.startsWith('BEGIN ') || command === 'START TRANSACTION') {
           if (transaction) throw new Error('Nested transaction is not supported');
-          const result = await client.query(sql, values);
+          // Mark before sending: a failed connection/BEGIN must not be reused.
           transaction = true;
+          const result = await client.query(sql, values);
           await establish();
           return result;
         }
@@ -36,22 +38,37 @@ function createTenantPool(pool) {
           return result;
         }
         if (transaction) return client.query(sql, values);
-        await client.query('BEGIN');
+        transaction = true;
         try {
+          await client.query('BEGIN');
           await establish();
           const result = await client.query(sql, values);
           await client.query('COMMIT');
+          transaction = false;
           return result;
         } catch (error) {
-          await client.query('ROLLBACK').catch(() => {});
+          try {
+            await client.query('ROLLBACK');
+            transaction = false;
+          } catch (_) { /* release destroys a client whose cleanup failed */ }
           throw error;
         }
+    }
+    return {
+      query(sql, values) {
+        if (released) return Promise.reject(new Error('Client already released'));
+        // pg queues statements, but each automatic transaction has several
+        // statements. Queue the entire operation so they cannot interleave.
+        pending++;
+        const result = queue.then(() => execute(sql, values)).finally(() => { pending--; });
+        queue = result.catch(() => {});
+        return result;
       },
       release(error) {
         if (released) return;
         released = true;
         // Never return an open/aborted transaction to the pool.
-        client.release(error || transaction ? true : undefined);
+        client.release(error || transaction || pending ? true : undefined);
       },
     };
   }

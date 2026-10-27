@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Linking, Platform } from "react-native";
 import { Page, Card, Text, MenuRow } from "../../components/design/System";
-import { SquaresFour } from "phosphor-react-native";
+import { SquaresFour } from "phosphor-react-native/src/icons/SquaresFour";
 import { useAuth } from "../../context/AuthContext";
 import { getWebPortalUrl } from "../../utils/host";
 

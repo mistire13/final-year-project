@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform, Linking } from "react-native";
-import {
-  ShoppingCart,
-  MagnifyingGlass,
-  Plus,
-  ArrowLeft,
-} from "phosphor-react-native";
+import { ShoppingCart } from "phosphor-react-native/src/icons/ShoppingCart";
+import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
+import { Plus } from "phosphor-react-native/src/icons/Plus";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
 import {
   Page,
   Text,
@@ -188,7 +186,7 @@ export function DaycareStoreScreen({ navigation, route }: any) {
       ) : filtered.length > 0 ? (
         <View style={s.grid}>
           {filtered.map((p) => {
-            const stock = p.stock_quantity ?? 10;
+            const stock = p.stock_quantity ?? 0;
             const priceNum = Number(p.price);
             const qtyInCart = inCart(p.id);
             const isOutOfStock = stock <= 0;

@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View } from "react-native";
-import { Fingerprint, Check, ShieldCheck, EnvelopeSimple } from "phosphor-react-native";
+import { Fingerprint } from "phosphor-react-native/src/icons/Fingerprint";
+import { Check } from "phosphor-react-native/src/icons/Check";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
+import { EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple";
 import {
   Page,
   Text,
@@ -13,11 +16,21 @@ import {
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
-import { GuardianRecord } from "../../api/parentApi";
+import { GuardianRecord, guardianRecordKey, getChildGuardians } from "../../api/parentApi";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 
 export function GuardianDetailsScreen({ navigation, route }: any) {
   const { selectedChild } = useChild();
-  const guardian: GuardianRecord | undefined = route.params?.guardian;
+  const initial: GuardianRecord | undefined = route.params?.guardian;
+  const key = initial ? guardianRecordKey(initial) : "none";
+  const {data:guardian,loading,error,refresh} = useRemoteResource<GuardianRecord | undefined>(
+    `guardian:${selectedChild?.id}:${key}`,
+    async()=>selectedChild ? (await getChildGuardians(selectedChild.id)).find(g=>guardianRecordKey(g)===key) : undefined,
+    undefined,
+  );
+  useEffect(()=>navigation.addListener?.("focus",refresh),[navigation,refresh]);
+
+  if (loading || error) return <Page title="Guardian Details" back><Notice tone={error?"error":"neutral"}>{error || "Loading current guardian approval…"}</Notice>{error?<Button title="Retry" onPress={refresh}/>:null}</Page>;
 
   if (!guardian) {
     return (
@@ -61,11 +74,11 @@ export function GuardianDetailsScreen({ navigation, route }: any) {
           ]}
         >
           <Badge
-            title={guardian.pickup_authorized ? "Pickup Authorized" : "Approval Pending"}
+            title={guardian.pickup_authorized ? "Pickup Authorized" : guardian.status ? guardian.status.charAt(0).toUpperCase()+guardian.status.slice(1) : "Not authorized"}
             tone={guardian.pickup_authorized ? "green" : "gold"}
           />
           <Badge
-            title={guardian.biometric_enrolled ? "Biometric Enrolled" : "Enrollment Pending"}
+            title={guardian.biometric_enrolled ? "Biometric Enrolled" : "Biometric device not connected"}
             tone={guardian.biometric_enrolled ? "neutral" : "gold"}
           />
         </View>
@@ -73,7 +86,7 @@ export function GuardianDetailsScreen({ navigation, route }: any) {
 
       <Card style={{ marginTop: 18, padding: 16 }}>
         <View style={s.row}>
-          <Avatar source={artwork.child} size={44} />
+          <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={childName.slice(0,2).toUpperCase()} size={44} />
           <View style={{ marginLeft: 12 }}>
             <Text size={10} color="#8A919B" style={{ letterSpacing: 0.5 }}>
               ASSOCIATED CHILD
@@ -96,19 +109,22 @@ export function GuardianDetailsScreen({ navigation, route }: any) {
             <Text size={14} weight="medium">{guardian.email || "No email on record"}</Text>
           </View>
         </View>
+        {guardian.phone ? <Text size={14}>Phone: {guardian.phone}</Text> : null}
+        {guardian.review_note ? <Text size={13} style={{marginTop:12}}>Daycare decision: {guardian.review_note}</Text> : null}
+        {guardian.pickup_guardian_id ? <Text size={12} style={{marginTop:12}}>Pickup contact only. This record does not grant parent-app access.</Text> : null}
       </Card>
 
       <Notice tone={guardian.biometric_enrolled ? "success" : "neutral"}>
         {guardian.biometric_enrolled
-          ? "This guardian has completed biometric enrollment at the daycare kiosk and is fully approved for pickup."
-          : "Biometric enrollment must be completed in-person at the daycare entrance kiosk with staff assistance."}
+          ? "Biometric enrollment is recorded. Pickup permission is shown separately above; staff must verify identity."
+          : "Staff verify identity and pickup permission at the daycare. Biometric device verification is not connected."}
       </Notice>
 
       <Button
         title="View Pickup Status & History"
         variant="outline"
         onPress={() =>
-          navigation.navigate("PickupVerification", { guardianId: guardian.guardian_link_id })
+          navigation.navigate("PickupVerification", { guardianKey: guardianRecordKey(guardian) })
         }
         style={{ marginTop: 16 }}
       />

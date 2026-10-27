@@ -14,7 +14,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const bcrypt = require('bcryptjs');
-const { withIsolatedDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
+const { withCurrentDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
 
 const password = 'Test-password-phase3!';
 const secret = 'synthetic-phase-three-jwt-secret-for-testing';
@@ -157,7 +157,7 @@ function setupContext(pool) {
 }
 
 test('Phase 3: Child Profile Protection & Safety Record Integrity', async (t) => {
-  await withIsolatedDatabase(async ({ db, pool, name }) => {
+  await withCurrentDatabase(async ({ db, pool, name }) => {
     assertTestDatabaseName(name);
     const f = await fixture(db);
     const mod = setupContext(pool);
@@ -285,7 +285,7 @@ test('Phase 3: Child Profile Protection & Safety Record Integrity', async (t) =>
       // 3. Reassign Child A to Caregiver A2
       await mod.childrenService.updateChild(
         f.childA.id,
-        { caregiver_id: f.caregiverA2.id },
+        { caregiver_id: f.caregiverA2.id, version: (await db('children').where({id:f.childA.id}).first()).version },
         f.adminA
       );
 
@@ -422,7 +422,7 @@ test('Phase 3: Child Profile Protection & Safety Record Integrity', async (t) =>
       // 2. Admin A updates Child A status to inactive
       const updated = await mod.childrenService.updateChild(
         f.childA.id,
-        { enrollment_status: 'inactive' },
+        { enrollment_status: 'inactive', version: (await db('children').where({id:f.childA.id}).first()).version },
         f.adminA
       );
       assert.equal(updated.enrollment_status, 'inactive');

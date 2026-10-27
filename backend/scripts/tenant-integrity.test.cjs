@@ -4,6 +4,7 @@ const {withIsolatedDatabase}=require('./helpers/auth-test-database.cjs');
 const integrity=require('../src/db/tenant-integrity');
 const migration=require('../src/db/migrations/019_tenant_relationship_integrity');
 test('Tenant relationship constraints reject direct SQL cross-tenant writes',async t=>withIsolatedDatabase(async({db,pool})=>{
+ await require('../src/db/migrations/023_runtime_profile_fields').up(db);
  await db('roles').insert({id:3,name:'parent'}).onConflict('id').ignore();
  const [a,b]=await db('daycares').insert([{name:'A',slug:'integrity-a',contact_email:'a@example.invalid'},{name:'B',slug:'integrity-b',contact_email:'b@example.invalid'}]).returning('*');
  const [ua,ub]=await db('users').insert([{name:'A',email:'a@example.invalid',role_id:3,daycare_id:a.id,password_hash:'synthetic'},{name:'B',email:'b@example.invalid',role_id:3,daycare_id:b.id,password_hash:'synthetic'}]).returning('*');

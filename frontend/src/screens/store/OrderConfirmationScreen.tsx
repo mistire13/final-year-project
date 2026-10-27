@@ -1,6 +1,8 @@
 import React from "react";
 import { View } from "react-native";
-import { CheckCircle, ArrowRight, ShoppingBag } from "phosphor-react-native";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { ShoppingBag } from "phosphor-react-native/src/icons/ShoppingBag";
 import {
   Page,
   Text,
@@ -70,7 +72,7 @@ export function OrderConfirmationScreen({ navigation, route }: any) {
 
       <Card style={{ marginTop: 16, padding: 16 }}>
         <View style={s.row}>
-          <Avatar source={artwork.child} initials={childName.slice(0, 2).toUpperCase()} size={46} />
+          <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={childName.slice(0, 2).toUpperCase()} size={46} />
           <View style={{ marginLeft: 12 }}>
             <Text size={11} color="#8B919B">
               ORDER ASSIGNED TO
@@ -117,12 +119,10 @@ export function OrderConfirmationScreen({ navigation, route }: any) {
           <Text size={17} weight="semibold">
             Payment Method
           </Text>
-          <Badge title="Pay at Pickup" tone="gold" />
+          <Badge title={totalAmount===0?'No charge':'Pay at Pickup'} tone={totalAmount===0?'green':'gold'} />
         </View>
         <Text size={13} color="#6C7380" style={{ marginTop: 8 }}>
-          {order?.method === "digital"
-            ? "Digital mobile payment at daycare front desk."
-            : "Pay in person at daycare front desk upon collection."}
+          {totalAmount===0?'No payment is required for this zero-total order.':'Pay in person at daycare front desk upon collection.'}
         </Text>
       </Card>
 

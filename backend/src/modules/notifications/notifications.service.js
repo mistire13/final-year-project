@@ -36,8 +36,10 @@ const getNotifications = async (user) => {
 
   // Use the same tenant and audience policy as the alerts endpoint.
   const { data: alerts } = await listAlerts(user);
-  const activeAlertsCount = alerts.length;
-  const recentAlerts = alerts.slice(0, 5);
+  const {rows:[settings]}=await db.query("SELECT COALESCE(to_jsonb(u)->'ui_preferences'->'read_alert_ids','[]'::jsonb) AS read_alert_ids FROM users u WHERE id=$1 AND daycare_id=$2",[user.id,user.daycare_id]);
+  const unreadAlerts=alerts.filter(item=>!(settings?.read_alert_ids||[]).includes(item.id));
+  const activeAlertsCount = unreadAlerts.length;
+  const recentAlerts = unreadAlerts.slice(0, 20);
 
   let unnotifiedHealthCount = 0;
   let unpaidOrdersCount = 0;

@@ -6,16 +6,17 @@
 
 exports.seed = async (knex) => {
   // Idempotent clean up in reverse foreign key dependency order
-  await knex('report_activities').del();
-  await knex('report_meals').del();
-  await knex('daily_reports').del();
-  await knex('attendance').del();
-  await knex('health_records').del();
-  await knex('guardian_links').del();
-  await knex('care_instructions').del();
-  await knex('emergency_contacts').del();
-  await knex('children').del();
-  await knex('groups').del();
+  await knex('guardian_verification_events').del().catch(() => {});
+  await knex('report_activities').del().catch(() => {});
+  await knex('report_meals').del().catch(() => {});
+  await knex('daily_reports').del().catch(() => {});
+  await knex('attendance').del().catch(() => {});
+  await knex('health_records').del().catch(() => {});
+  await knex('guardian_links').del().catch(() => {});
+  await knex('care_instructions').del().catch(() => {});
+  await knex('emergency_contacts').del().catch(() => {});
+  await knex('children').del().catch(() => {});
+  await knex('groups').del().catch(() => {});
 
   // Reset sequences if needed
   await knex.raw('ALTER SEQUENCE groups_id_seq RESTART WITH 1');
@@ -24,8 +25,8 @@ exports.seed = async (knex) => {
   // Insert Groups
   const [toddlersGroup, preKGroup] = await knex('groups')
     .insert([
-      { name: 'Toddlers (1-2 yrs)', description: 'Nursery and early toddler care' },
-      { name: 'Pre-K (3-5 yrs)', description: 'Early learning and activity group' },
+      { name: 'Toddlers (1-2 yrs)', description: 'Nursery and early toddler care', daycare_id: 1 },
+      { name: 'Pre-K (3-5 yrs)', description: 'Early learning and activity group', daycare_id: 1 },
     ])
     .returning(['id', 'name']);
 
@@ -48,6 +49,8 @@ exports.seed = async (knex) => {
         group_id: toddlersGroup.id,
         caregiver_id: caregiverId,
         enrollment_status: 'active',
+        daycare_id: 1,
+        monthly_care_fee: 3500.00,
       },
       {
         full_name: 'Sara Tadesse',
@@ -56,6 +59,8 @@ exports.seed = async (knex) => {
         group_id: preKGroup.id,
         caregiver_id: null,
         enrollment_status: 'active',
+        daycare_id: 1,
+        monthly_care_fee: 4000.00,
       },
     ])
     .returning(['id', 'full_name']);
@@ -106,5 +111,5 @@ exports.seed = async (knex) => {
     },
   ]);
 
-  console.log('✅ Seed 003 completed: Groups, Children, Contacts, Instructions, Guardian Links.');
+  console.log('✅ Seed 003 completed: Groups, Children with care fees, Contacts, Instructions, Guardian Links.');
 };

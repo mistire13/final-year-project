@@ -4,19 +4,22 @@
   "description": "Ankelba - Parent Communication and Child Activity Reporting Platform for Daycare Centers",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "node --watch server.js",
     "start": "node server.js",
     "migrate": "knex migrate:latest --knexfile src/config/knexfile.js",
+    "db:runtime:setup": "node scripts/setup-runtime-roles.cjs",
     "migrate:rollback": "knex migrate:rollback --knexfile src/config/knexfile.js",
     "seed": "knex seed:run --knexfile src/config/knexfile.js",
     "test": "node master_audit.js",
     "test:foundation": "node --test scripts/foundation.test.cjs",
+    "test:essentials": "node --test scripts/essential-security.test.cjs scripts/phase1-payments.test.cjs scripts/phase1-legacy-auth.test.cjs scripts/phase2-daycare-isolation.test.cjs scripts/phase3-child-safety.test.cjs scripts/phase4-attendance-frontdesk.test.cjs scripts/phase5-reports-health-metrics.test.cjs scripts/phase6-communication-audiences.test.cjs scripts/profile-reliability.test.cjs",
     "test:daycare-auth": "node --test scripts/daycare-auth-config.test.cjs scripts/daycare-users-unit.test.cjs scripts/daycare-auth.test.cjs scripts/daycare-auth-app.test.cjs scripts/daycare-auth-races.test.cjs",
     "test:auth-security": "node --test scripts/auth-security.test.cjs scripts/mfa-auth.test.cjs scripts/account-recovery.test.cjs scripts/platform-auth.test.cjs",
     "auth:inbox": "node scripts/auth-test-inbox.cjs",
     "auth:bootstrap-owner": "node scripts/bootstrap-platform-owner.cjs",
     "audit": "node master_audit.js",
-    "lint": "eslint src/**/*.js"
+    "lint": "eslint src/**/*.js",
+    "test:subscriptions": "node --test scripts/practical-subscriptions.test.cjs"
   },
   "keywords": [
     "daycare",
@@ -45,7 +48,6 @@
   },
   "devDependencies": {
     "eslint": "^9.9.0",
-    "nodemon": "^3.1.4",
     "prettier": "^3.3.3",
     "qrcode": "^1.5.4"
   },

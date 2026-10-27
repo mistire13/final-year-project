@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import { apiClient } from "../api/client";
+import { useAuth } from "./AuthContext";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 export type Guardian = {
   id: number;
   name: string;
@@ -12,12 +14,13 @@ export type Guardian = {
 export type PreviewOrder = {
   reference: string;
   total: number;
-  method: "pay_at_daycare" | "digital";
+  method: "pay_at_daycare" | "digital" | "demo";
   items: { name: string; quantity: number; price: number }[];
   note: string;
   payment_status?: string;
 };
 type State = {
+  persistenceError: string;
   reminders: number[];
   toggleReminder: (eventId: number) => void;
   guardians: Guardian[];
@@ -29,38 +32,9 @@ type State = {
 };
 const Context = createContext<State | null>(null);
 export function DesignProvider({ children }: { children: ReactNode }) {
-  const [guardians, setGuardians] = useState<Guardian[]>([
-    {
-      id: 1,
-      name: "Hana Tesfaye",
-      relationship: "Mother",
-      phone: "+251 91 123 4567",
-      email: "hana.tesfaye@example.com",
-      authorized: true,
-      enrolled: true,
-      photo: "mother",
-    },
-    {
-      id: 2,
-      name: "Abel Mekonnen",
-      relationship: "Father",
-      phone: "+251 91 987 6543",
-      email: "abel@example.com",
-      authorized: true,
-      enrolled: true,
-      photo: "father",
-    },
-    {
-      id: 3,
-      name: "Daniel Bekele",
-      relationship: "Uncle",
-      phone: "+251 92 333 4455",
-      email: "daniel@example.com",
-      authorized: true,
-      enrolled: false,
-      photo: null,
-    },
-  ]);
+  const {user}=useAuth();
+  const [persistenceError,setPersistenceError]=useState("");
+  const [guardians,setGuardians]=useState<Guardian[]>([]);
   const [reminders, setReminders] = useState<number[]>([]);
   const [order, setOrder] = useState<PreviewOrder | null>(null);
   const [preferences, setPreferences] = useState<Record<string, boolean>>({
@@ -68,6 +42,9 @@ export function DesignProvider({ children }: { children: ReactNode }) {
     messages: true,
     announcements: false,
   });
+  useEffect(()=>{setOrder(null);setGuardians([]);setReminders([]);setPersistenceError('');setPreferences({activity:true,messages:true,announcements:false});},[user?.id,user?.daycare_id]);
+  useEffect(()=>{let active=true;if(user?.daycare_id)apiClient.get('/notifications/preferences').then(({data})=>{if(!active)return;setReminders(data.reminders||[]);setPreferences(p=>({...p,...data.notifications}));}).catch(()=>{if(active)setPersistenceError('Preferences could not be loaded. Retry after reconnecting.');});return()=>{active=false;};},[user?.id,user?.daycare_id]);
+  const persist=async(body:any)=>{try{await apiClient.patch('/notifications/preferences',body);setPersistenceError('');}catch{setPersistenceError('Your preference was not saved. Check your connection and try again.');}};
   const saveGuardian = (guardian: Guardian) =>
     setGuardians((list) =>
       list.some((g) => g.id === guardian.id)
@@ -77,18 +54,23 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
+        persistenceError,
         reminders,
-        toggleReminder: (id) =>
-          setReminders((ids) =>
-            ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id],
-          ),
+        toggleReminder: (id) => {
+          const enabled=!reminders.includes(id);
+          setReminders(ids=>enabled?[...ids,id]:ids.filter(x=>x!==id));
+          void persist({reminder:{event_id:id,enabled}});
+        },
         guardians,
         saveGuardian,
         order,
         setOrder,
         preferences,
-        togglePreference: (key) =>
-          setPreferences((p) => ({ ...p, [key]: !p[key] })),
+        togglePreference: (key) => {
+          const enabled=!preferences[key];
+          setPreferences(p=>({...p,[key]:enabled}));
+          void persist({notifications:{[key]:enabled}});
+        },
       }}
     >
       {children}

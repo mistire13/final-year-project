@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, TextInput, Pressable, Image, ActivityIndicator } from "react-native";
-import {
-  ArrowLeft,
-  PaperPlaneRight,
-  Lock,
-  ChatCircle,
-  WarningCircle,
-} from "phosphor-react-native";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { PaperPlaneRight } from "phosphor-react-native/src/icons/PaperPlaneRight";
+import { Lock } from "phosphor-react-native/src/icons/Lock";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { WarningCircle } from "phosphor-react-native/src/icons/WarningCircle";
 import {
   Page,
   Text,
@@ -21,6 +19,7 @@ import {
   sendDirectMessage,
   markMessageAsRead,
   DirectMessage,
+  getCommunicationContacts,
 } from "../../api/parentApi";
 import { useAuth } from "../../context/AuthContext";
 
@@ -28,7 +27,8 @@ export function CaregiverChatScreen({ navigation, route }: any) {
   const { user } = useAuth();
   const recipientId = Number(route.params?.recipientId);
   const validRecipient = Number.isSafeInteger(recipientId) && recipientId > 0;
-  const isOffice = route.params?.recipientRole === "admin";
+  const [recipientRole,setRecipientRole]=useState<string | undefined>(route.params?.recipientRole);
+  const isOffice = recipientRole === "admin";
   const recipientName: string = route.params?.recipientName || "Daycare staff";
 
   const [input, setInput] = useState("");
@@ -36,8 +36,17 @@ export function CaregiverChatScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const requestRevision=useRef(0);
+  useEffect(()=>{
+    let active=true;
+    setRecipientRole(route.params?.recipientRole);
+    getCommunicationContacts().then(contacts=>{if(active)setRecipientRole(contacts.find(c=>c.id===recipientId)?.role);}).catch(()=>{});
+    return()=>{active=false;};
+  },[recipientId,route.params?.recipientRole]);
 
   const loadMessages = useCallback(async () => {
+    const revision=++requestRevision.current;
+    setMessages([]);setLoading(true);
     if (!validRecipient) {
       setErrorMessage("Choose a staff contact from Messages to start a conversation.");
       setLoading(false);
@@ -46,6 +55,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
     try {
       setErrorMessage("");
       const list = await getDirectMessages(recipientId);
+      if(revision!==requestRevision.current)return;
       // Backend returns ordered created_at DESC; sort ASC for chat chronological view
       const sorted = [...list].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -58,15 +68,17 @@ export function CaregiverChatScreen({ navigation, route }: any) {
         await Promise.all(unreadIncoming.map((m) => markMessageAsRead(m.id)));
       }
     } catch (err: any) {
-      setErrorMessage("Could not load messages. Please check your connection.");
+      if(revision===requestRevision.current)setErrorMessage("Could not load messages. Please check your connection.");
     } finally {
-      setLoading(false);
+      if(revision===requestRevision.current)setLoading(false);
     }
   }, [recipientId, validRecipient, user?.id]);
 
 
   useEffect(() => {
+    setInput('');
     loadMessages();
+    return()=>{requestRevision.current++;};
   }, [loadMessages]);
 
   const handleSend = async () => {
@@ -77,7 +89,9 @@ export function CaregiverChatScreen({ navigation, route }: any) {
     setErrorMessage("");
 
     try {
-      const sent = await sendDirectMessage(recipientId, text, isOffice ? "Office Inquiry" : "Caregiver Inquiry");
+      const revision=requestRevision.current;
+      const sent = await sendDirectMessage(recipientId, text, isOffice ? "Office Inquiry" : "Daycare Inquiry");
+      if(revision!==requestRevision.current)return;
       setMessages((prev) => [...prev, sent]);
       setInput("");
     } catch (err: any) {
@@ -104,7 +118,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
             onPress={() => navigation.goBack()}
           />
           <Avatar
-            source={isOffice ? undefined : artwork.caregiver}
+            source={undefined}
             initials={recipientName.slice(0, 2).toUpperCase()}
             size={42}
           />
@@ -113,7 +127,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
               {recipientName}
             </Text>
             <Text size={12} color="#7D838C">
-              {isOffice ? "Administration & Front Desk" : "Early Learning Caregiver"}
+              {isOffice ? "Administration & Front Desk" : recipientRole==='caregiver' ? "Caregiver" : recipientRole==='parent' ? "Parent / guardian" : "Daycare contact"}
             </Text>
           </View>
         </View>
@@ -193,7 +207,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
       >
         <Lock size={13} color="#7D838C" style={{ marginRight: 6 }} />
         <Text size={11} color="#7D838C">
-          End-to-end encrypted direct message with daycare
+          Private message with your daycare
         </Text>
       </View>
 

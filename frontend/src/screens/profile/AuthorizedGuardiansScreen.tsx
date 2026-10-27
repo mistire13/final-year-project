@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
-import { ShieldCheck, UserPlus, Fingerprint, Users } from "phosphor-react-native";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
+import { UserPlus } from "phosphor-react-native/src/icons/UserPlus";
+import { Fingerprint } from "phosphor-react-native/src/icons/Fingerprint";
+import { Users } from "phosphor-react-native/src/icons/Users";
 import {
   Page,
   Text,
@@ -13,28 +16,15 @@ import {
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
-import { getChildGuardians, GuardianRecord } from "../../api/parentApi";
+import { getChildGuardians, guardianRecordKey, GuardianRecord } from "../../api/parentApi";
+import {useRemoteResource} from '../../hooks/useRemoteResource';
 
 export function AuthorizedGuardiansScreen({ navigation }: any) {
   const { selectedChild } = useChild();
-  const [guardians, setGuardians] = useState<GuardianRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadGuardians = useCallback(async () => {
-    if (!selectedChild?.id) return;
-    try {
-      setLoading(true);
-      const data = await getChildGuardians(selectedChild.id);
-      setGuardians(data);
-    } catch {
-      // Fallback gracefully
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedChild?.id]);
+  const {data:guardians,error,loading,refresh:loadGuardians}=useRemoteResource<GuardianRecord[]>(
+    `guardians:${selectedChild?.id||'none'}`,()=>selectedChild?.id?getChildGuardians(selectedChild.id):Promise.resolve([]),[]);
 
   useEffect(() => {
-    loadGuardians();
     const unsubscribe = navigation.addListener?.("focus", loadGuardians);
     return () => {
       if (typeof unsubscribe === "function") unsubscribe();
@@ -47,14 +37,16 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
   return (
     <Page
       title="Authorized Guardians"
-      subtitle={`Trusted adults who are authorized to pick up ${childName}.`}
+      subtitle={`Pickup contacts and approval requests for ${childName}.`}
       back
       tabs
       activeTab="Profile"
     >
+      {error ? <><Notice tone="error">{error}</Notice><Button title="Retry" onPress={loadGuardians}/></> : null}
+      {!selectedChild ? <Notice>Select a linked child to view guardians.</Notice> : null}
       <Card style={{ padding: 16 }}>
         <View style={s.row}>
-          <Avatar source={artwork.guardianChild} initials={childName.slice(0, 2).toUpperCase()} size={48} />
+          <Avatar source={selectedChild?.photo_url ? {uri:selectedChild.photo_url} : undefined} initials={childName.slice(0, 2).toUpperCase()} size={48} />
           <View style={{ marginLeft: 12 }}>
             <Text size={18} weight="semibold">
               {selectedChild?.full_name || "Child Profile"}
@@ -67,7 +59,7 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
       </Card>
 
       <Notice>
-        Only adults verified by daycare administration and registered with biometric credentials may complete physical pickup.
+        Only adults approved by daycare administration may complete pickup. Staff check their identity at the daycare.
       </Notice>
 
       {loading ? (
@@ -80,11 +72,11 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
       ) : guardians.length > 0 ? (
         guardians.map((g) => (
           <Card
-            key={g.guardian_link_id}
+            key={guardianRecordKey(g)}
             onPress={() =>
               navigation.navigate("GuardianDetails", {
                 guardian: g,
-                guardianId: g.guardian_link_id,
+                guardianKey: guardianRecordKey(g),
               })
             }
             style={{ marginBottom: 14, padding: 18 }}
@@ -108,7 +100,7 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
                 </Text>
               </View>
               <Badge
-                title={g.pickup_authorized ? "● Authorized" : "Pending"}
+                title={g.pickup_authorized ? "● Authorized" : g.status ? g.status.charAt(0).toUpperCase()+g.status.slice(1) : "Not authorized"}
                 tone={g.pickup_authorized ? "green" : "gold"}
               />
             </View>
@@ -125,7 +117,7 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
                   weight="medium"
                   style={{ marginLeft: 6 }}
                 >
-                  {g.biometric_enrolled ? "Biometric Enrolled" : "Enrollment Pending at Daycare"}
+                  {g.biometric_enrolled ? "Biometric Enrolled" : "No biometric enrollment recorded"}
                 </Text>
               </View>
               <Text size={12} color="#10263D" weight="semibold">
@@ -163,7 +155,7 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
           color="#666F7C"
           style={{ textAlign: "center", marginTop: 8, lineHeight: 18 }}
         >
-          Guardian pickup verification takes place on the daycare kiosk. Per child protection regulations, children's biometric data is never recorded.
+          Staff confirm guardian approval and identity at pickup. Biometric device verification is not connected.
         </Text>
       </Card>
     </Page>

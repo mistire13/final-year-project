@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { View, useWindowDimensions, Pressable, Platform, Linking, Image } from "react-native";
-import { ArrowRight, ShieldCheck } from "phosphor-react-native";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
 import { Page, Text, Button, BrandMark } from "../../components/design/System";
 import { useAuth } from "../../context/AuthContext";
 import { getWebPortalUrl } from "../../utils/host";
@@ -15,6 +16,11 @@ export function SplashScreen({ navigation, route }: any) {
       return;
     }
     if (!isLoading && user) {
+      if (Platform.OS === "web" && user.role !== "parent") {
+        window.location.assign(user.role === "admin" ? "/admin" : user.role === "caregiver" ? "/staff" : "/super-admin");
+        return;
+      }
+      if ((user.role as string) === "super_admin") return;
       if (user.role === "parent" && user.profile_complete === false) {
         navigation.replace("ChildProfileWizard");
       } else {
@@ -81,15 +87,14 @@ export function SplashScreen({ navigation, route }: any) {
       {user ? (
         <View style={{ gap: 10 }}>
           <Button
-            title="Go to Home Dashboard"
+            title={(user.role as string) === "super_admin" ? "Open platform console" : "Go to Home Dashboard"}
             icon={ArrowRight}
-            onPress={() => navigation.navigate("MainTabs")}
+            onPress={() => (user.role as string) === "super_admin" ? Linking.openURL(getWebPortalUrl("/super-admin")) : navigation.navigate("MainTabs")}
           />
           <Pressable
             accessibilityRole="button"
             onPress={async () => {
               await logout();
-              navigation.replace("Splash", { stay: true });
             }}
             style={{ marginTop: 8, alignItems: "center", paddingVertical: 8 }}
           >

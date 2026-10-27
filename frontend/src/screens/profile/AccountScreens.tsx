@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
-import {
-  LockKey,
-  Package,
-  CalendarBlank,
-  ChatCircle,
-  Clock,
-} from "phosphor-react-native";
+import { LockKey } from "phosphor-react-native/src/icons/LockKey";
+import { Package } from "phosphor-react-native/src/icons/Package";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
 import {
   Page,
   Text,
@@ -20,35 +18,26 @@ import {
 } from "../../components/design/System";
 import { useAuth } from "../../context/AuthContext";
 import { apiClient } from "../../api/client";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { getMyOrders, OrderRecord } from "../../api/parentApi";
 import { formatMoney } from "../store/catalog";
 
 export function OrdersScreen({ navigation }: any) {
-  const [orders, setOrders] = useState<OrderRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: orders,
+    loading,
+    error,
+    refresh: loadOrders,
+  } = useRemoteResource<OrderRecord[]>("orders", getMyOrders, []);
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
-
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getMyOrders();
-      setOrders(data);
-    } catch {
-      // Gracefully handle error
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    loadOrders();
-    const unsubscribe = navigation.addListener?.("focus", loadOrders);
-    return () => {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
+    const remove = navigation.addListener?.("focus", loadOrders);
+    return () => remove?.();
   }, [navigation, loadOrders]);
 
-  const getStatusTone = (status: string): "green" | "gold" | "neutral" | "red" => {
+  const getStatusTone = (
+    status: string,
+  ): "green" | "gold" | "neutral" | "red" => {
     switch (status) {
       case "collected":
         return "green";
@@ -69,7 +58,13 @@ export function OrdersScreen({ navigation }: any) {
 
   return (
     <Page title="My Orders" back tabs activeTab="Profile">
-      {loading ? (
+      {error ? (
+        <>
+          <Notice tone="error">{error}</Notice>
+          <Button title="Retry" onPress={loadOrders} />
+        </>
+      ) : null}
+      {error ? null : loading ? (
         <View style={{ paddingVertical: 40, alignItems: "center" }}>
           <ActivityIndicator size="small" color="#061224" />
           <Text size={13} color="#8A919B" style={{ marginTop: 12 }}>
@@ -116,16 +111,35 @@ export function OrdersScreen({ navigation }: any) {
                 </Text>
                 {o.items && o.items.length > 0 ? (
                   <Text size={13} color="#4D5663" style={{ marginTop: 6 }}>
-                    {o.items.map((i) => `${i.product_name} (×${i.quantity})`).join(", ")}
+                    {o.items
+                      .map((i) => `${i.product_name} (×${i.quantity})`)
+                      .join(", ")}
                   </Text>
                 ) : null}
-                <View style={[s.between, { marginTop: 10, borderTopWidth: 1, borderTopColor: "#EDEAE4", paddingTop: 8 }]}>
-                  <Text size={12} color="#8A919B">Payment: {o.payment_status.toUpperCase()}</Text>
+                <View
+                  style={[
+                    s.between,
+                    {
+                      marginTop: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: "#EDEAE4",
+                      paddingTop: 8,
+                    },
+                  ]}
+                >
+                  <Text size={12} color="#8A919B">
+                    Payment: {o.payment_status.toUpperCase()}{o.payment_method==='demo'?' · DEMO':o.payment_method==='no_charge'?' · NO CHARGE':''}
+                  </Text>
                   <Text size={15} weight="bold" color="#10263D">
                     {formatMoney(Number(o.total))}
                   </Text>
                 </View>
-                <Text size={11} color="#008794" weight="semibold" style={{ marginTop: 6 }}>
+                <Text
+                  size={11}
+                  color="#008794"
+                  weight="semibold"
+                  style={{ marginTop: 6 }}
+                >
                   Tap to view receipt & collection details →
                 </Text>
               </View>
@@ -138,8 +152,12 @@ export function OrdersScreen({ navigation }: any) {
           <Text size={19} weight="semibold" style={{ marginTop: 14 }}>
             No orders placed yet
           </Text>
-          <Text color="#7E8793" style={{ textAlign: "center", marginTop: 8, marginBottom: 20 }}>
-            Browse uniforms, books, diapers, and supplies available in the daycare store.
+          <Text
+            color="#7E8793"
+            style={{ textAlign: "center", marginTop: 8, marginBottom: 20 }}
+          >
+            Browse uniforms, books, diapers, and supplies available in the
+            daycare store.
           </Text>
           <Button
             title="Visit Store"
@@ -176,8 +194,21 @@ export function OrdersScreen({ navigation }: any) {
             />
           </View>
 
-          <View style={{ marginVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#EFECE6", paddingVertical: 10 }}>
-            <Text size={13} weight="semibold" color="#10263D" style={{ marginBottom: 6 }}>
+          <View
+            style={{
+              marginVertical: 12,
+              borderTopWidth: 1,
+              borderBottomWidth: 1,
+              borderColor: "#EFECE6",
+              paddingVertical: 10,
+            }}
+          >
+            <Text
+              size={13}
+              weight="semibold"
+              color="#10263D"
+              style={{ marginBottom: 6 }}
+            >
               Itemized Items:
             </Text>
             {(selectedOrder.items || []).map((item, idx) => (
@@ -190,27 +221,53 @@ export function OrdersScreen({ navigation }: any) {
                 </Text>
               </View>
             ))}
-            <View style={[s.between, { marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderColor: "#EFECE6" }]}>
-              <Text size={14} weight="bold">Total Amount</Text>
+            <View
+              style={[
+                s.between,
+                {
+                  marginTop: 8,
+                  paddingTop: 6,
+                  borderTopWidth: 1,
+                  borderColor: "#EFECE6",
+                },
+              ]}
+            >
+              <Text size={14} weight="bold">
+                Total Amount
+              </Text>
               <Text size={16} weight="bold" color="#10263D">
                 {formatMoney(Number(selectedOrder.total))}
               </Text>
             </View>
           </View>
 
+          {selectedOrder.note ? (
+            <Notice>Order note: {selectedOrder.note}</Notice>
+          ) : null}
+          {selectedOrder.payment_method==='demo' && <Notice>SIMULATED PAYMENT · No money transferred. Reference: {selectedOrder.payment_reference}</Notice>}
+          {selectedOrder.payment_method==='no_charge' && <Notice>No payment required for this zero-total order.</Notice>}
           <View style={{ marginBottom: 14 }}>
             <Text size={12} color="#6B7280" style={{ lineHeight: 17 }}>
-              📍 <strong>Pickup instructions:</strong> Present Order #ANK-{selectedOrder.id} at the daycare front office during operational pickup hours (07:30 - 18:00).
+              {selectedOrder.order_status==='cancelled'?'This order was cancelled. No collection is due.':selectedOrder.order_status==='collected'?'Collection recorded by your daycare.':selectedOrder.order_status==='ready_for_pickup'?`Present Order #ANK-${selectedOrder.id} at the daycare office during collection hours.`:'Awaiting daycare preparation. Check the order status before visiting to collect.'}
             </Text>
-            <Text size={12} color={selectedOrder.payment_status === "paid" ? "#1E7E34" : "#B26B00"} weight="medium" style={{ marginTop: 4 }}>
+            <Text
+              size={12}
+              color={
+                selectedOrder.payment_status === "paid" ? "#1E7E34" : "#B26B00"
+              }
+              weight="medium"
+              style={{ marginTop: 4 }}
+            >
               Payment status: {selectedOrder.payment_status.toUpperCase()}
-              {selectedOrder.payment_status !== "paid" ? " (Pay at front desk or digitally)" : " (Cleared for collection)"}
+              {selectedOrder.order_status==='cancelled' ? ' (Order cancelled)' : selectedOrder.payment_status !== "paid"
+                ? " (Pay at the daycare)"
+                : selectedOrder.order_status==='collected' ? " (Collection recorded)" : selectedOrder.order_status==='ready_for_pickup' ? " (Ready for collection)" : " (Awaiting preparation)"}
             </Text>
           </View>
 
-          {selectedOrder.payment_status !== "paid" && (
+          {selectedOrder.payment_status !== "paid" && selectedOrder.order_status!=='cancelled' && (
             <Button
-              title="Pay Digitally (Telebirr / CBE / Card)"
+              title="Payment options"
               variant="outline"
               onPress={() => {
                 const target = selectedOrder;
@@ -237,31 +294,121 @@ export function OrdersScreen({ navigation }: any) {
 }
 
 export function NotificationsScreen({ navigation }: any) {
+  const [inbox, setInbox] = useState<any>(null);
+  const [read, setRead] = useState<number[]>([]);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setError("");
+    try {
+      const [data, prefs] = await Promise.all([
+        apiClient.get("/notifications"),
+        apiClient.get("/notifications/preferences"),
+      ]);
+      setInbox(data.data);
+      setRead(prefs.data.read_alert_ids || []);
+    } catch {
+      setError("Could not load notifications. Please retry.");
+    }
+  }, []);
+  useEffect(() => {
+    void load();
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [load, navigation]);
   return (
     <Page title="Notifications" back>
-      <Card style={{ paddingVertical: 0 }}>
-        <MenuRow
-          title="Daily Activity Reports"
-          icon={CalendarBlank}
-          onPress={() => navigation.navigate("Reports")}
-        />
-        <MenuRow
-          title="Attendance History"
-          icon={Clock}
-          onPress={() => navigation.navigate("AttendanceHistory")}
-        />
-        <MenuRow
-          title="Health & Incident Notices"
-          icon={ChatCircle}
-          onPress={() => navigation.navigate("HealthNotices")}
-        />
-        <MenuRow
-          title="Messages & Caregiver Chat"
-          icon={ChatCircle}
-          onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
-          last
-        />
-      </Card>
+      {error ? (
+        <>
+          <Notice>{error}</Notice>
+          <Button title="Retry" onPress={load} />
+        </>
+      ) : !inbox ? (
+        <ActivityIndicator />
+      ) : (
+        <>
+          <Text size={18} weight="bold">
+            Unread messages
+          </Text>
+          {inbox.unread_messages.recent.length ? (
+            inbox.unread_messages.recent.map((item: any) => (
+              <Card
+                key={item.id}
+                onPress={() =>
+                  navigation.navigate("CaregiverChat", {
+                    recipientId: item.sender_id,
+                    recipientName: item.sender_name,
+                  })
+                }
+                style={{ marginTop: 12 }}
+              >
+                <Text weight="bold">{item.sender_name}</Text>
+                <Text>{item.body}</Text>
+              </Card>
+            ))
+          ) : (
+            <Notice>You’re up to date with your messages.</Notice>
+          )}
+          <Text size={18} weight="bold" style={{ marginTop: 24 }}>
+            Daycare alerts
+          </Text>
+          {inbox.alerts.recent
+            .filter((item: any) => !read.includes(item.id))
+            .map((item: any) => (
+              <Card key={item.id} style={{ marginTop: 12 }}>
+                <Text weight="bold">{item.title}</Text>
+                <Text size={12}>
+                  {new Date(item.created_at).toLocaleString()}
+                </Text>
+                <Button
+                  title="Mark as read"
+                  variant="outline"
+                  onPress={async () => {
+                    try {
+                      const response = await apiClient.patch(
+                        "/notifications/preferences",
+                        { read_alert_id: item.id },
+                      );
+                      setRead(response.data.read_alert_ids);
+                    } catch {
+                      setError(
+                        "Could not mark this alert as read. Please retry.",
+                      );
+                    }
+                  }}
+                />
+              </Card>
+            ))}
+          {!inbox.alerts.recent.some(
+            (item: any) => !read.includes(item.id),
+          ) && <Notice>No unread daycare alerts.</Notice>}
+          <Card style={{ marginTop: 20 }}>
+            <MenuRow
+              title="Reports"
+              icon={CalendarBlank}
+              onPress={() =>
+                navigation.navigate("MainTabs", { screen: "Reports" })
+              }
+            />
+            <MenuRow
+              title="Announcements"
+              icon={ChatCircle}
+              onPress={() =>
+                navigation.navigate("MainTabs", {
+                  screen: "Messages",
+                  params: { tab: "Announcements" },
+                })
+              }
+            />
+            {inbox.unpaid_orders.count > 0 && (
+              <MenuRow
+                title={`${inbox.unpaid_orders.count} unpaid orders`}
+                icon={Package}
+                onPress={() => navigation.navigate("Orders")}
+              />
+            )}
+          </Card>
+        </>
+      )}
     </Page>
   );
 }
@@ -279,9 +426,9 @@ export function SecurityScreen() {
       setMessage("Sign in to change your password.");
       return;
     }
-    if (password !== confirm || password.length < 8) {
+    if (password !== confirm || password.length < 12) {
       setMessage(
-        "Use at least 8 characters and make sure both passwords match.",
+        "Use at least 12 characters and make sure both passwords match.",
       );
       return;
     }

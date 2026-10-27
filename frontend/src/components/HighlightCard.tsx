@@ -1,14 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import {
-  ForkKnife,
-  Moon,
-  BookOpen,
-  Smiley,
-  Heart,
-  Eye,
-  Lightning,
-} from 'phosphor-react-native';
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { Moon } from "phosphor-react-native/src/icons/Moon";
+import { BookOpen } from "phosphor-react-native/src/icons/BookOpen";
+import { Smiley } from "phosphor-react-native/src/icons/Smiley";
+import { Heart } from "phosphor-react-native/src/icons/Heart";
+import { Eye } from "phosphor-react-native/src/icons/Eye";
+import { Lightning } from "phosphor-react-native/src/icons/Lightning";
 import { colors, radii, shadows } from '../theme/tokens';
 
 export type HighlightCategory =

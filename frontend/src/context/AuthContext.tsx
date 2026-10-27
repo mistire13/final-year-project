@@ -3,9 +3,11 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
-import { apiClient, tokenStorage } from "../api/client";
+import { Platform } from "react-native";
+import { apiClient, tokenStorage, onSessionExpired } from "../api/client";
 import { User, AuthResponse, UserProfileMe } from "../types";
 
 interface AuthContextType {
@@ -65,14 +67,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<UserProfileMe | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const generation = useRef(0);
+
+  useEffect(() => onSessionExpired(() => {
+    generation.current++;
+    setToken(null);
+    setUser(null);
+    setIsLoading(false);
+  }), []);
 
   const refreshUser = async () => {
+    const requestGeneration = generation.current;
     try {
       const response = await apiClient.get<{ user: UserProfileMe }>("/auth/me");
+      if (requestGeneration !== generation.current) return;
       if (response.data?.user) {
         setUser(response.data.user);
       }
     } catch {
+      if (requestGeneration !== generation.current) return;
       await tokenStorage.clearToken();
       setToken(null);
       setUser(null);
@@ -81,13 +94,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const initializeAuth = async () => {
+      const requestGeneration = generation.current;
       try {
         const savedToken = await tokenStorage.getToken();
+        if (requestGeneration !== generation.current) return;
         if (savedToken) {
           setToken(savedToken);
           const response = await apiClient.get<{ user: UserProfileMe }>("/auth/me");
+          if (requestGeneration !== generation.current) return;
           if (response.data?.user) {
-            setUser(response.data.user);
+            const fetchedUser = response.data.user;
+            if (fetchedUser.role === "super_admin") {
+              if (Platform.OS === "web" && typeof window !== "undefined") {
+                if (!window.localStorage.getItem("ankelba_operator_token")) {
+                  window.localStorage.setItem("ankelba_operator_token", savedToken);
+                }
+              }
+              await tokenStorage.clearToken();
+              setToken(null);
+              setUser(null);
+            } else if (fetchedUser.role !== "parent" && Platform.OS === "web") {
+              if (typeof window !== "undefined") {
+                if (!window.localStorage.getItem("ankelba_portal_token")) {
+                  window.localStorage.setItem("ankelba_portal_token", savedToken);
+                }
+              }
+              await tokenStorage.clearToken();
+              setToken(null);
+              setUser(null);
+            } else {
+              setUser(fetchedUser);
+            }
           } else {
             setUser(null);
           }
@@ -95,12 +132,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           setUser(null);
         }
       } catch (err) {
+        if (requestGeneration !== generation.current) return;
         console.warn("Auth initialization failed", err);
         await tokenStorage.clearToken();
         setToken(null);
         setUser(null);
       } finally {
-        setIsLoading(false);
+        if (requestGeneration === generation.current) setIsLoading(false);
       }
     };
 
@@ -108,6 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const login = async (email: string, password: string) => {
+    const requestGeneration = ++generation.current;
     setIsLoading(true);
     try {
       const response = await apiClient.post<AuthResponse>("/auth/login", {
@@ -115,7 +154,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         password,
       });
       const { token: receivedToken, user: receivedUser } = response.data;
+      if (requestGeneration !== generation.current) return { success: false, error: "Sign-in was cancelled." };
+
+      if (receivedUser.role === "super_admin") {
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.localStorage.setItem("ankelba_operator_token", receivedToken);
+        }
+        await tokenStorage.clearToken();
+        setIsLoading(false);
+        return {
+          success: true,
+          role: receivedUser.role,
+          profileComplete: (receivedUser as UserProfileMe).profile_complete,
+        };
+      }
+
+      if (Platform.OS === "web" && (receivedUser.role === "admin" || receivedUser.role === "caregiver")) {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("ankelba_portal_token", receivedToken);
+        }
+        await tokenStorage.clearToken();
+        setIsLoading(false);
+        return {
+          success: true,
+          role: receivedUser.role,
+          profileComplete: (receivedUser as UserProfileMe).profile_complete,
+        };
+      }
+
       await tokenStorage.setToken(receivedToken);
+      if (requestGeneration !== generation.current) return { success: false, error: "Sign-in was cancelled." };
       setToken(receivedToken);
       setUser(receivedUser as UserProfileMe);
       setIsLoading(false);
@@ -125,6 +193,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         profileComplete: (receivedUser as UserProfileMe).profile_complete,
       };
     } catch (err: any) {
+      if (requestGeneration !== generation.current) return { success: false, error: "Sign-in was cancelled." };
       setIsLoading(false);
       const errorMsg = extractErrorMessage(err);
       return { success: false, error: errorMsg };
@@ -132,10 +201,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const logout = async () => {
+    const requestGeneration = ++generation.current;
     setIsLoading(true);
     try {
       await apiClient.post("/auth/logout").catch(() => {});
     } finally {
+      if (requestGeneration !== generation.current) return;
       await tokenStorage.clearToken();
       setToken(null);
       setUser(null);
@@ -144,6 +215,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const enablePreview = () => {
+    if (!__DEV__) return;
+    generation.current++;
     setUser(DEFAULT_PREVIEW_USER);
   };
 
@@ -151,7 +224,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     <AuthContext.Provider
       value={{ user, token, isLoading, login, logout, refreshUser, enablePreview }}
     >
-      {children}
+      <React.Fragment key={user ? `${user.id}:${user.daycare_id}:${user.role}` : "signed-out"}>
+        {children}
+      </React.Fragment>
     </AuthContext.Provider>
   );
 };

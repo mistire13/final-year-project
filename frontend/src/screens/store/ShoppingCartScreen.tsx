@@ -1,6 +1,9 @@
 import React from "react";
 import { View, Image, Pressable } from "react-native";
-import { Plus, Minus, ArrowRight, Trash } from "phosphor-react-native";
+import { Plus } from "phosphor-react-native/src/icons/Plus";
+import { Minus } from "phosphor-react-native/src/icons/Minus";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { Trash } from "phosphor-react-native/src/icons/Trash";
 import {
   Page,
   Text,

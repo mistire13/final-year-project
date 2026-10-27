@@ -1,14 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import {
-  CheckCircle,
-  ForkKnife,
-  BookOpen,
-  Smiley,
-  Moon,
-  Palette,
-  Clock,
-} from 'phosphor-react-native';
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { BookOpen } from "phosphor-react-native/src/icons/BookOpen";
+import { Smiley } from "phosphor-react-native/src/icons/Smiley";
+import { Moon } from "phosphor-react-native/src/icons/Moon";
+import { Palette } from "phosphor-react-native/src/icons/Palette";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
 import { colors, radii, shadows } from '../theme/tokens';
 import { HighlightCategory } from './HighlightCard';
 

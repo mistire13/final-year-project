@@ -19,20 +19,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import {
-  ArrowLeft,
-  BellSimple,
-  CaretRight,
-  House,
-  ClipboardText,
-  ChatCircle,
-  CalendarBlank,
-  User,
-  Storefront,
-  SquaresFour,
-  ArrowRight,
-  X,
-} from "phosphor-react-native";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { BellSimple } from "phosphor-react-native/src/icons/BellSimple";
+import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
+import { House } from "phosphor-react-native/src/icons/House";
+import { ClipboardText } from "phosphor-react-native/src/icons/ClipboardText";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { User } from "phosphor-react-native/src/icons/User";
+import { Storefront } from "phosphor-react-native/src/icons/Storefront";
+import { SquaresFour } from "phosphor-react-native/src/icons/SquaresFour";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { X } from "phosphor-react-native/src/icons/X";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { colors, fonts, radii, shadows } from "../../theme/tokens";
 import { useAuth } from "../../context/AuthContext";
@@ -367,7 +365,7 @@ export function Card({
       {children}
     </MotionPressable>
   ) : (
-    <View style={cardStyle}>{children}</View>
+    <MotionView style={cardStyle}>{children}</MotionView>
   );
 }
 export function Button({

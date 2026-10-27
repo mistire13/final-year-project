@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { View } from "react-native";
-import { EnvelopeSimple, ArrowRight, LockKey } from "phosphor-react-native";
+import { EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { LockKey } from "phosphor-react-native/src/icons/LockKey";
 import {
   Page,
   Text,

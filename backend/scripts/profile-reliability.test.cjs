@@ -71,9 +71,9 @@ test('Backend phase 1: security revisions and atomic profile saves',async t=>wit
     return {status:response.status,body:await response.json()};
    };
    const login=await request('POST','/auth/login',{email:user.email,password:'Synthetic-password-123!'});assert.equal(login.status,200);token=login.body.token;
-   assert.equal((await request('PUT',`/parent/children/${child.id}/profile`,{full_name:'HTTP child',parent_name:'HTTP parent'})).status,200);
-   assert.equal((await request('PUT',`/parent/children/${child.id}/care`,{instructions:[{category:'allergy',instruction_text:'Retained allergy'}]})).status,200);
-   assert.equal((await request('PATCH','/parent/profile-complete',{})).status,200);
+   assert.equal((await request('PUT',`/parent/children/${child.id}/profile`,{full_name:'HTTP child',parent_name:'HTTP parent'})).status,428);
+   assert.equal((await request('PUT',`/parent/children/${child.id}/care`,{instructions:[{category:'allergy',instruction_text:'Retained allergy'}]})).status,428);
+   assert.equal((await request('PATCH','/parent/profile-complete',{})).status,428);
    const loaded=await request('GET',`/parent/children/${child.id}/care-profile`);assert.equal(loaded.status,200);
    assert.equal((await request('PATCH',`/parent/children/${child.id}/care-profile`,{version:loaded.body.version,profile:{full_name:'Atomic HTTP child'}})).status,200);
    assert.equal((await request('GET','/auth/me')).status,200);

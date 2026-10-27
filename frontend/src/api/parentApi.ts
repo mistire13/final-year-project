@@ -230,20 +230,32 @@ export const getStoreProducts = async (): Promise<StoreProduct[]> => {
 
 /** Authorized Guardians */
 export interface GuardianRecord {
-  guardian_link_id: number;
-  user_id: number;
+  guardian_link_id?: number;
+  pickup_guardian_id?: number;
+  user_id?: number;
   name: string;
   email: string;
   relationship: string;
   pickup_authorized: boolean;
   biometric_enrolled: boolean;
   created_at: string;
+  phone?: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'revoked';
+  review_note?: string;
 }
 
+export const guardianRecordKey = (g: GuardianRecord): string => g.pickup_guardian_id ? `pickup:${g.pickup_guardian_id}` : `link:${g.guardian_link_id}`;
+
 export const getChildGuardians = async (childId: number): Promise<GuardianRecord[]> => {
-  const res = await apiClient.get<{ data: GuardianRecord[] }>(`/children/${childId}/guardians`);
-  return res.data.data || [];
+  const [links, requests] = await Promise.all([
+    apiClient.get<{ data: GuardianRecord[] }>(`/children/${childId}/guardians`),
+    apiClient.get<{ data: GuardianRecord[] }>(`/children/${childId}/pickup-guardians`),
+  ]);
+  return [...(links.data.data || []), ...(requests.data.data || []).map(g=>({...g,biometric_enrolled:false}))];
 };
+
+export const requestPickupGuardian = async (childId: number, body: {name:string;phone:string;email:string;relationship:string;request_key:string}) =>
+  (await apiClient.post(`/children/${childId}/pickup-guardians`,body)).data;
 
 /** Announcements */
 export interface DaycareAnnouncement {
@@ -273,8 +285,11 @@ export interface OrderItemRecord {
 }
 
 export interface OrderRecord {
+  payment_method?: 'demo' | 'no_charge' | 'pay_at_daycare' | 'digital';
+  payment_reference?: string | null;
   id: number;
   parent_id?: number;
+  note?: string;
   total: number;
   order_status: string;
   payment_status: string;
@@ -282,8 +297,8 @@ export interface OrderRecord {
   items?: OrderItemRecord[];
 }
 
-export const placeStoreOrder = async (items: Array<{ product_id: number; quantity: number }>): Promise<OrderRecord> => {
-  const res = await apiClient.post<OrderRecord>('/store/orders', { items });
+export const placeStoreOrder = async (items: Array<{ product_id: number; quantity: number }>, note: string, idempotency_key: string): Promise<OrderRecord> => {
+  const res = await apiClient.post<OrderRecord>('/store/orders', { items, note, idempotency_key });
   return res.data;
 };
 
@@ -291,6 +306,11 @@ export const getMyOrders = async (): Promise<OrderRecord[]> => {
   const res = await apiClient.get<any>('/store/orders/my');
   return res.data?.data || (Array.isArray(res.data) ? res.data : []);
 };
+
+export const getPaymentCapabilities = async (): Promise<{demo_enabled:boolean;online_enabled:boolean}> =>
+  (await apiClient.get('/payments/capabilities')).data;
+export const simulateDemoPayment = async (orderId:number): Promise<{gateway_ref:string;status:string;method:string;simulated:boolean}> =>
+  (await apiClient.post('/payments/demo',{order_id:orderId})).data;
 
 /** Groups */
 export interface GroupRecord {
@@ -361,6 +381,43 @@ export const updateMyProfile = async (data: UpdateMyProfileInput): Promise<any> 
   const res = await apiClient.patch('/users/profile/me', data);
   return res.data;
 };
+
+/** Daycare Child Care Fee Invoices & Payment Receipts (FR-ECM-01 to FR-ECM-16) */
+export interface ParentPaymentReceipt {
+  id: number;
+  amount_paid: string | number;
+  payment_method: string;
+  reference_code: string | null;
+  receipt_number: string;
+  verified_at: string;
+}
+
+export interface ParentBill {
+  id: number;
+  daycare_id: number;
+  child_id: number;
+  invoice_type: string;
+  billing_period: string;
+  title: string;
+  amount: string | number;
+  amount_paid: string | number;
+  balance_remaining: string | number;
+  due_date: string;
+  status: 'pending' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string | null;
+  created_at: string;
+  child_name: string;
+  child_photo?: string | null;
+  daycare_name: string;
+  daycare_phone?: string | null;
+  payments: ParentPaymentReceipt[];
+}
+
+export const getMyBills = async (): Promise<ParentBill[]> => {
+  const res = await apiClient.get<ParentBill[]>('/finances/parent/my-bills');
+  return res.data;
+};
+
 
 
 

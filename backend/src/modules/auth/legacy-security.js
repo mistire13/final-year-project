@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 
 // Migration 018 decouples security changes from profile edits. JSON lookup keeps
 // older databases compatible until migration; exact epoch text is the fallback.
-const ACCOUNT_FIELDS = `u.id, u.name, u.email, u.password_hash, u.status,
+const ACCOUNT_FIELDS = `u.id, u.name, u.email, u.password_hash, u.status, to_jsonb(u)->>'phone' AS phone,
   u.profile_complete, u.daycare_id, r.name AS role,
   COALESCE(to_jsonb(u)->>'security_revision', extract(epoch from u.updated_at)::text) AS user_revision,
   COALESCE(to_jsonb(d)->>'security_revision', extract(epoch from d.updated_at)::text) AS daycare_revision,

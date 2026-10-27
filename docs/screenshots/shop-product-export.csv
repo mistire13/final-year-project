@@ -1,0 +1,4 @@
+﻿"id","name","description","price","category_id","stock_qty","available","created_by","updated_at","daycare_id","image_url","version"
+"43","Alemitu shop QA empty kit","Synthetic sold-out product: add-to-cart must be disabled.","3.00","","0","true","150","2026-10-23T18:51:17.534Z","25","","1"
+"42","Alemitu shop QA hidden kit","Synthetic hidden product: must not appear to parents.","9.00","","1","false","150","2026-10-23T18:51:06.229Z","25","","1"
+"41","Alemitu shop QA stocked kit","Synthetic shop acceptance fixture. No real payment or goods.","12.50","","2","true","150","2026-10-23T18:50:52.123Z","25","","2"

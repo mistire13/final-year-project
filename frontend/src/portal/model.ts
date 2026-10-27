@@ -9,6 +9,7 @@ export type Dataset = {
   reports: Row[];
   health: Row[];
   guardians: Row[];
+  guardianRequests?: Row[];
   events: Row[];
   announcements: Row[];
   products: Row[];

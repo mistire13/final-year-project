@@ -8,10 +8,12 @@
  */
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const control = db.control || db;
 const legacySecurity = require('../modules/auth/legacy-security');
 const { withTenant } = require('../db/tenant-pool');
 
 const auth = async (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
   try {
     // Support both HttpOnly cookie and Authorization header
     let token = null;
@@ -40,7 +42,7 @@ const auth = async (req, res, next) => {
     if (!Number.isInteger(decoded.userId) || typeof decoded.auth_state !== 'string') {
       return res.status(401).json({ error: 'Session expired, please log in again' });
     }
-    const account = await legacySecurity.findAccount(db, { id: decoded.userId });
+    const account = await legacySecurity.findAccount(control, { id: decoded.userId });
     if (!legacySecurity.activeAccount(account) || !legacySecurity.matchesState(decoded.auth_state, account)) {
       return res.status(401).json({ error: 'Session expired or account unavailable, please log in again' });
     }
@@ -56,18 +58,8 @@ const auth = async (req, res, next) => {
     };
     req.daycareId = account.daycare_id ? Number(account.daycare_id) : null;
 
-    if (account.role === 'super_admin' && decoded.isImpersonating && decoded.daycareId) {
-      const dcRes = await db.query('SELECT name, status, subscription_plan, trial_ends_at FROM daycares WHERE id = $1', [decoded.daycareId]);
-      if (dcRes.rows[0]) {
-        req.user.role = 'admin';
-        req.user.daycare_id = decoded.daycareId;
-        req.user.daycare_name = dcRes.rows[0].name;
-        req.user.daycare_status = dcRes.rows[0].status;
-        req.user.subscription_plan = dcRes.rows[0].subscription_plan;
-        req.user.trial_ends_at = dcRes.rows[0].trial_ends_at;
-        req.user.is_impersonating = true;
-        req.daycareId = Number(decoded.daycareId);
-      }
+    if (decoded.isImpersonating) {
+      return res.status(401).json({ error: 'Impersonation sessions are no longer supported. Sign in with your own account.' });
     }
 
     if (req.daycareId) {

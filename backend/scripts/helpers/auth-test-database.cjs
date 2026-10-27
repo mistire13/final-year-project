@@ -26,9 +26,10 @@ const connection = {
 };
 
 class AuthMigrationSource {
+  constructor(operational = false, current = false) { this.operational = operational; this.current = current; }
   async getMigrations() {
     return readdirSync(migrationDirectory)
-      .filter(name => /^\d{3}[a-z]?_.+\.js$/.test(name) && Number(name.slice(0, 3)) <= 17)
+      .filter(name => /^\d{3}[a-z]?_.+\.js$/.test(name) && (this.current || Number(name.slice(0, 3)) <= 17 || (this.operational && [22,23,25,26].includes(Number(name.slice(0,3))))))
       .sort();
   }
   getMigrationName(name) { return name; }
@@ -48,7 +49,7 @@ async function assertTestConnection(client, name) {
   assert.equal(result.rows[0].name, name);
 }
 
-async function withIsolatedDatabase(work) {
+async function withIsolatedDatabase(work, { operational = false, current = false } = {}) {
   assert.ok(['localhost', '127.0.0.1', '::1'].includes(connection.host), 'Only local PostgreSQL hosts are allowed');
   assert.ok(Number.isInteger(connection.port) && connection.port > 0 && connection.port <= 65535);
   const name = `ankelba_auth_test_${process.pid}_${Date.now()}_${randomBytes(4).toString('hex')}`;
@@ -66,7 +67,7 @@ async function withIsolatedDatabase(work) {
     db = knexFactory({ client: 'pg', connection: isolatedConnection, pool: { min: 0, max: 2 } });
     assert.equal((await db.raw('SELECT current_database() AS name')).rows[0].name, name);
     assertTestDatabaseName(name);
-    await db.migrate.latest({ migrationSource: new AuthMigrationSource() });
+    await db.migrate.latest({ migrationSource: new AuthMigrationSource(operational, current) });
     pool = new Pool({ ...isolatedConnection, max: 4 });
     await assertTestConnection(pool, name);
     // work must close HTTP servers before returning; clients close before DROP.
@@ -92,4 +93,6 @@ async function withIsolatedDatabase(work) {
   if (failure) throw failure;
 }
 
-module.exports = { withIsolatedDatabase, assertTestDatabaseName, ownedDatabases };
+const withOperationalDatabase = work => withIsolatedDatabase(work, { operational: true });
+const withCurrentDatabase = work => withIsolatedDatabase(work, { current: true });
+module.exports = { withIsolatedDatabase, withOperationalDatabase, withCurrentDatabase, assertTestDatabaseName, ownedDatabases };

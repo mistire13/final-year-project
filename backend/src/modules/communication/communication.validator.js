@@ -7,6 +7,7 @@
 const { Joi } = require('../../middleware/validator');
 
 const createAnnouncementSchema = Joi.object({
+  request_key:Joi.string().min(16).max(128),
   title: Joi.string().max(200).required(),
   body: Joi.string().required(),
   announcement_type: Joi.string().valid('general', 'alert', 'meal_plan').default('general'),

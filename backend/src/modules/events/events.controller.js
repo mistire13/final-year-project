@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 /**
  * src/modules/events/events.controller.js
  * Controller for Events Calendar.
  */
-const svc = require('./events.service');
+const svc = require("./events.service");
 
 const listEvents = async (req, res, next) => {
   try {
@@ -34,7 +34,7 @@ const updateEvent = async (req, res, next) => {
 
 const cancelEvent = async (req, res, next) => {
   try {
-    const result = await svc.cancelEvent(req.params.id, req.user);
+    const result = await svc.cancelEvent(req.params.id, req.user, req.body);
     res.json(result);
   } catch (e) {
     next(e);

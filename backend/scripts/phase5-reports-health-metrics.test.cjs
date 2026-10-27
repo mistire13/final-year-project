@@ -314,17 +314,23 @@ test('Phase 5: Daily Reporting, Health Observations & Metrics Reconciliation', a
     // 3. Dashboard Presence Reconciliation & Addis Ababa Timezone (B17)
     // ─────────────────────────────────────────────────────────────────────────
     await t.test('B17: Dashboard presence metrics deduct checked-out children and synchronize with daily dates', async () => {
-      // Initially: Daycare A has 3 active children (childA1, childA2, childA3), none checked in
+      // A previous-day event must stay out of today's presence, including
+      // runs in the first 30 minutes after Addis Ababa midnight.
+      await db('attendance').insert({
+        child_id:f.childA2.id,event_type:'checkin',recorded_by:f.caregiverA1.id,daycare_id:f.daycareA.id,
+        event_time:db.raw("((clock_timestamp() AT TIME ZONE 'Africa/Addis_Ababa')::date::timestamp AT TIME ZONE 'Africa/Addis_Ababa') - interval '1 second'")
+      });
+      // Daycare A has 3 active children, with no current-day check-ins.
       const stats0 = await mod.dashboardService.getStats(f.adminA);
       assert.equal(Number(stats0.enrollment.active), 3);
       assert.equal(Number(stats0.attendance_today.checked_in), 0);
       assert.equal(Number(stats0.attendance_today.checked_out), 0);
 
-      // 1. Child A1 checks in 30 minutes ago
+      // 1. Child A1 checks in on the current daycare day, at its midnight boundary.
       await db('attendance').insert({
         child_id: f.childA1.id,
         event_type: 'checkin',
-        event_time: new Date(Date.now() - 1000 * 60 * 30),
+        event_time: db.raw("(clock_timestamp() AT TIME ZONE 'Africa/Addis_Ababa')::date::timestamp AT TIME ZONE 'Africa/Addis_Ababa'"),
         notes: 'Arrived on bus',
         recorded_by: f.caregiverA1.id,
         daycare_id: f.daycareA.id,

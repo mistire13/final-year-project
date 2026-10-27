@@ -66,6 +66,10 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // PostgreSQL unique violation
+  if (err.code === '23514' && err.constraint === 'daycare_active_child_quota') {
+    return res.status(409).json({ error: 'Your active child enrollment quota has been reached. Contact the platform owner to review your plan.' });
+  }
+
   if (err.code === '23505') {
     return res.status(409).json({ error: 'A record with this value already exists' });
   }

@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { View, Pressable } from "react-native";
-import { User, Phone, EnvelopeSimple, UserPlus } from "phosphor-react-native";
+import { User } from "phosphor-react-native/src/icons/User";
+import { Phone } from "phosphor-react-native/src/icons/Phone";
+import { EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple";
+import { UserPlus } from "phosphor-react-native/src/icons/UserPlus";
 import {
   Page,
   Text,
@@ -12,11 +15,12 @@ import {
   s,
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
-import { useDesign } from "../../context/DesignContext";
+import { requestPickupGuardian } from "../../api/parentApi";
 import { useChild } from "../../context/ChildContext";
 import { contactError } from "../../utils/contact";
 export function AddGuardianScreen({ navigation }: any) {
-  const { saveGuardian } = useDesign();
+  const [saving, setSaving] = useState(false);
+  const [sent, setSent] = useState(false);
   const { selectedChild } = useChild();
   const childFirst = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "your child";
   const childGroup = selectedChild?.group_name || "Daycare Classroom";
@@ -26,36 +30,17 @@ export function AddGuardianScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [relation, setRelation] = useState("Mother");
   const [error, setError] = useState("");
-  const save = () => {
+  const requestKey = useRef(`guardian-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const save = async () => {
     const problem = contactError(name, phone, email);
-    if (problem) {
-      setError(problem);
-      return;
-    }
-    const id = Date.now();
-    saveGuardian({
-      id,
-      name: name.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      relationship: relation,
-      authorized: false,
-      enrolled: false,
-      photo: null,
-    });
-    navigation.replace("GuardianDetails", {
-      guardianId: id,
-      guardian: {
-        guardian_link_id: id,
-        user_id: id,
-        name: name.trim(),
-        email: email.trim(),
-        relationship: relation,
-        pickup_authorized: false,
-        biometric_enrolled: false,
-        created_at: new Date().toISOString(),
-      },
-    });
+    if (problem) { setError(problem); return; }
+    if (!selectedChild) { setError("Select a child before requesting a guardian."); return; }
+    setSaving(true); setError("");
+    try {
+      await requestPickupGuardian(selectedChild.id, {name:name.trim(),phone:phone.trim(),email:email.trim(),relationship:relation,request_key:requestKey.current});
+      setSent(true);
+    } catch (err: any) { setError(err?.response?.data?.message || err.message || "Request could not be sent. Please try again."); }
+    finally { setSaving(false); }
   };
   return (
     <Page
@@ -67,7 +52,7 @@ export function AddGuardianScreen({ navigation }: any) {
     >
       <Card tint="#FFFAEE" style={{ marginBottom: 22 }}>
         <View style={s.row}>
-          <Avatar source={artwork.guardianChild} initials={childFirst.slice(0, 2).toUpperCase()} />
+          <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={childFirst.slice(0, 2).toUpperCase()} />
           <View>
             <Text size={20} weight="semibold">
               {selectedChild?.full_name || childFirst}
@@ -136,12 +121,13 @@ export function AddGuardianScreen({ navigation }: any) {
         />
       </Card>
       <Notice>
-        Draft only. Daycare staff approve pickup access and arrange adult
-        verification.
+        Your daycare reviews this request before granting pickup permission. This contact will not receive parent-app access.
       </Notice>
+      {sent ? <Notice tone="success">Request saved. You can track the decision on your Guardians page. Pickup permission is pending approval.</Notice> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button
-        title="Save Draft"
+        title={sent ? "Request sent" : saving ? "Sending…" : "Request guardian approval"}
+        disabled={saving || sent}
         icon={UserPlus}
         onPress={save}
         style={{ marginTop: 20 }}

@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Pressable, ScrollView, ActivityIndicator } from "react-native";
-import { ArrowRight, Clock, Info, CalendarBlank } from "phosphor-react-native";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { Info } from "phosphor-react-native/src/icons/Info";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
 import {
   Page,
   Text,
@@ -9,6 +12,7 @@ import {
   Badge,
   Button,
   s,
+  Notice,
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
@@ -16,32 +20,39 @@ import { getChildReports, DailyReportSummary } from "../../api/parentApi";
 
 export function ReportsScreen({ navigation }: any) {
   const { selectedChild } = useChild();
-  const childId = selectedChild?.id || 1;
+  const childId = selectedChild?.id;
   const childName = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "Your Child";
   const groupName = selectedChild?.group_name || "Daycare Group";
 
   const [filter, setFilter] = useState("This Month");
   const [reports, setReports] = useState<DailyReportSummary[]>([]);
+  const [loadError,setLoadError]=useState("");
   const [loading, setLoading] = useState(true);
 
+  const requestRevision = useRef(0);
   const loadReports = useCallback(async () => {
+    const revision = ++requestRevision.current;
+    if (!childId) { setReports([]); setLoading(false); return; }
     setLoading(true);
     try {
+      setLoadError("");
       const data = await getChildReports(childId);
-      setReports(data);
+      if (revision === requestRevision.current) setReports(data);
     } catch {
-      setReports([]);
+      if (revision === requestRevision.current) setLoadError("Reports could not be loaded. Please retry.");
     } finally {
-      setLoading(false);
+      if (revision === requestRevision.current) setLoading(false);
     }
   }, [childId]);
 
   useEffect(() => {
+    setReports([]);
     loadReports();
     const unsubscribe = navigation.addListener?.("focus", () => {
       loadReports();
     });
     return () => {
+      requestRevision.current++;
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [navigation, loadReports]);
@@ -71,6 +82,8 @@ export function ReportsScreen({ navigation }: any) {
 
   return (
     <Page title="Reports" subtitle={`A look back at ${childName}’s daycare days.`}>
+      {!childId && <Notice>No child is linked to this account yet. Contact your daycare administrator.</Notice>}
+      {!!loadError&&<><Notice>{loadError}</Notice><Button title="Retry" onPress={loadReports}/></>}
       <Card tint="#F1F0F5" style={{ padding: 16 }}>
         <View style={s.row}>
           <Avatar source={artwork.reportsChild} />

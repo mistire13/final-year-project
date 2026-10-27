@@ -12,7 +12,7 @@ const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const { Client, Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const { withIsolatedDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
+const { withOperationalDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
 const { createTenantPool, withTenant } = require('../src/db/tenant-pool');
 const m18 = require('../src/db/migrations/018_profile_security_revisions');
 const m19 = require('../src/db/migrations/019_tenant_relationship_integrity');
@@ -135,8 +135,11 @@ function setupContext(pool) {
 }
 
 test('phase two: daycare isolation and permission enforcement', async (t) => {
-  await withIsolatedDatabase(async ({ db, pool, name }) => {
+  await withOperationalDatabase(async ({ db, pool, name }) => {
     assertTestDatabaseName(name);
+    // Keep the pre-RLS upgrade scenario below, with current API-only fields.
+    await require('../src/db/migrations/030_announcement_request_keys').up(db);
+    await require('../src/db/migrations/033_child_and_classroom_edit_versions').up(db);
     const f = await fixture(db);
     const mod = setupContext(pool);
 
@@ -563,6 +566,10 @@ test('phase two: daycare isolation and permission enforcement', async (t) => {
       const testRole = `test_tenant_role_${randomBytes(4).toString('hex')}`;
       const rolePassword = 'TestRoleSecret2026!';
       await db.raw(`CREATE ROLE "${testRole}" WITH LOGIN PASSWORD '${rolePassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS IN ROLE ankelba_tenant`);
+      t2.after(async () => {
+        await db.raw(`DROP OWNED BY "${testRole}"`);
+        await db.raw(`DROP ROLE "${testRole}"`);
+      });
       await db.raw(`GRANT USAGE ON SCHEMA public TO "${testRole}"`);
       await db.raw(`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "${testRole}"`);
       await db.raw(`GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO "${testRole}"`);

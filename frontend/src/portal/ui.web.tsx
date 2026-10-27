@@ -1,5 +1,6 @@
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { Row, initials, label, exportCsv } from "./model";
+import { motion, useReducedMotion, useAnimate } from "motion/react";
 const paths: Record<string, string> = {
   home: "M3 10 12 3l9 7v11h-6v-7H9v7H3Z",
   chart: "M4 20V10m8 10V4m8 16v-7",
@@ -83,7 +84,7 @@ export function Button({
   className?: string;
 }) {
   return (
-    <button
+    <motion.button whileHover={disabled ? undefined : { y: -1 }} whileTap={disabled ? undefined : { scale: .98 }}
       type={type}
       className={`p-button ${variant} ${className}`.trim()}
       onClick={onClick}
@@ -91,7 +92,7 @@ export function Button({
       style={style}
     >
       {icon && <Icon name={icon} size={17} />} {children}
-    </button>
+    </motion.button>
   );
 }
 export function Badge({ value, tone }: { value: unknown; tone?: string }) {
@@ -157,8 +158,9 @@ export function Card({
   title?: string;
   action?: ReactNode;
 }) {
+  const reduce = useReducedMotion();
   return (
-    <section className={"p-card " + className}>
+    <motion.section initial={reduce ? false : { opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className={"p-card " + className}>
       {(title || action) && (
         <div className="p-card-head">
           {title && <h2>{title}</h2>}
@@ -166,7 +168,7 @@ export function Card({
         </div>
       )}
       {children}
-    </section>
+    </motion.section>
   );
 }
 export function Empty({
@@ -306,10 +308,19 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
+  const [ref, animate] = useAnimate<HTMLDialogElement>();
+  const reduce = useReducedMotion();
+  const closing = useRef(false);
+  const close = async () => {
+    if (closing.current) return;
+    closing.current = true;
+    if (!reduce && ref.current) await animate(ref.current, { opacity: 0, transform: "translateY(8px) scale(.99)" }, { duration: .14 });
+    onClose();
+  };
   useEffect(() => {
     const el = ref.current;
     el?.showModal();
+    if (!reduce && el) void animate(el, { opacity: [0, 1], transform: ["translateY(12px) scale(.98)", "translateY(0) scale(1)"] }, { duration: .22 });
     return () => el?.close();
   }, []);
   return (
@@ -319,7 +330,7 @@ export function Modal({
       aria-label={title}
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        void close();
       }}
     >
       <div className="p-dialog-head">
@@ -330,7 +341,7 @@ export function Modal({
         <button
           className="p-icon-button"
           aria-label="Close dialog"
-          onClick={onClose}
+          onClick={() => void close()}
         >
           <Icon name="close" />
         </button>

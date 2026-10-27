@@ -1,3 +1,8 @@
+import SetupChecklist from './SetupChecklist.web';
+import {DaycareSubscription} from './SubscriptionViews.web';
+import { CaregiverPage } from "./CaregiverPages.web";
+import { DaycareFinances } from "./DaycareFinances.web";
+import { PageTransition } from "./WebMotion.web";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./portal.css";
 import {
@@ -52,6 +57,7 @@ const nav = [
     items: [
       ["dashboard", "Overview", "home"],
       ["analytics", "Analytics", "chart"],
+      ["finances", "Finances & Fees", "file"],
       ["children", "Children & Families", "child"],
       ["caregivers", "Caregivers & Staff", "people"],
       ["groups", "Groups & classrooms", "leaf"],
@@ -82,6 +88,7 @@ const nav = [
 const subtitles: Record<string, string> = {
   dashboard: "A thoughtful overview of your daycare, all in one place.",
   analytics: "Understand the patterns behind each day of care.",
+  finances: "Child care fees, monthly invoices, cash/mobile payment reconciliation and digital receipts.",
   settings: "Manage daycare center profile, contact details and subscription plan tier.",
   children: "Enrolled children, their linked families, emergency contacts, and care plans.",
   caregivers: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
@@ -103,8 +110,7 @@ const subtitles: Record<string, string> = {
 const num = (value: any) => (value ? Number(value) : null);
 const options = (rows: Row[], key = "name") =>
   rows.map((r) => ({ value: String(r.id), label: r[key] }));
-function Brand({ daycareName, plan, trialEndsAt }: { daycareName?: string; plan?: string; trialEndsAt?: string | null }) {
-  const daysLeft = trialEndsAt ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
+function Brand({ daycareName, plan }: { daycareName?: string; plan?: string }) {
   return (
     <div className="p-brand" style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
@@ -127,7 +133,7 @@ function Brand({ daycareName, plan, trialEndsAt }: { daycareName?: string; plan?
           </div>
           {plan && (
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", textTransform: "capitalize", marginTop: 2 }}>
-              ● {plan} Plan {daysLeft !== null ? `(${daysLeft}d trial)` : ""}
+              ● {plan} Plan
             </div>
           )}
         </div>
@@ -172,11 +178,11 @@ export default function Portal() {
     ? [
         {
           group: "YOUR SHIFT",
-          items: [["workspace", "Front-desk workspace", "desk"]],
+          items: [["workspace", "Attendance & pickup", "desk"], ["reports", "Daily reports", "file"], ["health", "Health & incidents", "heart"], ["communication", "Messages & announcements", "message"], ["events", "Calendar", "calendar"]],
         },
       ]
     : nav;
-  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), "users", "caregivers"];
+  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["users", "caregivers"])];
   const normalizedPage = page === "users" ? "caregivers" : page;
   const selected = available.includes(normalizedPage)
     ? normalizedPage
@@ -224,7 +230,7 @@ export default function Portal() {
           setActor(user);
         }
       } catch (err) {
-        console.warn("Portal session check error:", err);
+        if (active) setLoginError("Your session could not be checked. Check your connection and reload to retry.");
       } finally {
         if (active) setChecking(false);
       }
@@ -320,7 +326,7 @@ export default function Portal() {
   };
   const open = (kind: string, row: Row = { id: 0 }) => {
     setFormError("");
-    setModal({ kind, row });
+    setModal({ kind, row: ["guardian-request-create","announcement"].includes(kind) ? {...row,request_key:`${Date.now()}-${Math.random().toString(36).slice(2)}`} : row });
   };
   const close = () => {
     if (!saving) setModal(null);
@@ -329,7 +335,7 @@ export default function Portal() {
     path: string,
     body: any,
     apply: (d: Dataset) => Dataset,
-    method: "post" | "patch" = "post",
+    method: "post" | "patch" | "delete" = "post",
   ) => {
     if (preview) {
       setData((old) => {
@@ -431,12 +437,6 @@ export default function Portal() {
               groups: [{ id: newGId, name: values.new_group_name.trim(), description: "Classroom group" }, ...d.groups],
             }));
             assignedGroupId = newGId;
-          } else {
-            const newG = await portalClient
-              .post("/groups", { name: values.new_group_name.trim(), description: "Classroom group" })
-              .then((r) => r.data)
-              .catch(() => null);
-            if (newG?.id) assignedGroupId = newG.id;
           }
         }
 
@@ -453,8 +453,10 @@ export default function Portal() {
             dob: values.child_dob,
             gender: values.child_gender || null,
             group_id: assignedGroupId,
+            ...(!preview && values.new_group_name?.trim() ? {new_group_name: values.new_group_name.trim()} : {}),
             caregiver_id: num(values.child_caregiver_id),
             enrollment_status: "active",
+            monthly_care_fee: values.monthly_care_fee ? parseFloat(values.monthly_care_fee) : 3500.00,
           },
           emergency_contacts: values.sec_contact_name?.trim() ? [
             {
@@ -542,6 +544,8 @@ export default function Portal() {
           caregiver_id: row.id,
           child_ids: childIds,
           group_id: values.group_id || null,
+          group_version: data.groups.find(g=>g.id===Number(values.group_id))?.version,
+          child_versions: data.children.filter(c=>c.enrollment_status==='active' && (childIds.includes(c.id) || c.caregiver_id===row.id)).map(c=>({id:c.id,version:c.version})),
         });
         await refresh();
         setToast(`Updated student assignments for ${row.name} successfully.`);
@@ -560,6 +564,7 @@ export default function Portal() {
           return;
         }
         await portalClient.patch(`/children/${row.id}`, {
+          version: row.version,
           caregiver_id: values.caregiver_id,
           group_id: values.group_id,
         });
@@ -581,6 +586,8 @@ export default function Portal() {
           return;
         }
         await portalClient.patch(`/groups/${row.id}`, {
+          version: row.version,
+          child_versions: data.children.filter(c=>c.group_id===row.id && c.enrollment_status==='active').map(c=>({id:c.id,version:c.version})),
           lead_caregiver_id: values.lead_caregiver_id,
           assign_children: values.assign_children,
         });
@@ -600,6 +607,7 @@ export default function Portal() {
         if (values.dob > today())
           throw Error("Birth date cannot be in the future.");
         const body = {
+          ...(row.id ? {version:row.version} : {}),
           full_name: values.full_name.trim(),
           dob: values.dob,
           gender: values.gender,
@@ -615,14 +623,23 @@ export default function Portal() {
         );
       } else if (kind === "contact" || kind === "instruction") {
         const contact=kind==="contact";
-        const body=contact ? {name:values.name.trim(),relationship:values.relationship.trim(),phone:values.phone.trim()} : {category:values.category,instruction_text:values.instruction_text.trim()};
+        const child=data.children.find(c=>c.id===row.child_id)!;
+        const body=contact ? {child_version:child.version,name:values.name.trim(),relationship:values.relationship.trim(),phone:values.phone.trim()} : {child_version:child.version,category:values.category,instruction_text:values.instruction_text.trim()};
         if(contact&&!/^[+0-9() -]{7,30}$/.test(values.phone.trim()))throw Error("Enter a valid contact phone number.");
         const list=contact?"emergency_contacts":"care_instructions";
-        const child=data.children.find(c=>c.id===row.child_id)!;
         const rows=child[list]||[];
         const saved={id:row.id||Date.now(),...body};
         const updated=row.id?rows.map((r:Row)=>r.id===row.id?saved:r):[...rows,saved];
         await mutate("/children/"+(row.id?(contact?"contacts/":"instructions/")+row.id:row.child_id+(contact?"/contacts":"/instructions")),body,upsert("children",{...child,[list]:updated}),row.id?"patch":"post");
+      } else if (kind === "guardian-request-review") {
+        await mutate(`/children/${row.child_id}/pickup-guardians/${row.id}`, {
+          decision: values.decision, version: row.version, review_note: values.review_note?.trim(),
+        }, upsert("guardianRequests", {...row,status:values.decision}), "patch");
+      } else if (kind === "guardian-request-create") {
+        await mutate(`/children/${values.child_id}/pickup-guardians`, {
+          name:values.name?.trim(),relationship:values.relationship?.trim(),phone:values.phone?.trim(),email:values.email?.trim(),
+          request_key:`admin-guardian-${row.request_key}`,
+        }, upsert("guardianRequests",{id:0,...values,status:"pending"}));
       } else if (kind === "guardian") {
         if (
           data.guardians.some(
@@ -642,6 +659,8 @@ export default function Portal() {
         );
       } else if (kind === "group") {
         const body: any = {
+          ...(row.id ? {version:row.version} : {}),
+          child_versions: data.children.filter(c=>c.group_id===row.id && c.enrollment_status==='active').map(c=>({id:c.id,version:c.version})),
           name: values.name.trim(),
           description: values.description || "",
           lead_caregiver_id: num(values.lead_caregiver_id),
@@ -727,14 +746,16 @@ export default function Portal() {
           throw Error(
             "Confirm the identity check and describe how identity was verified (at least 12 characters).",
           );
-        if (
-          !data.guardians.some(
+        const [adultType, adultId] = String(values.guardian_key || "").split(":");
+        const userId = adultType === "user" ? Number(adultId) : null;
+        const pickupId = adultType === "pickup" ? Number(adultId) : null;
+        if (!(pickupId ? (data.guardianRequests || []).some(g=>g.id===pickupId && g.child_id===row.id && g.status==='approved') :
+          data.guardians.some(
             (g) =>
               g.child_id === row.id &&
-              g.user_id === Number(values.guardian_user_id) &&
+              g.user_id === userId &&
               g.pickup_authorized,
-          )
-        )
+          )))
           throw Error("Choose an approved pickup guardian.");
         if (attendanceStatus(data, row.id, today())?.event_type !== "checkin")
           throw Error("This child is no longer checked in.");
@@ -747,7 +768,7 @@ export default function Portal() {
           );
         const body = {
           child_id: row.id,
-          guardian_user_id: Number(values.guardian_user_id),
+          ...(pickupId ? {pickup_guardian_id:pickupId} : {guardian_user_id:userId}),
           method: "manual",
           identity_confirmed: true,
           reason: values.reason.trim(),
@@ -777,6 +798,7 @@ export default function Portal() {
         }));
       } else if (kind === "event") {
         const body = {
+          ...(row.id ? { version: row.version } : {}),
           title: values.title.trim(),
           event_date: values.event_date,
           event_time: values.event_time || null,
@@ -793,11 +815,14 @@ export default function Portal() {
           }),
           row.id ? "patch" : "post",
         );
+      } else if (kind === "cancel-event") {
+        await mutate("/events/"+row.id,{version:row.version},upsert("events",{...row,cancelled:true}),"delete");
       } else if (kind === "announcement") {
         const body = {
           title: values.title.trim(),
           body: values.body,
           announcement_type: values.announcement_type || "general",
+          request_key: row.request_key,
           audience: values.target_group_id ? "group" : "all",
           target_group_id: num(values.target_group_id),
         };
@@ -828,6 +853,7 @@ export default function Portal() {
         );
       } else if (kind === "product") {
         const body = {
+          ...(row.id ? { version: row.version } : {}),
           name: values.name.trim(),
           price: Number(values.price),
           stock_qty: Number(values.stock_qty),
@@ -849,7 +875,7 @@ export default function Portal() {
           row.id ? "patch" : "post",
         );
       } else if (kind === "order") {
-        const body: any = { order_status: values.order_status };
+        const body: any = { version: row.version, order_status: values.order_status };
         if (values.payment_status) body.payment_status = values.payment_status;
         await mutate(
           "/store/orders/" + row.id + "/status",
@@ -859,6 +885,7 @@ export default function Portal() {
         );
       } else if (kind === "edit-settings") {
         const body = {
+          version: row.version,
           name: values.name?.trim(),
           license_number: values.license_number?.trim(),
           contact_email: values.contact_email?.trim(),
@@ -868,14 +895,7 @@ export default function Portal() {
         const updated = await portalApi.updateDaycareSettings(body);
         setData((old) => ({ ...old, daycare: updated }));
         setToast("Daycare settings updated successfully.");
-      } else if (kind === "renew-plan") {
-        const updated = await portalApi.renewDaycarePlan({
-          plan: values.plan,
-          days: Number(values.days) || 365,
-          payment_method: values.payment_method || "mock_chapa",
-        });
-        setData((old) => ({ ...old, daycare: updated }));
-        setToast(`Subscription renewed successfully for ${values.plan} tier!`);
+
       }
       setModal(null);
     } catch (error: any) {
@@ -996,21 +1016,22 @@ export default function Portal() {
               </Button>
             </form>
             <footer>
-              <a href="/">SaaS Landing & Free Trial</a>
-              <a href="/app">Parent Mobile App</a>
-              {__DEV__ && (
-                <a href="/admin/preview/dashboard">Explore admin preview</a>
-              )}
+              <a href="/">Back to Ankelba</a>
+              <a href="/app">Parent sign in</a>
+              <a href="/application-status">Check application status</a>
+
             </footer>
           </div>
         </div>
       </div>
     );
   const pageComponent =
-    selected === "dashboard" ? (
-      <Overview {...ctx} />
+    staff && ["reports","health","communication","events"].includes(selected) ? <CaregiverPage ctx={ctx} page={selected}/> : selected === "dashboard" ? (
+      <> {!staff && !preview && <SetupChecklist data={visibleData}/>}<Overview {...ctx} /></>
     ) : selected === "analytics" ? (
       <Analytics {...ctx} />
+    ) : selected === "finances" ? (
+      <DaycareFinances ctx={ctx} />
     ) : ["caregivers", "users"].includes(selected) ? (
       <Caregivers {...ctx} />
     ) : selected === "children" ? (
@@ -1034,8 +1055,7 @@ export default function Portal() {
       >
         <Brand
           daycareName={actor?.daycare_name}
-          plan={actor?.subscription_plan}
-          trialEndsAt={actor?.trial_ends_at}
+          plan={data.daycare?.subscription_plan || actor?.subscription_plan}
         />
         {navigation.map((group) => (
           <div key={group.group}>
@@ -1102,7 +1122,7 @@ export default function Portal() {
               }}
               style={{ fontSize: 12, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              <Icon name="globe" size={13} /> SaaS Landing
+              <Icon name="globe" size={13} /> Ankelba website
             </a>
             <a
               href="/app"
@@ -1251,9 +1271,7 @@ export default function Portal() {
               <p role="status">Loading your daycare records…</p>
             </Card>
           ) : (
-            <div className="p-grid" style={{ gap: 20 }}>
-              {pageComponent}
-            </div>
+            <PageTransition page={selected}>{!staff && !preview && selected === "settings" && <DaycareSubscription/>}{pageComponent}</PageTransition>
           )}
           <p className="p-kpi-note">
             Ankelba · Connect, share, nurture.{" "}
@@ -1446,9 +1464,9 @@ function PortalModal({
       <section className="p-profile-section">
         <div className="p-card-head">
           <h3>Classroom & Assigned Caregiver</h3>
-          <Button variant="secondary" onClick={() => ctx.open("assign-child-caregiver", row)}>
+          {!ctx.staff && <Button variant="secondary" onClick={() => ctx.open("assign-child-caregiver", row)}>
             Change Assignment
-          </Button>
+          </Button>}
         </div>
         <div className="p-profile-row" style={{ display: "flex", gap: 32 }}>
           <div>
@@ -1462,16 +1480,27 @@ function PortalModal({
         </div>
       </section>
       <section className="p-profile-section"><h3>Family & pickup</h3>
-        {data.guardians.filter(g=>g.child_id===row.id).map(g=><div className="p-profile-row" key={g.id}><Person name={userName(data,g.user_id)} sub={g.relationship}/><Badge value={g.pickup_authorized?"Approved":"Not authorized"}/></div>)}
-        {!data.guardians.some(g=>g.child_id===row.id)&&<p>No linked guardians yet.</p>}
-        <Button variant="secondary" onClick={()=>ctx.open("guardian",row)}>Link guardian</Button>
+        <div style={{marginBottom: 8}}>
+          <strong style={{fontSize: 12, color: '#6B7280', textTransform: 'uppercase'}}>Registered Parents</strong>
+          {data.guardians.filter(g=>g.child_id===row.id).map(g=><div className="p-profile-row" key={g.id}><Person name={userName(data,g.user_id)} sub={g.relationship}/><Badge value={g.pickup_authorized?"Approved":"Not authorized"} tone={g.pickup_authorized?"green":"quiet"}/></div>)}
+          {!data.guardians.some(g=>g.child_id===row.id)&&<p style={{fontSize: 13, color: '#9CA3AF'}}>No linked parent accounts.</p>}
+        </div>
+        <div style={{marginTop: 12, marginBottom: 8}}>
+          <strong style={{fontSize: 12, color: '#6B7280', textTransform: 'uppercase'}}>Authorized Pickup Contacts</strong>
+          {(data.guardianRequests||[]).filter(g=>g.child_id===row.id).map(g=><div className="p-profile-row" key={'req-'+g.id}><div><Person name={g.name} sub={`${g.relationship} · ${g.phone}`}/><Badge value={g.status==='approved'?'Approved':g.status==='pending'?'Pending review':g.status==='rejected'?'Rejected':'Revoked'} tone={g.status==='approved'?'green':g.status==='pending'?'gold':'red'}/></div>{!ctx.staff && ['pending','approved'].includes(g.status) && <Button variant="quiet" onClick={()=>ctx.open("guardian-request-review",g)}>{g.status==='approved'?'Revoke':'Review'}</Button>}</div>)}
+          {!(data.guardianRequests||[]).some(g=>g.child_id===row.id)&&<p style={{fontSize: 13, color: '#9CA3AF'}}>No additional pickup contacts.</p>}
+        </div>
+        {!ctx.staff && <div style={{display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap'}}>
+          <Button variant="secondary" onClick={()=>ctx.open("guardian",row)}>Link parent account</Button>
+          <Button variant="secondary" onClick={()=>ctx.open("guardian-request-create",{id:0,child_id:row.id})}>Add pickup contact</Button>
+        </div>}
       </section>
-      <section className="p-profile-section"><div className="p-card-head"><h3>Emergency contacts</h3><Button variant="secondary" icon="plus" onClick={()=>ctx.open("contact",{id:0,child_id:row.id})}>Add contact</Button></div>
-        {(row.emergency_contacts||[]).map((c:Row)=><div className="p-profile-row" key={c.id}><Person name={c.name} sub={c.relationship+" · "+c.phone}/><Button variant="quiet" onClick={()=>ctx.open("contact",{...c,child_id:row.id})}>Edit</Button></div>)}
+      <section className="p-profile-section"><div className="p-card-head"><h3>Emergency contacts</h3>{!ctx.staff && <Button variant="secondary" icon="plus" onClick={()=>ctx.open("contact",{id:0,child_id:row.id})}>Add contact</Button>}</div>
+        {(row.emergency_contacts||[]).map((c:Row)=><div className="p-profile-row" key={c.id}><Person name={c.name} sub={c.relationship+" · "+c.phone}/>{!ctx.staff && <Button variant="quiet" onClick={()=>ctx.open("contact",{...c,child_id:row.id})}>Edit</Button>}</div>)}
         {!row.emergency_contacts?.length&&<p>No emergency contacts recorded.</p>}
       </section>
-      <section className="p-profile-section"><div className="p-card-head"><h3>Care instructions</h3><Button variant="secondary" icon="plus" onClick={()=>ctx.open("instruction",{id:0,child_id:row.id})}>Add instruction</Button></div>
-        {(row.care_instructions||[]).map((c:Row)=><div className="p-profile-row" key={c.id}><div><Badge value={c.category}/><p>{c.instruction_text}</p></div><Button variant="quiet" onClick={()=>ctx.open("instruction",{...c,child_id:row.id})}>Edit</Button></div>)}
+      <section className="p-profile-section"><div className="p-card-head"><h3>Care instructions</h3>{!ctx.staff && <Button variant="secondary" icon="plus" onClick={()=>ctx.open("instruction",{id:0,child_id:row.id})}>Add instruction</Button>}</div>
+        {(row.care_instructions||[]).map((c:Row)=><div className="p-profile-row" key={c.id}><div><Badge value={c.category}/><p>{c.instruction_text}</p></div>{!ctx.staff && <Button variant="quiet" onClick={()=>ctx.open("instruction",{...c,child_id:row.id})}>Edit</Button>}</div>)}
         {!row.care_instructions?.length&&<p>No care instructions recorded.</p>}
       </section>
       <div className="p-dialog-footer"><Button onClick={close}>Done</Button></div>
@@ -1482,6 +1511,21 @@ function PortalModal({
   } else if (kind === "instruction") {
     title=row.id?"Edit care instruction":"Add care instruction";
     fields=[field("category","Category","select",true,{wide:true,options:["allergy","dietary","medical_note","general"].map(value=>({value,label:label(value)}))}),field("instruction_text","Instruction","textarea",true,{wide:true})];
+  } else if (kind === "guardian-request-create") {
+    title = "Add pickup contact for review";
+    initial = {child_id:row.child_id?String(row.child_id):""};
+    fields = [field("child_id","Child","select",true,{options:data.children.map(c=>({value:String(c.id),label:c.full_name}))}),
+      field("name","Adult full name","text",true),field("relationship","Relationship","text",true),
+      field("phone","Phone number","tel",true),field("email","Email (optional)","email",false)];
+    detail = <div className="p-notice">This contact receives pickup permission only after review. No app account is created.</div>;
+    submit = "Save pending contact";
+  } else if (kind === "guardian-request-review") {
+    title = (row.status === "approved" ? "Revoke pickup permission" : "Review pickup request") + " · " + row.name;
+    initial = {decision:row.status==='approved'?'revoked':'',review_note:''};
+    fields = [field("decision","Decision","select",true,{options:row.status==='approved'?[{value:'revoked',label:'Revoke pickup permission'}]:[{value:'approved',label:'Approve pickup permission'},{value:'rejected',label:'Reject request'}]}),
+      field("review_note","Review reason and identity check","textarea",true,{wide:true,hint:"Record your review and identity/authorization check, or the reason for rejection/revocation (at least 12 characters)."})];
+    detail = <div className="p-notice">{childName(data,row.child_id)} · {row.relationship} · {row.phone}<p>Approval permits pickup; it does not create a parent-app login. Identity must still be checked for every collection.</p></div>;
+    submit = "Record decision";
   } else if (kind === "guardian") {
     title = "Link guardian to " + row.full_name;
     initial = { pickup_authorized: false };
@@ -1599,26 +1643,23 @@ function PortalModal({
         g.pickup_authorized &&
         data.users.some((u) => u.id === g.user_id && u.status === "active"),
     );
-    const defaultGuardian = guardians[0];
     initial = {
-      guardian_user_id: defaultGuardian ? String(defaultGuardian.user_id) : "",
-      identity_confirmed: true,
-      reason: defaultGuardian
-        ? `Parent ${userName(data, defaultGuardian.user_id)} (${defaultGuardian.relationship}) verified for pickup at front desk.`
-        : "Authorized guardian verified for pickup at front desk.",
+      guardian_key: "",
+      identity_confirmed: false,
+      reason: "",
     };
     fields = [
       field(
-        "guardian_user_id",
+        "guardian_key",
         "Approved adult collecting this child",
         "select",
         true,
         {
           wide: true,
-          options: guardians.map((g) => ({
-            value: String(g.user_id),
+          options: [...guardians.map((g) => ({
+            value: `user:${g.user_id}`,
             label: userName(data, g.user_id) + " · " + g.relationship,
-          })),
+          })), ...(data.guardianRequests || []).filter(g=>g.child_id===row.id && g.status==='approved').map(g=>({value:`pickup:${g.id}`,label:`${g.name} · ${g.relationship} (pickup contact)`}))],
         },
       ),
       field("reason", "Manual identity check performed (min. 12 chars)", "textarea", true, {
@@ -1684,6 +1725,10 @@ function PortalModal({
       }),
       field("description", "Description", "textarea", false, { wide: true }),
     ];
+  } else if (kind === "cancel-event") {
+    title="Cancel daycare event";
+    detail=<p>Cancel “{row.title}” for families and caregivers? It will no longer appear in upcoming events.</p>;
+    fields=[]; submit="Cancel event";
   } else if (kind === "announcement") {
     title = "New announcement";
     initial = { announcement_type: "general" };
@@ -1742,26 +1787,21 @@ function PortalModal({
     fields = [
       field("order_status", "Fulfillment status", "select", true, {
         wide: true,
-        options: [
-          "placed",
-          "confirmed",
-          "ready_for_pickup",
-          "collected",
-          "cancelled",
-        ].map((v) => ({ value: v, label: label(v) })),
+        options: [row.order_status,...(({placed:["confirmed","cancelled"],confirmed:["ready_for_pickup","cancelled"],ready_for_pickup:["collected","cancelled"]} as Record<string,string[]>)[row.order_status] || [])].filter(v=>v===row.order_status || v!=="cancelled" || Number(row.total)===0 || !["paid","pending"].includes(row.payment_status)).map(v=>({value:v,label:label(v)})),
       }),
       field("payment_status", "Payment status", "select", true, {
         wide: true,
         options: [
           { value: "unpaid", label: "Unpaid (Pending daycare collection)" },
-          { value: "paid", label: "Paid (Received at front desk / digital)" },
-          { value: "failed", label: "Payment Failed / Cancelled" },
-        ],
+          { value: "paid", label: row.payment_method==='demo' ? "Paid (DEMO simulation; no money received)" : row.payment_method==='no_charge' ? "Paid (No charge)" : "Paid (Received at daycare)" },
+          { value: "failed", label: "Payment failed" },
+        ].filter(option=>row.order_status==="cancelled" || row.payment_status==="paid" ? option.value===row.payment_status : true),
       }),
     ];
     detail = (
       <div className="p-notice">
-        Order Total: <strong>{money(row.total)}</strong> · Placed by {userName(data, row.parent_id)}
+        {row.payment_method==='demo' && <p>DEMO payment · no money transferred. Reference: {row.payment_reference}</p>}
+        Unpaid and zero-total cancellations restore reserved stock. Collected orders are final; payment reversals require a separate refund workflow.<br/>Order Total: <strong>{money(row.total)}</strong> · Placed by {userName(data, row.parent_id)}
       </div>
     );
   } else if (kind === "edit-settings") {
@@ -1781,42 +1821,6 @@ function PortalModal({
       field("address", "Physical Center Address", "text", false, { wide: true }),
     ];
     submit = "Save Center Profile";
-  } else if (kind === "renew-plan") {
-    title = "Upgrade or Renew Subscription Plan";
-    initial = {
-      plan: data.daycare?.subscription_plan || "standard",
-      days: 365,
-      payment_method: "mock_chapa",
-    };
-    fields = [
-      field("plan", "Select Subscription Tier", "select", true, {
-        wide: true,
-        options: [
-          { value: "standard", label: "Standard Care Plan (2,500 ETB / mo)" },
-          { value: "premium", label: "Enterprise Academy Plan (6,000 ETB / mo)" },
-        ],
-      }),
-      field("days", "Billing Cycle Duration", "select", true, {
-        wide: true,
-        options: [
-          { value: "30", label: "1 Month (30 Days)" },
-          { value: "365", label: "1 Full Year (365 Days) — 15% Discount" },
-        ],
-      }),
-      field("payment_method", "Payment Provider", "select", true, {
-        wide: true,
-        options: [
-          { value: "mock_chapa", label: "Chapa Payment Gateway (Simulated Instant)" },
-          { value: "direct_transfer", label: "Bank Wire Transfer / Pay at Daycare" },
-        ],
-      }),
-    ];
-    detail = (
-      <div className="p-notice" style={{ background: "#eef6f2", borderColor: "#cce6d9", color: "#417b61" }}>
-        ✨ Upgrading or renewing instantly extends your center's capacity and unlocks full platform features.
-      </div>
-    );
-    submit = "Process Subscription Payment";
   } else if (kind === "child-profile") {
     const guardian = data.guardians.find((g) => g.child_id === row.id);
     const parentUser = guardian ? data.users.find((u) => u.id === guardian.user_id) : null;
@@ -1920,9 +1924,15 @@ function PortalModal({
             Caregiver: userName(data, row.caregiver_id),
             Date: dayOf(row.report_date),
             Mood: label(row.mood),
-            "Sleep (minutes)": row.sleep_duration_min,
+            "Sleep (minutes)": row.sleep_duration_min ?? "—",
             Observations:
               row.general_observations || "No observations recorded",
+            Meals: (row.meals && row.meals.length > 0)
+              ? row.meals.map((m: any) => `${label(m.meal_type)}: ${m.description || ""}${m.portion ? ` (${m.portion})` : ""}`).join("\n")
+              : "No meals recorded",
+            Activities: (row.activities && row.activities.length > 0)
+              ? row.activities.map((a: any) => `${label(a.activity_type)}: ${a.description || ""}${a.location ? ` (${a.location})` : ""}`).join("\n")
+              : "No activities recorded",
           }
         : kind === "health-detail"
           ? {
@@ -2007,6 +2017,7 @@ function FamilyEnrollmentModal({
     child_gender: "female",
     child_group_id: data.groups[0]?.id ? String(data.groups[0].id) : "",
     child_caregiver_id: "",
+    monthly_care_fee: "3500.00",
     allergy_note: "",
     care_note: "",
     sec_contact_name: "",
@@ -2162,6 +2173,7 @@ function FamilyEnrollmentModal({
               {isNewGroup ? (
                 <input
                   required
+                  aria-label="New classroom group name"
                   placeholder="e.g., Little Sprouts (Toddler Room)"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
@@ -2169,6 +2181,7 @@ function FamilyEnrollmentModal({
                 />
               ) : (
                 <select
+                  aria-label="Classroom group"
                   value={formData.child_group_id}
                   onChange={(e) => handleChange("child_group_id", e.target.value)}
                 >
@@ -2181,7 +2194,7 @@ function FamilyEnrollmentModal({
                 </select>
               )}
             </div>
-            <label style={{ gridColumn: "1 / -1" }}>
+            <label>
               Assigned primary caregiver (optional)
               <select
                 value={formData.child_caregiver_id}
@@ -2196,6 +2209,21 @@ function FamilyEnrollmentModal({
                     </option>
                   ))}
               </select>
+            </label>
+            <label>
+              Monthly care fee (ETB) *
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                placeholder="3500.00"
+                value={formData.monthly_care_fee}
+                onChange={(e) => handleChange("monthly_care_fee", e.target.value)}
+              />
+              <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
+                Baseline monthly care &amp; stay fee for this child
+              </small>
             </label>
           </div>
         </div>
@@ -2326,6 +2354,7 @@ function AssignCaregiverModal({
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
           Select children or an entire classroom to assign to <strong>{caregiver.name}</strong> ({caregiver.title || "Caregiver"}). Assigned caregivers record daily activities, naps, meals, and attendance.
+          {' '}Previously assigned active children you deselect will be unassigned. The classroom lead changes only when all active children in that classroom are selected.
         </p>
 
         {/* Quick Group Bulk-Assign */}

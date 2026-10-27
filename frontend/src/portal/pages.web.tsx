@@ -3,6 +3,8 @@ import {
   Dataset,
   Row,
   addDays,
+  allowedDuty,
+  allowedAttendance,
   attendanceStatus,
   dayOf,
   dutyState,
@@ -160,7 +162,7 @@ function AttendanceChart({
   );
 }
 export function Overview(ctx: PageContext) {
-  const { data, date, go, open } = ctx;
+  const { data, date, go, open, staff, actor } = ctx;
   const m = metrics(data, date);
   const reportRate = m.total ? Math.round((m.submitted / m.total) * 100) : 0;
   const lowStock = data.products.filter((p) => p.stock_qty <= 5).length;
@@ -293,7 +295,7 @@ export function Overview(ctx: PageContext) {
               const parentEmail = child.parent_email || parentUser?.email;
               const parentRel = child.parent_relationship || guardian?.relationship || "Parent";
               const verification = data.verifications.find((v) => v.child_id === child.id && (status?.event_type === "checkout"));
-              const collectedBy = verification ? userName(data, verification.guardian_user_id) : parentName;
+              const collectedBy = verification ? verification.guardian_name || userName(data, verification.guardian_user_id) : parentName;
               return {
                 ...child,
                 parentName,
@@ -347,9 +349,13 @@ export function Overview(ctx: PageContext) {
                 render: (r) => (
                   <div className="p-row-actions">
                     {r.event_type === "not_marked" ? (
-                      <Button variant="secondary small" onClick={() => open("checkin", r)}>Check in</Button>
+                      (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "attendance")) ? (
+                        <Button variant="secondary small" onClick={() => open("checkin", r)}>Check in</Button>
+                      ) : null
                     ) : r.event_type === "checkin" ? (
-                      <Button variant="secondary small" onClick={() => open("pickup", r)}>Verify & Checkout</Button>
+                      (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "pickup")) ? (
+                        <Button variant="secondary small" onClick={() => open("pickup", r)}>Verify & Checkout</Button>
+                      ) : null
                     ) : (
                       <Button variant="quiet" onClick={() => open("child-profile", r)}>Profile</Button>
                     )}
@@ -421,7 +427,7 @@ export function Overview(ctx: PageContext) {
             const event_type = att?.status?.event_type || "not_marked";
             const event_time = att?.status?.event_time;
             const verification = data.verifications.find((v) => v.child_id === c.id && event_type === "checkout");
-            const collectedBy = verification ? userName(data, verification.guardian_user_id) : parentName;
+            const collectedBy = verification ? verification.guardian_name || userName(data, verification.guardian_user_id) : parentName;
             return {
               ...c,
               parentDisplay: `${parentName} (${relationship})`,
@@ -480,9 +486,13 @@ export function Overview(ctx: PageContext) {
               render: (r) => (
                 <div className="p-row-actions">
                   {r.event_type === "not_marked" ? (
-                    <Button variant="secondary small" onClick={() => open("checkin", r)}>Check in</Button>
+                    (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "attendance")) ? (
+                      <Button variant="secondary small" onClick={() => open("checkin", r)}>Check in</Button>
+                    ) : null
                   ) : r.event_type === "checkin" ? (
-                    <Button variant="secondary small" onClick={() => open("pickup", r)}>Checkout</Button>
+                    (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "pickup")) ? (
+                      <Button variant="secondary small" onClick={() => open("pickup", r)}>Checkout</Button>
+                    ) : null
                   ) : null}
                   <Button variant="quiet" onClick={() => open("child-profile", r)}>
                     Profile
@@ -570,7 +580,7 @@ export function Analytics({ data, date }: PageContext) {
   );
   const paid = data.orders.filter(
     (o) =>
-      o.payment_status === "paid" && dates.includes(localDay(o.created_at)),
+      o.payment_status === "paid" && o.payment_method !== 'demo' && dates.includes(localDay(o.created_at)),
   );
   const submitted = data.reports.filter(
     (r) => childIds.has(r.child_id) && dates.includes(dayOf(r.report_date)),
@@ -869,9 +879,51 @@ export function Children(ctx: PageContext) {
   const { data, query, open } = ctx;
   const [group, setGroup] = useState("");
   const [status, setStatus] = useState("");
+  const pendingRequests = (data.guardianRequests || []).filter((g) => g.status === "pending");
   return (
-    <Card>
-      <div className="p-card-head">
+    <>
+      {pendingRequests.length > 0 && (
+        <Card className="p-guardian-requests">
+          <div className="p-card-head">
+            <div>
+              <h2 style={{ fontSize: 16 }}>Pending pickup requests ({pendingRequests.length})</h2>
+              <p>Parent-submitted pickup contacts awaiting review and identity verification before collection authorization.</p>
+            </div>
+          </div>
+          <Table
+            pageSize={5}
+            rows={pendingRequests}
+            columns={[
+              {
+                key: "child",
+                title: "Child",
+                render: (r) => <Person name={childName(data, r.child_id)} sub={`Child ID: ${r.child_id}`} />,
+              },
+              {
+                key: "name",
+                title: "Requested contact",
+                render: (r) => <Person name={r.name} sub={`${r.relationship} · ${r.phone}`} />,
+              },
+              {
+                key: "status",
+                title: "Review status",
+                render: () => <Badge value="Pending review" tone="gold" />,
+              },
+              {
+                key: "actions",
+                title: "Action",
+                render: (r) => (
+                  <Button variant="secondary small" onClick={() => open("guardian-request-review", r)}>
+                    Review request
+                  </Button>
+                ),
+              },
+            ]}
+          />
+        </Card>
+      )}
+      <Card>
+        <div className="p-card-head">
         <div>
           <h2>Children & Families</h2>
           <p>Enrolled children, linked guardians, emergency contacts and medical notes</p>
@@ -1015,6 +1067,7 @@ export function Children(ctx: PageContext) {
         ]}
       />
     </Card>
+    </>
   );
 }
 export function Groups(ctx: PageContext) {
@@ -1177,7 +1230,7 @@ export function Duties(ctx: PageContext) {
   );
 }
 export function Attendance(ctx: PageContext) {
-  const { data, date, query, open, staff } = ctx;
+  const { data, date, query, open, staff, actor } = ctx;
   const [status, setStatus] = useState("");
   const m = metrics(data, date);
   const editable = date === today();
@@ -1245,7 +1298,7 @@ export function Attendance(ctx: PageContext) {
                 const parentEmail = child.parent_email || parentUser?.email;
                 const parentRel = child.parent_relationship || guardian?.relationship || "Parent";
                 const verification = data.verifications.find((v) => v.child_id === child.id && (status?.event_type === "checkout"));
-                const collectedBy = verification ? userName(data, verification.guardian_user_id) : parentName;
+                const collectedBy = verification ? verification.guardian_name || userName(data, verification.guardian_user_id) : parentName;
                 const allergies = (child.care_instructions || []).filter((ci: any) => ci.category === "allergy");
                 return {
                   ...child,
@@ -1293,7 +1346,7 @@ export function Attendance(ctx: PageContext) {
                     </div>
                   );
                 }
-                return <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 600 }}>✓ Safe</span>;
+                return <span style={{ fontSize: "12px", color: "#6B7280" }}>No care alerts recorded</span>;
               },
             },
             {
@@ -1317,30 +1370,34 @@ export function Attendance(ctx: PageContext) {
               render: (r) => (
                 <div className="p-row-actions">
                   {r.event_type === "not_marked" ? (
-                    <>
+                    (!staff || allowedAttendance(data.duties, actor, r)) ? (
+                      <>
+                        <Button
+                          variant="secondary small"
+                          disabled={!editable}
+                          onClick={() => open("checkin", r)}
+                        >
+                          Check in
+                        </Button>
+                        <Button
+                          variant="quiet"
+                          disabled={!editable}
+                          onClick={() => open("absent", r)}
+                        >
+                          Absent
+                        </Button>
+                      </>
+                    ) : null
+                  ) : r.event_type === "checkin" ? (
+                    (!staff || allowedDuty(data.duties, actor.id, r.group_id, "pickup")) ? (
                       <Button
                         variant="secondary small"
                         disabled={!editable}
-                        onClick={() => open("checkin", r)}
+                        onClick={() => open("pickup", r)}
                       >
-                        Check in
+                        Verify pickup
                       </Button>
-                      <Button
-                        variant="quiet"
-                        disabled={!editable}
-                        onClick={() => open("absent", r)}
-                      >
-                        Absent
-                      </Button>
-                    </>
-                  ) : r.event_type === "checkin" ? (
-                    <Button
-                      variant="secondary small"
-                      disabled={!editable}
-                      onClick={() => open("pickup", r)}
-                    >
-                      Verify pickup
-                    </Button>
+                    ) : null
                   ) : (
                     <>
                       <Button
@@ -1514,6 +1571,19 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         </div>
         <Card>
           <div className="p-card-head">
+            <div><h2>Pickup contacts & requests</h2><p>Review new adults and manage pickup-only permission. App access is separate.</p></div>
+            <Button onClick={()=>open("guardian-request-create")}>Add pickup contact</Button>
+          </div>
+          <Table rows={search((data.guardianRequests || []).map(g=>({...g,child_name:childName(data,g.child_id)})),query)} columns={[
+            {key:"name",title:"Adult",render:r=><Person name={r.name} sub={r.relationship}/>},
+            {key:"child_name",title:"Child"}, {key:"phone",title:"Phone"},
+            {key:"status",title:"Decision",render:r=><Badge value={r.status}/>},
+            {key:"review_note",title:"Review reason"},
+            {key:"actions",title:"Review",render:r=>r.status==='pending'||r.status==='approved'?<Button variant="quiet" onClick={()=>open("guardian-request-review",r)}>{r.status==='pending'?'Review request':'Revoke permission'}</Button>:<span>Decision recorded</span>},
+          ]}/>
+        </Card>
+        <Card>
+          <div className="p-card-head">
             <h2>Guardian authorization & enrollment</h2>
           </div>
           <Table
@@ -1556,7 +1626,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
               data.verifications.map((v) => ({
                 ...v,
                 child_name: childName(data, v.child_id),
-                name: userName(data, v.guardian_user_id),
+                name: v.guardian_name || userName(data, v.guardian_user_id),
               })),
               query,
             )}
@@ -1618,9 +1688,8 @@ export function Monitoring(ctx: PageContext & { page: string }) {
               key: "actions",
               title: "Manage",
               render: (r) => (
-                <Button variant="quiet" onClick={() => open("event", r)}>
-                  Edit
-                </Button>
+                <><Button variant="quiet" disabled={r.cancelled} onClick={() => open("event", r)}>Edit</Button>
+                {!r.cancelled && <Button variant="quiet" onClick={()=>open("cancel-event",r)}>Cancel event</Button>}</>
               ),
             },
           ]}
@@ -1808,6 +1877,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
           )}
           columns={[
             { key: "id", title: "Order", render: (r) => "#ANK-" + r.id },
+            { key: "note", title: "Parent note", render: (r) => r.note || "—" },
             {
               key: "name",
               title: "Parent",
@@ -1822,7 +1892,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
             {
               key: "payment_status",
               title: "Payment",
-              render: (r) => <Badge value={r.payment_status} />,
+              render: (r) => <div><Badge value={r.payment_status}/>{r.payment_method==='demo' && <small> DEMO · no money transferred<br/>{r.payment_reference}</small>}{r.payment_method==='no_charge' && <small> No charge</small>}</div>,
             },
             {
               key: "actions",
@@ -1848,7 +1918,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         </div>
         <Table
           rows={search(
-            data.audit.map((a) => ({ ...a, name: userName(data, a.actor_id) })),
+            data.audit.map((a) => ({ ...a, name: a.actor_name || data.users.find(u=>u.id===a.actor_id)?.name || (a.actor_id ? `Account #${a.actor_id}` : 'System') })),
             query,
           )}
           columns={[
@@ -1914,7 +1984,7 @@ export function DaycareSettings(ctx: PageContext) {
         <div className="p-card-head">
           <div>
             <h2>Subscription Plan & Enrollment Capacity</h2>
-            <p>Your daycare tier, trial duration and child enrollment quota.</p>
+            <p>Your selected package and active enrollment capacity. Subscription terms and history are shown above.</p>
           </div>
           <Badge
             value={dc.subscription_plan}
@@ -1929,7 +1999,7 @@ export function DaycareSettings(ctx: PageContext) {
               {dc.subscription_plan} Care
             </div>
             <div style={{ fontSize: 13, color: daysLeft !== null && daysLeft <= 5 ? "#c0392b" : "#417B61", fontWeight: 600 }}>
-              {daysLeft !== null ? `⏱️ ${daysLeft} days remaining on trial` : "● Active Subscription"}
+              View current trial or paid-period status in your subscription details above.
             </div>
           </div>
 
@@ -1955,9 +2025,7 @@ export function DaycareSettings(ctx: PageContext) {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 10 }}>
-          <Button icon="sparkles" onClick={() => open("renew-plan", dc)}>
-            💳 Upgrade or Renew Plan
-          </Button>
+          <p>Contact platform support to request a subscription change.</p>
         </div>
       </Card>
 

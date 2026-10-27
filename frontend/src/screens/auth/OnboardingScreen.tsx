@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { MotionView } from "../../components/design/Motion";
 import { View, Image, Pressable } from "react-native";
-import { ArrowRight } from "phosphor-react-native";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
 import { Page, Text, Button } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 const slides = [

@@ -72,6 +72,11 @@ async function execute(user, childId, input) {
     const profile = body.profile || {};
     const fields = ['full_name', 'dob', 'gender', 'photo_url'].filter(key => Object.hasOwn(profile, key));
     if (fields.length) await client.query(`UPDATE children SET ${fields.map((key, i) => `${key}=$${i + 1}`).join(',')} WHERE id=$${fields.length + 1}`, [...fields.map(key => profile[key]), childId]);
+    if (!fields.length && (body.care_instructions !== undefined || body.emergency_contacts !== undefined)) {
+      // Advance the shared edit_version trigger even when only collections
+      // change, so an administrator's previously loaded care editor is stale.
+      await client.query('UPDATE children SET full_name=full_name WHERE id=$1', [childId]);
+    }
     if (profile.relationship !== undefined) await client.query('UPDATE guardian_links SET relationship=$1 WHERE child_id=$2 AND user_id=$3', [profile.relationship, childId, actor.id]);
     if (body.parent_name !== undefined) await client.query('UPDATE users SET name=$1,updated_at=NOW() WHERE id=$2', [body.parent_name, actor.id]);
     if (body.care_instructions !== undefined) {

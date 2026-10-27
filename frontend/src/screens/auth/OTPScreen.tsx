@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { View, TextInput, Pressable } from "react-native";
-import { LockKey, ArrowRight, CheckCircle, Eye, EyeSlash, ShieldCheck } from "phosphor-react-native";
+import { LockKey } from "phosphor-react-native/src/icons/LockKey";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
+import { Eye } from "phosphor-react-native/src/icons/Eye";
+import { EyeSlash } from "phosphor-react-native/src/icons/EyeSlash";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
 import { Page, Text, Button, Notice, Field, Card, s, IconButton } from "../../components/design/System";
 import { apiClient } from "../../api/client";
 

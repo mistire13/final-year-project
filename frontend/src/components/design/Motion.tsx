@@ -117,63 +117,22 @@ export function MotionPressable({
   ...props
 }: PressableProps) {
   const reduce = useReducedMotion();
-  const scale = useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = useState(false);
+  const scale = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (reduce || disabled) {
-      scale.stopAnimation();
-      scale.setValue(1);
-    }
+    if (reduce || disabled) { scale.stopAnimation(); scale.setValue(1); }
     return () => scale.stopAnimation();
   }, [reduce, disabled, scale]);
-  const animate = (toValue: number) => {
-    scale.stopAnimation();
-    if (reduce || disabled) {
-      scale.setValue(1);
-      return;
-    }
-    Animated.timing(scale, {
-      toValue,
-      duration: toValue === 1 ? 160 : 90,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: nativeDriver,
-    }).start();
+  const play = (toValue: number) => {
+    if (reduce || disabled) return;
+    Animated.spring(scale, { toValue, tension: 210, friction: 18, useNativeDriver: nativeDriver }).start();
   };
-  if (Platform.OS === "web") {
-    return (
-      <Pressable
-        {...props}
-        disabled={disabled}
-        onPressIn={(event) => {
-          setPressed(true);
-          onPressIn?.(event);
-        }}
-        onPressOut={(event) => {
-          setPressed(false);
-          onPressOut?.(event);
-        }}
-        style={(state) => [
-          typeof style === "function" ? style(state) : style,
-          !reduce && !disabled && state.pressed ? { transform: [{ scale: 0.98 }] } : null,
-        ]}
-      />
-    );
-  }
-
   return (
     <AnimatedPressable
       {...props}
       disabled={disabled}
-      onPressIn={(event) => {
-        setPressed(true);
-        animate(0.98);
-        onPressIn?.(event);
-      }}
-      onPressOut={(event) => {
-        setPressed(false);
-        animate(1);
-        onPressOut?.(event);
-      }}
+      onPressIn={event => { setPressed(true); play(.98); onPressIn?.(event); }}
+      onPressOut={event => { setPressed(false); play(1); onPressOut?.(event); }}
       style={[
         typeof style === "function" ? style({ pressed }) : style,
         { transform: [{ scale }] },

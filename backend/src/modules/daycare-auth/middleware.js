@@ -3,6 +3,7 @@
 const { credentials, checkCookieProof, csrfToken } = require('./tokens');
 const { checkTenantSelectors } = require('./validator');
 const { unavailable } = require('./errors');
+const { withTenant } = require('../../db/tenant-pool');
 
 function noStore(req, res, next) {
   res.set('Cache-Control', 'no-store');
@@ -24,7 +25,7 @@ function createAuthenticate(service, config) {
       req.daycareId = Number(result.user.daycare_id);
       req.authSession = { ...result.session, transport: credential.transport };
       if (credential.transport === 'cookie') req.authSession.csrf_token = csrfToken(credential.token);
-      next();
+      return withTenant(req.daycareId, () => next());
     } catch (error) { next(unavailable(error)); }
   };
 }

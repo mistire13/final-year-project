@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./portal.css";
+import { PageTransition } from "./WebMotion.web";
 import "./saas.css";
-import { portalApi, apiError } from "./api";
+import { operatorApi as portalApi, apiError } from "./api";
+import {OperatorSubscriptions} from "./SubscriptionViews.web";
 import { Badge, Button, Card, Icon } from "./ui.web";
 
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
@@ -16,13 +18,20 @@ interface DaycareItem {
   license_number: string;
   status: "pending" | "active" | "suspended" | "rejected";
   subscription_plan: "trial" | "standard" | "premium";
+  subscription_terms?: any;
+  subscription_status?: string;
+  billing_cycle?: string;
+  subscription_ends_at?: string | null;
+  requested_plan?: "trial" | "standard" | "premium" | null;
   trial_ends_at: string | null;
   max_children: number;
   created_at: string;
   updated_at?: string;
+  version: number;
   admin_name: string;
   admin_email: string;
   children_count: number;
+  active_children_count: number;
   staff_count: number;
 }
 
@@ -84,6 +93,7 @@ interface SystemHealthInfo {
 }
 
 type SuperAdminPage =
+  | "subscriptions"
   | "overview"
   | "daycares"
   | "applications"
@@ -92,26 +102,56 @@ type SuperAdminPage =
   | "health"
   | "broadcast";
 
+function useDialogKeyboard(open: boolean, id: string, close: () => void) {
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  useEffect(() => {
+    if (!open) return;
+    const dialog = document.getElementById(id);
+    if (!dialog) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const controls = () => Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),[href]'));
+    controls()[0]?.focus();
+    const trap = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && dialog.getAttribute('aria-busy') !== 'true') { event.preventDefault(); closeRef.current(); }
+      if (event.key === 'Tab') {
+        const items = controls(), first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    dialog.addEventListener('keydown', trap);
+    return () => { dialog.removeEventListener('keydown', trap); previous?.focus(); };
+  }, [open, id]);
+}
+
 export default function SuperAdmin() {
   // Auth state
   const [checkingSession, setCheckingSession] = useState(true);
   const [user, setUser] = useState<any | null>(null);
-  const [loginEmail, setLoginEmail] = useState("superadmin@ankelba.com");
-  const [loginPassword, setLoginPassword] = useState("1234");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
 
   // Navigation & UI state
   const [activePage, setActivePage] = useState<SuperAdminPage>("overview");
+  const [subscriptionId,setSubscriptionId]=useState<number>();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
+  const [dataError,setDataError]=useState("");
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
   // Platform Data
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [daycares, setDaycares] = useState<DaycareItem[]>([]);
   const [users, setUsers] = useState<PlatformUser[]>([]);
+  const [userTotal,setUserTotal]=useState(0);
+  const [userPage,setUserPage]=useState(0);
+  const userRequest=useRef(0);
+  const [usersLoading,setUsersLoading]=useState(false);
+  const [usersError,setUsersError]=useState('');
   const [auditLogs, setAuditLogs] = useState<PlatformAuditLog[]>([]);
   const [health, setHealth] = useState<SystemHealthInfo | null>(null);
 
@@ -121,6 +161,22 @@ export default function SuperAdmin() {
   const [userRoleFilter, setUserRoleFilter] = useState<"all" | "admin" | "caregiver" | "parent">("all");
   const [userSearch, setUserSearch] = useState("");
   const [auditSearch, setAuditSearch] = useState("");
+  const loadUserDirectory=async()=>{
+    const revision=++userRequest.current;
+    setUsersLoading(true);setUsersError('');
+    try {
+      const result=await portalApi.getSuperAdminUsers({search:userSearch,role:userRoleFilter,limit:50,offset:userPage*50});
+      if(revision===userRequest.current){setUsers(result.data);setUserTotal(result.total);}
+    } catch(error){if(revision===userRequest.current)setUsersError(apiError(error));}
+    finally{if(revision===userRequest.current)setUsersLoading(false);}
+  };
+  useEffect(()=>{
+    if(user?.role!=='super_admin')return;
+    setUsersLoading(true);
+    const timer=setTimeout(()=>void loadUserDirectory(),200);
+    return()=>{clearTimeout(timer);userRequest.current++;};
+  },[user?.id,userSearch,userRoleFilter,userPage]);
+  useEffect(()=>setUserPage(0),[userSearch,userRoleFilter]);
 
   // Platform Broadcast Banner State
   const [broadcast, setBroadcast] = useState<{ message: string; level: "info" | "warning" | "alert"; active: boolean }>({
@@ -161,21 +217,12 @@ export default function SuperAdmin() {
     daycare: null,
   });
 
-  const [planModal, setPlanModal] = useState<{
-    open: boolean;
-    daycare: DaycareItem | null;
-    plan: string;
-    maxChildren: number;
-    extendDays: number;
-  }>({
-    open: false,
-    daycare: null,
-    plan: "standard",
-    maxChildren: 50,
-    extendDays: 0,
-  });
-
   const [actionBusyId, setActionBusyId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState('');
+  useEffect(() => { setActionError(''); }, [approveModal.open, rejectModal.open]);
+  useDialogKeyboard(approveModal.open, 'approval-dialog', () => setApproveModal({open:false,daycare:null,plan:'standard',trialDays:30}));
+  useDialogKeyboard(rejectModal.open, 'rejection-dialog', () => setRejectModal({open:false,daycare:null,reason:''}));
+  useDialogKeyboard(inspectModal.open, 'inspection-dialog', () => setInspectModal({open:false,daycare:null}));
 
   const navigateTo = (path: string) => {
     window.history.pushState({}, "", path);
@@ -205,6 +252,7 @@ export default function SuperAdmin() {
       }
     } catch {
       setUser(null);
+      setLoginError("Your session could not be checked. Check your connection and reload to retry.");
     } finally {
       setCheckingSession(false);
     }
@@ -212,23 +260,24 @@ export default function SuperAdmin() {
 
   const loadAllPlatformData = async () => {
     setDataLoading(true);
+    setDataError("");
     try {
-      const [s, d, u, a, h, b] = await Promise.all([
-        portalApi.getSuperAdminStats().catch(() => null),
-        portalApi.getSuperAdminDaycares().catch(() => []),
-        portalApi.getSuperAdminUsers().catch(() => []),
-        portalApi.getSuperAdminAuditLogs().catch(() => []),
-        portalApi.getSuperAdminSystemHealth().catch(() => null),
-        portalApi.getBroadcast().catch(() => null),
+      const [s, d, a, h, b] = await Promise.all([
+        portalApi.getSuperAdminStats(),
+        portalApi.getSuperAdminDaycares(),
+        portalApi.getSuperAdminAuditLogs(),
+        portalApi.getSuperAdminSystemHealth(),
+        portalApi.getBroadcast(),
       ]);
       if (s) setStats(s);
       if (d) setDaycares(d);
-      if (u) setUsers(u);
+      void loadUserDirectory();
       if (a) setAuditLogs(a);
       if (h) setHealth(h);
       if (b) setBroadcast({ message: b.message || "", level: b.level || "info", active: !!b.active });
       setLastRefreshed(new Date());
     } catch (err) {
+      setDataError("Platform records could not be refreshed. Displayed records may be out of date. Retry with Refresh.");
       showToast(apiError(err));
     } finally {
       setDataLoading(false);
@@ -286,27 +335,18 @@ export default function SuperAdmin() {
     showToast("Signed out from Super Admin console.");
   };
 
-  // Quick fill test credentials
-  const fillTestCredentials = () => {
-    setLoginEmail("superadmin@ankelba.com");
-    setLoginPassword("1234");
-    setLoginError(null);
-  };
-
   // Daycare Management Actions
   const handleApproveConfirm = async () => {
     if (!approveModal.daycare) return;
     const dId = approveModal.daycare.id;
     setActionBusyId(dId);
     try {
-      await portalApi.approveDaycare(dId, {
-        plan: approveModal.plan,
-        trialDays: approveModal.trialDays,
-      });
-      showToast(`Daycare "${approveModal.daycare.name}" approved and ${approveModal.trialDays}-day trial activated!`);
+      await portalApi.approveDaycare(dId);
+      showToast(`Daycare "${approveModal.daycare.name}" approved. Its selected package trial is active.`);
       setApproveModal({ open: false, daycare: null, plan: "standard", trialDays: 30 });
       await loadAllPlatformData();
     } catch (err: any) {
+      setActionError(apiError(err));
       showToast(apiError(err));
     } finally {
       setActionBusyId(null);
@@ -323,6 +363,7 @@ export default function SuperAdmin() {
       setRejectModal({ open: false, daycare: null, reason: "" });
       await loadAllPlatformData();
     } catch (err: any) {
+      setActionError(apiError(err));
       showToast(apiError(err));
     } finally {
       setActionBusyId(null);
@@ -346,27 +387,6 @@ export default function SuperAdmin() {
         await portalApi.suspendDaycare(d.id, "Administrative suspension");
         showToast(`Daycare "${d.name}" has been suspended.`);
       }
-      await loadAllPlatformData();
-    } catch (err: any) {
-      showToast(apiError(err));
-    } finally {
-      setActionBusyId(null);
-    }
-  };
-
-  const handlePlanSave = async () => {
-    if (!planModal.daycare) return;
-    const dId = planModal.daycare.id;
-    setActionBusyId(dId);
-    try {
-      await portalApi.updateDaycarePlan(
-        dId,
-        planModal.plan,
-        planModal.maxChildren,
-        planModal.extendDays
-      );
-      showToast(`Subscription plan updated for "${planModal.daycare.name}".`);
-      setPlanModal({ open: false, daycare: null, plan: "standard", maxChildren: 50, extendDays: 0 });
       await loadAllPlatformData();
     } catch (err: any) {
       showToast(apiError(err));
@@ -529,7 +549,7 @@ export default function SuperAdmin() {
                 textTransform: "uppercase",
               }}
             >
-              SaaS Platform Operator
+              Platform operator
             </span>
           </div>
           <h1
@@ -571,14 +591,16 @@ export default function SuperAdmin() {
           )}
 
           <form onSubmit={handleLogin} style={{ textAlign: "left" }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+            <label htmlFor="platform-email" style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
               Super Admin Email
             </label>
             <input
+              id="platform-email"
+              autoComplete="username"
               type="email"
               value={loginEmail}
               onChange={(e) => setLoginEmail(e.target.value)}
-              placeholder="superadmin@ankelba.com"
+              placeholder="Your operator email"
               required
               style={{
                 width: "100%",
@@ -593,10 +615,12 @@ export default function SuperAdmin() {
               }}
             />
 
-            <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+            <label htmlFor="platform-password" style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
               Password
             </label>
             <input
+              id="platform-password"
+              autoComplete="current-password"
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
@@ -634,32 +658,15 @@ export default function SuperAdmin() {
           </form>
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #eeece6" }}>
-            <button
-              type="button"
-              onClick={fillTestCredentials}
-              className="p-button subtle"
-              style={{
-                width: "100%",
-                marginBottom: 14,
-                borderRadius: 8,
-                fontSize: 12,
-                padding: "8px 14px",
-              }}
-            >
-              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <Icon name="key" size={14} /> Autofill Super Admin Test Credentials (1234)
-              </span>
-            </button>
-
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#76818B" }}>
               <a
-                onClick={() => navigateTo("/")}
+                href="/"
                 style={{ cursor: "pointer", color: "#10263B", textDecoration: "underline", fontWeight: 600 }}
               >
-                ← SaaS Home
+                ← Ankelba home
               </a>
               <a
-                onClick={() => navigateTo("/admin")}
+                href="/admin"
                 style={{ cursor: "pointer", color: "#417B61", textDecoration: "underline", fontWeight: 600 }}
               >
                 Daycare Admin Portal →
@@ -674,6 +681,7 @@ export default function SuperAdmin() {
   // 3. Authenticated Super Admin Portal Workspace
   return (
     <div className="ankelba-portal">
+      {dataError && <div role="alert" className="p-error">{dataError}</div>}
       {/* Toast Alert */}
       {toast && (
         <div
@@ -686,7 +694,7 @@ export default function SuperAdmin() {
             color: "#ffffff",
             padding: "14px 22px",
             borderRadius: 14,
-            zIndex: 9999,
+            zIndex: 10001,
             boxShadow: "0 12px 36px rgba(16, 38, 59, 0.35)",
             fontSize: 14,
             fontWeight: 600,
@@ -747,6 +755,7 @@ export default function SuperAdmin() {
         <div style={{ marginBottom: 18 }}>
           <div className="p-nav-group">PLATFORM GOVERNANCE</div>
           <nav aria-label="Platform Governance">
+            <a href="#subscriptions" className={"p-nav-link "+(activePage==="subscriptions"?"active":"")} onClick={e=>{e.preventDefault();setActivePage("subscriptions");setMobileMenuOpen(false);}}><Icon name="store" size={18}/>Subscriptions & packages</a>
             <a
               href="#overview"
               className={"p-nav-link " + (activePage === "overview" ? "active" : "")}
@@ -819,7 +828,7 @@ export default function SuperAdmin() {
               }}
             >
               <Icon name="people" size={18} />
-              Global Accounts ({users.length || stats?.total_users || 0})
+              Global Accounts ({stats?.total_users ?? userTotal})
             </a>
 
             <a
@@ -924,7 +933,7 @@ export default function SuperAdmin() {
                   textTransform: "uppercase",
                 }}
               >
-                SaaS Operator
+                Platform operator
               </span>
               <span
                 style={{
@@ -936,7 +945,7 @@ export default function SuperAdmin() {
                   borderRadius: 4,
                 }}
               >
-                RLS Scoped
+                Governance access
               </span>
             </div>
           </div>
@@ -977,6 +986,7 @@ export default function SuperAdmin() {
           <div className="p-breadcrumb">
             Ankelba Cloud <span>/</span> Platform Administration <span>/</span>{" "}
             <strong>
+              {activePage === "subscriptions" && "Subscriptions & packages"}
               {activePage === "overview" && "Executive Overview"}
               {activePage === "daycares" && "Daycare Directory"}
               {activePage === "applications" && "Applications Review Queue"}
@@ -1002,7 +1012,7 @@ export default function SuperAdmin() {
               }}
             >
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#417B61" }} />
-              Row-Level Isolation Enforced
+              Tenant policies configured
             </span>
 
             <span style={{ fontSize: 11, color: "#76818B", fontWeight: 600 }}>
@@ -1022,6 +1032,8 @@ export default function SuperAdmin() {
 
         {/* Content Container */}
         <div style={{ padding: "30px 36px", maxWidth: 1400, margin: "0 auto" }}>
+        <PageTransition page={activePage} className="">
+          {activePage === "subscriptions" && <OperatorSubscriptions daycares={daycares} initialId={subscriptionId} onChanged={loadAllPlatformData}/>}
           {/* Active Global Broadcast Banner */}
           {broadcast.active && broadcast.message && (
             <div
@@ -1206,11 +1218,11 @@ export default function SuperAdmin() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                     <div style={{ fontSize: 32, fontWeight: 800, color: "#f4a261", lineHeight: 1 }}>
-                      {stats?.active_trials ?? daycares.filter((d) => d.subscription_plan === "trial" && d.status === "active").length}
+                      {stats?.active_trials ?? daycares.filter((d) => d.subscription_status === "trialing" && d.status === "active").length}
                     </div>
                     <span style={{ color: "#f4a261" }}><Icon name="clock" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active 30-Day Trials</div>
+                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active trials</div>
                   <div style={{ fontSize: 11, color: "#f4a261", marginTop: 4 }}>Trial countdown active</div>
                 </div>
 
@@ -1230,8 +1242,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#3b82f6" }}><Icon name="child" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Enrolled Children</div>
-                  <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 4 }}>Platform-wide census</div>
+                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Child Profiles</div>
+                  <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 4 }}>All enrollment statuses</div>
                 </div>
 
                 <div
@@ -1251,14 +1263,14 @@ export default function SuperAdmin() {
                     <span style={{ color: "#8b5cf6" }}><Icon name="people" size={22} /></span>
                   </div>
                   <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Registered Accounts</div>
-                  <div style={{ fontSize: 11, color: "#8b5cf6", marginTop: 4 }}>Staff & Parent users</div>
+                  <div style={{ fontSize: 11, color: "#8b5cf6", marginTop: 4 }}>All roles, including platform operators</div>
                 </div>
               </div>
 
               {/* Middle Section: Platform Breakdowns */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24, marginBottom: 28 }}>
                 {/* Subscription Plans Card */}
-                <Card title="Subscription Plan Distribution">
+                <Card title="Packages and trial activity">
                   <div style={{ padding: "10px 0" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
                       <span>Standard Plan</span>
@@ -1289,15 +1301,15 @@ export default function SuperAdmin() {
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
-                      <span>30-Day Free Trial</span>
-                      <span>{daycares.filter((d) => d.subscription_plan === "trial").length} daycares</span>
+                      <span>Currently trialing across packages</span>
+                      <span>{daycares.filter((d) => d.subscription_status === "trialing").length} daycares</span>
                     </div>
                     <div style={{ height: 8, background: "#eeece6", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
                       <div
                         style={{
                           height: "100%",
                           background: "#f4a261",
-                          width: `${(daycares.filter((d) => d.subscription_plan === "trial").length / (daycares.length || 1)) * 100}%`,
+                          width: `${(daycares.filter((d) => d.subscription_status === "trialing").length / (daycares.length || 1)) * 100}%`,
                         }}
                       />
                     </div>
@@ -1511,9 +1523,9 @@ export default function SuperAdmin() {
                             </td>
                             <td>
                               <div style={{ fontWeight: 700 }}>
-                                {d.children_count} / {d.max_children || 50} children
+                                {d.active_children_count} / {d.max_children || 50} active children
                               </div>
-                              <div style={{ fontSize: 11, color: "#76818B" }}>{d.staff_count} staff accounts</div>
+                              <div style={{ fontSize: 11, color: "#76818B" }}>{d.children_count} total child profiles · {d.staff_count} staff accounts</div>
                             </td>
                             <td>
                               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1526,20 +1538,12 @@ export default function SuperAdmin() {
 
                                 <Button
                                   variant="subtle small"
-                                  onClick={() =>
-                                    setPlanModal({
-                                      open: true,
-                                      daycare: d,
-                                      plan: d.subscription_plan || "standard",
-                                      maxChildren: d.max_children || 50,
-                                      extendDays: 0,
-                                    })
-                                  }
+                                  onClick={() => {setSubscriptionId(d.id);setActivePage("subscriptions");}}
                                 >
-                                  Plan & Quota
+                                  Subscription
                                 </Button>
 
-                                {!isPending && (
+                                {(d.status === 'active' || isSuspended) && (
                                   <Button
                                     variant={isSuspended ? "success small" : "danger small"}
                                     onClick={() => handleToggleSuspend(d)}
@@ -1594,7 +1598,7 @@ export default function SuperAdmin() {
                   Daycare Self-Registration Applications Queue
                 </h2>
                 <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
-                  Review prospective daycare applications submitted via the SaaS public landing page.
+                  Review prospective daycare applications submitted via the Ankelba website.
                   Approving an application activates a 30-day trial and enables the director's account.
                 </p>
               </div>
@@ -1656,7 +1660,7 @@ export default function SuperAdmin() {
                             Requested Subscription Plan
                           </div>
                           <div style={{ fontSize: 14, fontWeight: 700, textTransform: "capitalize", color: "#e07a5f" }}>
-                            {d.subscription_plan || "Standard (30-Day Trial)"}
+                            {d.requested_plan || "Not recorded on this older application"}
                           </div>
                           <div style={{ fontSize: 11, color: "#76818B" }}>
                             Submitted: {new Date(d.created_at).toLocaleDateString()}
@@ -1725,25 +1729,25 @@ export default function SuperAdmin() {
                     className={userRoleFilter === "all" ? "active" : ""}
                     onClick={() => setUserRoleFilter("all")}
                   >
-                    All Accounts ({users.length})
+                    All Accounts ({stats?.total_users ?? userTotal})
                   </button>
                   <button
                     className={userRoleFilter === "admin" ? "active" : ""}
                     onClick={() => setUserRoleFilter("admin")}
                   >
-                    Daycare Admins ({users.filter((u) => u.role === "admin").length})
+                    Daycare Admins
                   </button>
                   <button
                     className={userRoleFilter === "caregiver" ? "active" : ""}
                     onClick={() => setUserRoleFilter("caregiver")}
                   >
-                    Caregivers ({users.filter((u) => u.role === "caregiver").length})
+                    Caregivers
                   </button>
                   <button
                     className={userRoleFilter === "parent" ? "active" : ""}
                     onClick={() => setUserRoleFilter("parent")}
                   >
-                    Parents ({users.filter((u) => u.role === "parent").length})
+                    Parents
                   </button>
                 </div>
 
@@ -1774,7 +1778,9 @@ export default function SuperAdmin() {
                 </div>
               </div>
 
-              <Card title={`Cross-Tenant User Accounts Directory (${filteredUsers.length})`}>
+              <Card title={`User accounts · ${userTotal} matching accounts`}>
+                {!!usersError && <p role="alert">{usersError} <button onClick={()=>void loadUserDirectory()}>Retry users</button></p>}
+                {usersLoading && <p role="status">Loading accounts…</p>}
                 <div style={{ overflowX: "auto" }}>
                   <table className="p-table" style={{ width: "100%" }}>
                     <thead>
@@ -1788,7 +1794,7 @@ export default function SuperAdmin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.map((u) => (
+                      {!usersLoading && !usersError && filteredUsers.map((u) => (
                         <tr key={u.id}>
                           <td>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1830,7 +1836,7 @@ export default function SuperAdmin() {
                           </td>
                         </tr>
                       ))}
-                      {filteredUsers.length === 0 && (
+                      {!usersLoading && !usersError && filteredUsers.length === 0 && (
                         <tr>
                           <td colSpan={6} style={{ textAlign: "center", padding: 36, color: "#76818B" }}>
                             No user accounts match the search or role filter.
@@ -1840,6 +1846,7 @@ export default function SuperAdmin() {
                     </tbody>
                   </table>
                 </div>
+                <div className="p-dialog-footer"><Button disabled={usersLoading||userPage===0} onClick={()=>setUserPage(p=>p-1)}>Previous accounts</Button><span>Page {userPage+1} of {Math.max(1,Math.ceil(userTotal/50))} · {userTotal} total</span><Button disabled={usersLoading||(userPage+1)*50>=userTotal} onClick={()=>setUserPage(p=>p+1)}>Next accounts</Button></div>
               </Card>
             </div>
           )}
@@ -1968,7 +1975,7 @@ export default function SuperAdmin() {
                   Platform Health, Infrastructure & Isolation Diagnostics
                 </h2>
                 <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
-                  Real-time PostgreSQL connection telemetry, multi-tenant security verification, and table records.
+                  PostgreSQL connection telemetry, configured access controls, and record counts available to platform operators.
                 </p>
               </div>
 
@@ -2054,7 +2061,8 @@ export default function SuperAdmin() {
 
               {/* Security Isolation Checklist */}
               <div style={{ marginBottom: 24 }}>
-                <Card title="Multi-Tenant Security & Isolation Verification">
+                <Card title="Configured access controls & integration status">
+                  <p>Configuration summary. These indicators do not run an isolation, revocation or device acceptance test.</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
                     <div style={{ padding: "16px 18px", background: "#fbfaf7", borderRadius: 12, border: "1px solid #eeece6" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -2062,10 +2070,10 @@ export default function SuperAdmin() {
                         <strong style={{ color: "#10263B" }}>Row-Level Tenant Isolation</strong>
                       </div>
                       <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                        ✓ Verified: daycare_id enforced across all queries
+                        Tenant row policies configured
                       </div>
                       <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                        Prevents cross-tenant data leakage between independent daycare centers (SRS §2.3, §6.2).
+                        Cross-daycare access requires separate acceptance verification.
                       </p>
                     </div>
 
@@ -2075,10 +2083,10 @@ export default function SuperAdmin() {
                         <strong style={{ color: "#10263B" }}>Role-Based Access Control (RBAC)</strong>
                       </div>
                       <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                        ✓ Active: super_admin, admin, caregiver, parent
+                        Configured roles: owner, admin, caregiver, parent
                       </div>
                       <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                        Strict route-level permissions protect operational endpoints (SRS §2.4, §4.1).
+                        Role checks are configured on operational routes; this view does not test every permission.
                       </p>
                     </div>
 
@@ -2088,10 +2096,10 @@ export default function SuperAdmin() {
                         <strong style={{ color: "#10263B" }}>Stateful Token Revocation</strong>
                       </div>
                       <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                        ✓ Enforced: auth_state invalidated on password change
+                        Account state checks configured
                       </div>
                       <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                        Immediately terminates stale sessions on suspension or password reset.
+                        Sign-in state is checked against the account. Revocation acceptance is tested separately.
                       </p>
                     </div>
 
@@ -2101,10 +2109,10 @@ export default function SuperAdmin() {
                         <strong style={{ color: "#10263B" }}>Guardian Pickup Biometrics</strong>
                       </div>
                       <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
-                        ✓ Ready: Pickup verification with manual fallback
+                        Device unavailable · manual verification supported
                       </div>
                       <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
-                        Multi-factor adult identity confirmation during child checkout (SRS §4.10).
+                        No biometric or QR device is connected. Staff must record the approved manual identity check.
                       </p>
                     </div>
                   </div>
@@ -2136,7 +2144,7 @@ export default function SuperAdmin() {
                     <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
                       {health?.table_counts?.audit_count || auditLogs.length}
                     </div>
-                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Audit Log Entries</div>
+                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Platform Audit Entries</div>
                   </div>
                 </div>
               </Card>
@@ -2328,6 +2336,7 @@ export default function SuperAdmin() {
               </Card>
             </div>
           )}
+        </PageTransition>
         </div>
       </main>
 
@@ -2336,7 +2345,6 @@ export default function SuperAdmin() {
       {/* ========================================================================= */}
       {approveModal.open && approveModal.daycare && (
         <div
-          role="dialog"
           style={{
             position: "fixed",
             inset: 0,
@@ -2351,75 +2359,31 @@ export default function SuperAdmin() {
           }}
         >
           <div
+            id="approval-dialog" role="dialog" aria-modal="true" aria-labelledby="approval-title" aria-busy={actionBusyId===approveModal.daycare.id}
             style={{
               background: "#ffffff",
               borderRadius: 20,
               padding: "32px 36px",
               width: "100%",
               maxWidth: 500,
+              maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', boxSizing: 'border-box',
               boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: 0 }}>
+              <h3 id="approval-title" style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: 0 }}>
                 Approve Daycare Center
               </h3>
               <button
+                aria-label="Close approval dialog" disabled={actionBusyId===approveModal.daycare.id}
                 onClick={() => setApproveModal({ open: false, daycare: null, plan: "standard", trialDays: 30 })}
                 style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
               >
                 ✕
               </button>
             </div>
-            <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 20px" }}>
-              Activating <strong>{approveModal.daycare.name}</strong> will create its live workspace and grant immediate platform access to administrator <strong>{approveModal.daycare.admin_email}</strong>.
-            </p>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
-                Assign Subscription Tier
-              </label>
-              <select
-                value={approveModal.plan}
-                onChange={(e) => setApproveModal({ ...approveModal, plan: e.target.value as any })}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1.5px solid #dcd8cc",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                }}
-              >
-                <option value="standard">Standard Subscription Tier</option>
-                <option value="premium">Premium Enterprise Tier</option>
-                <option value="trial">Trial-Only Tier</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
-                Free Trial Duration (Days)
-              </label>
-              <input
-                type="number"
-                min={7}
-                max={90}
-                value={approveModal.trialDays}
-                onChange={(e) => setApproveModal({ ...approveModal, trialDays: Number(e.target.value) || 30 })}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1.5px solid #dcd8cc",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                }}
-              />
-              <span style={{ fontSize: 11, color: "#76818B", marginTop: 4, display: "block" }}>
-                Default is 30 days as specified in SRS §2.3 and FR-UAM-10.
-              </span>
-            </div>
+            <div className="journey j-panel"><p>Approve <strong>{approveModal.daycare.name}</strong> for <strong>{approveModal.daycare.admin_email}</strong>.</p><p>Selected package: <strong>{approveModal.daycare.subscription_terms?.name || approveModal.daycare.requested_plan || 'Standard'}</strong> · {approveModal.daycare.billing_cycle || 'monthly'}</p><p>{approveModal.daycare.subscription_terms?.trial_days || 30} days free from approval · Up to {approveModal.daycare.max_children} active children.</p><p>Approval retains the applicant’s accepted package terms. Future changes are managed in Subscriptions.</p></div>
+            {actionError && <p role="alert" style={{color:'#9d3028'}}>{actionError}</p>}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
               <Button
@@ -2446,7 +2410,7 @@ export default function SuperAdmin() {
       {/* ========================================================================= */}
       {rejectModal.open && rejectModal.daycare && (
         <div
-          role="dialog"
+          id="rejection-dialog" role="dialog" aria-modal="true" aria-labelledby="rejection-title" aria-busy={actionBusyId===rejectModal.daycare.id}
           style={{
             position: "fixed",
             inset: 0,
@@ -2467,14 +2431,16 @@ export default function SuperAdmin() {
               padding: "32px 36px",
               width: "100%",
               maxWidth: 480,
+              maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', boxSizing: 'border-box',
               boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#c0392b", margin: 0 }}>
+              <h3 id="rejection-title" style={{ fontSize: 20, fontWeight: 800, color: "#c0392b", margin: 0 }}>
                 Reject Daycare Application
               </h3>
               <button
+                aria-label="Close rejection dialog" disabled={actionBusyId===rejectModal.daycare.id}
                 onClick={() => setRejectModal({ open: false, daycare: null, reason: "" })}
                 style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
               >
@@ -2486,10 +2452,11 @@ export default function SuperAdmin() {
             </p>
 
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+              <label htmlFor="rejection-reason" style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
                 Reason for Rejection (Logged to Audit Trail)
               </label>
               <textarea
+                id="rejection-reason" maxLength={2000}
                 value={rejectModal.reason}
                 onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
                 rows={3}
@@ -2506,6 +2473,8 @@ export default function SuperAdmin() {
                 }}
               />
             </div>
+
+            {actionError && <p role="alert" style={{color:'#9d3028'}}>{actionError}</p>}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
               <Button
@@ -2532,7 +2501,7 @@ export default function SuperAdmin() {
       {/* ========================================================================= */}
       {inspectModal.open && inspectModal.daycare && (
         <div
-          role="dialog"
+          id="inspection-dialog" role="dialog" aria-modal="true" aria-label={`Daycare details: ${inspectModal.daycare.name}`} aria-busy={actionBusyId===inspectModal.daycare.id}
           style={{
             position: "fixed",
             inset: 0,
@@ -2553,6 +2522,7 @@ export default function SuperAdmin() {
               padding: "32px 36px",
               width: "100%",
               maxWidth: 580,
+              maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto', boxSizing: 'border-box',
               boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
             }}
           >
@@ -2606,83 +2576,19 @@ export default function SuperAdmin() {
               <div>
                 <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Capacity & Headcount</div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>
-                  {inspectModal.daycare.children_count} / {inspectModal.daycare.max_children || 50} Children ({Math.min(100, Math.round(((inspectModal.daycare.children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%)
+                  {inspectModal.daycare.active_children_count} / {inspectModal.daycare.max_children || 50} Active children ({Math.min(100, Math.round(((inspectModal.daycare.active_children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%)
                 </div>
                 <div style={{ background: "#eeece6", borderRadius: 999, height: 6, width: "100%", marginTop: 4, overflow: "hidden" }}>
-                  <div style={{ background: "#417B61", height: "100%", width: `${Math.min(100, Math.round(((inspectModal.daycare.children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%` }} />
+                  <div style={{ background: "#417B61", height: "100%", width: `${Math.min(100, Math.round(((inspectModal.daycare.active_children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%` }} />
                 </div>
-                <div style={{ fontSize: 12, color: "#76818B", marginTop: 4 }}>{inspectModal.daycare.staff_count} Staff Members</div>
+                <div style={{ fontSize: 12, color: "#76818B", marginTop: 4 }}>{inspectModal.daycare.children_count} total child profiles · {inspectModal.daycare.staff_count} Staff Members</div>
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#10263B" }}>⏱️ Quick Extend:</span>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await portalApi.updateDaycarePlan(inspectModal.daycare!.id, inspectModal.daycare!.subscription_plan, inspectModal.daycare!.max_children, 15);
-                      showToast(`Added +15 days to ${inspectModal.daycare!.name}'s trial!`);
-                      setInspectModal({ open: false, daycare: null });
-                      await loadAllPlatformData();
-                    } catch (err: any) {
-                      showToast(apiError(err));
-                    }
-                  }}
-                  style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #dcd8cc", background: "#f8f6f0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                >
-                  +15d
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await portalApi.updateDaycarePlan(inspectModal.daycare!.id, inspectModal.daycare!.subscription_plan, inspectModal.daycare!.max_children, 30);
-                      showToast(`Added +30 days to ${inspectModal.daycare!.name}'s trial!`);
-                      setInspectModal({ open: false, daycare: null });
-                      await loadAllPlatformData();
-                    } catch (err: any) {
-                      showToast(apiError(err));
-                    }
-                  }}
-                  style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #dcd8cc", background: "#f8f6f0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                >
-                  +30d
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await portalApi.updateDaycarePlan(inspectModal.daycare!.id, inspectModal.daycare!.subscription_plan, inspectModal.daycare!.max_children, 60);
-                      showToast(`Added +60 days to ${inspectModal.daycare!.name}'s trial!`);
-                      setInspectModal({ open: false, daycare: null });
-                      await loadAllPlatformData();
-                    } catch (err: any) {
-                      showToast(apiError(err));
-                    }
-                  }}
-                  style={{ padding: "4px 10px", borderRadius: 8, border: "1px solid #dcd8cc", background: "#f8f6f0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                >
-                  +60d
-                </button>
-              </div>
-
+              <button className="saas-btn saas-btn-primary" onClick={()=>{setSubscriptionId(inspectModal.daycare!.id);setInspectModal({open:false,daycare:null});setActivePage('subscriptions');}}>Manage subscription</button>
               <div style={{ display: "flex", gap: 10 }}>
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    try {
-                      const res = await portalApi.impersonateDaycare(inspectModal.daycare!.id);
-                      showToast(`Switching into ${inspectModal.daycare!.name} workspace...`);
-                      navigateTo("/admin/dashboard");
-                    } catch (err: any) {
-                      showToast(apiError(err));
-                    }
-                  }}
-                >
-                  🚀 Jump into Workspace
-                </Button>
+
                 <Button variant="primary" onClick={() => setInspectModal({ open: false, daycare: null })}>
                   Close
                 </Button>
@@ -2695,133 +2601,7 @@ export default function SuperAdmin() {
       {/* ========================================================================= */}
       {/* MODAL 4: UPDATE PLAN & MAX CHILDREN QUOTA */}
       {/* ========================================================================= */}
-      {planModal.open && planModal.daycare && (
-        <div
-          role="dialog"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(11, 23, 38, 0.7)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: 20,
-              padding: "32px 36px",
-              width: "100%",
-              maxWidth: 480,
-              boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <h3 style={{ fontSize: 20, fontWeight: 800, color: "#10263B", margin: 0 }}>
-                Manage Subscription Plan & Quota
-              </h3>
-              <button
-                onClick={() => setPlanModal({ open: false, daycare: null, plan: "standard", maxChildren: 50, extendDays: 0 })}
-                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
-              >
-                ✕
-              </button>
-            </div>
-            <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 20px" }}>
-              Configure subscription tier, maximum enrolled children quota, and trial extensions for <strong>{planModal.daycare.name}</strong>.
-            </p>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
-                Subscription Plan Tier
-              </label>
-              <select
-                value={planModal.plan}
-                onChange={(e) => setPlanModal({ ...planModal, plan: e.target.value })}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1.5px solid #dcd8cc",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                }}
-              >
-                <option value="standard">Standard Plan</option>
-                <option value="premium">Premium Enterprise Plan</option>
-                <option value="trial">Trial Tier</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
-                Maximum Enrolled Children Quota
-              </label>
-              <input
-                type="number"
-                min={10}
-                max={1000}
-                value={planModal.maxChildren}
-                onChange={(e) => setPlanModal({ ...planModal, maxChildren: Number(e.target.value) || 50 })}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1.5px solid #dcd8cc",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
-                Extend Trial Countdown (Days)
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={180}
-                value={planModal.extendDays}
-                onChange={(e) => setPlanModal({ ...planModal, extendDays: Number(e.target.value) || 0 })}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "1.5px solid #dcd8cc",
-                  fontSize: 14,
-                  fontFamily: "inherit",
-                }}
-              />
-              <span style={{ fontSize: 11, color: "#76818B", marginTop: 4, display: "block" }}>
-                Enter number of extra days to extend the active trial (e.g. 15 or 30). Leave 0 if no extension.
-              </span>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <Button
-                variant="secondary"
-                onClick={() => setPlanModal({ open: false, daycare: null, plan: "standard", maxChildren: 50, extendDays: 0 })}
-                disabled={actionBusyId !== null}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handlePlanSave}
-                disabled={actionBusyId !== null}
-              >
-                {actionBusyId === planModal.daycare.id ? "Saving..." : "Save Plan Changes"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

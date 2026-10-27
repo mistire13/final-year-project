@@ -93,6 +93,20 @@ This applies the schema migrations in dependency order. Migration
 013, so fresh databases do not need the old manual `migrate_profile_complete.js`
 script. Existing onboarding values are preserved.
 
+Before starting the server, set separate `APP_DB_USER` / `APP_DB_PASSWORD` and
+`CONTROL_DB_USER` / `CONTROL_DB_PASSWORD` credentials in `.env` (independent
+passwords of at least 24 characters), then run:
+
+```bash
+npm run db:runtime:setup
+```
+
+`DB_USER` / `DB_PASSWORD` are migration credentials only. Server startup refuses
+superuser/RLS-bypass runtime credentials or a login that holds both runtime roles.
+Run `npm run test:essentials` for the security and reliability regressions. See
+[Phase 1 verification](../docs/PHASE_1_ESSENTIALS_VERIFICATION.md) for changes and
+the remaining Phase 2 work.
+
 To verify fresh setup, legacy upgrades and targeted rollback in separate,
 automatically removed local test databases:
 
@@ -198,8 +212,10 @@ Server runs at `http://localhost:5000`
 | `DB_HOST` | Yes | PostgreSQL host |
 | `DB_PORT` | Yes | PostgreSQL port (default: 5432) |
 | `DB_NAME` | Yes | Database name |
-| `DB_USER` | Yes | Database user |
-| `DB_PASSWORD` | Yes | Database password |
+| `DB_USER` | Yes | Migration/provisioning database user |
+| `DB_PASSWORD` | Yes | Migration/provisioning password |
+| `APP_DB_USER` / `APP_DB_PASSWORD` | Yes | Restricted tenant runtime login |
+| `CONTROL_DB_USER` / `CONTROL_DB_PASSWORD` | Yes | Separate authentication/platform runtime login |
 | `JWT_SECRET` | Yes | Strong random secret (64+ chars) |
 | `JWT_EXPIRES_IN` | Yes | JWT lifetime (e.g., `24h`) |
 | `FRONTEND_URL` | Yes | CORS allowed origin |

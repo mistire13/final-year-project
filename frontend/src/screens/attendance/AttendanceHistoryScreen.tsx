@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import {
-  CalendarBlank,
-  Clock,
-  CheckCircle,
-  SignOut,
-  House,
-  WarningCircle,
-  ArrowClockwise,
-  User,
-  ShieldCheck,
-  QrCode,
-} from "phosphor-react-native";
+  View,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
+import { SignOut } from "phosphor-react-native/src/icons/SignOut";
+import { House } from "phosphor-react-native/src/icons/House";
+import { WarningCircle } from "phosphor-react-native/src/icons/WarningCircle";
+import { ArrowClockwise } from "phosphor-react-native/src/icons/ArrowClockwise";
+import { User } from "phosphor-react-native/src/icons/User";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
+import { QrCode } from "phosphor-react-native/src/icons/QrCode";
 import {
   Page,
   Text,
@@ -22,51 +26,45 @@ import {
   Notice,
   s,
 } from "../../components/design/System";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
 import { getChildAttendance, AttendanceRecord } from "../../api/parentApi";
 
 export function AttendanceHistoryScreen({ navigation, route }: any) {
-  const { selectedChild } = useChild();
-  const childId = route?.params?.childId || selectedChild?.id || 1;
-  const childName = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "Your Child";
+  const { selectedChild:activeChild, childrenList } = useChild();
+  const childId = route?.params?.childId || activeChild?.id;
+  const selectedChild=childrenList.find(c=>c.id===childId)||(activeChild?.id===childId?activeChild:null);
+  const childName = selectedChild?.full_name
+    ? selectedChild.full_name.split(" ")[0]
+    : "Your Child";
   const groupName = selectedChild?.group_name || "Daycare Classroom";
 
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [filter, setFilter] = useState<"All" | "checkin" | "checkout" | "absent">("All");
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
-
-  const loadAttendance = useCallback(async () => {
-    try {
-      setError("");
-      const data = await getChildAttendance(childId);
-      setRecords(data || []);
-    } catch {
-      setError("Unable to load attendance history. Please pull to refresh.");
-      setRecords([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [childId]);
-
+  const [filter, setFilter] = useState<
+    "All" | "checkin" | "checkout" | "absent"
+  >("All");
+  const {
+    data: records,
+    loading,
+    error,
+    refresh: loadAttendance,
+  } = useRemoteResource<AttendanceRecord[]>(
+    `attendance:${childId ?? "none"}`,
+    () => (childId ? getChildAttendance(childId) : Promise.resolve([])),
+    [],
+  );
+  const refreshing = loading;
+  const onRefresh = loadAttendance;
   useEffect(() => {
-    setLoading(true);
-    loadAttendance();
-    const unsubscribe = navigation.addListener?.("focus", () => {
-      loadAttendance();
-    });
-    return () => {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
+    const remove = navigation.addListener?.("focus", loadAttendance);
+    return () => remove?.();
   }, [navigation, loadAttendance]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadAttendance();
-  };
+  if (!childId)
+    return (
+      <Page title="Attendance history" back>
+        <Notice>No child is linked to this account yet.</Notice>
+      </Page>
+    );
 
   const filteredRecords = records.filter((r) => {
     if (filter === "All") return true;
@@ -171,7 +169,7 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
       {/* Child Card with Pickup Pass shortcut */}
       <Card tint="#F4F6EE" style={{ marginBottom: 18, padding: 16 }}>
         <View style={s.row}>
-          <Avatar source={artwork.child} size={54} />
+          <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={selectedChild?.full_name?.slice(0,2).toUpperCase()||'CH'} size={54} />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text size={18} weight="semibold">
               {selectedChild?.full_name || childName}
@@ -181,7 +179,7 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
             </Text>
           </View>
           <Button
-            title="Pickup Pass"
+            title="Pickup status"
             icon={QrCode}
             variant="secondary"
             style={{ minHeight: 38, paddingVertical: 6, paddingHorizontal: 12 }}
@@ -192,29 +190,65 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
 
       {/* Summary KPI Cards */}
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
-        <Card style={{ flex: 1, padding: 14, alignItems: "center", backgroundColor: "#EAF5EE" }}>
+        <Card
+          style={{
+            flex: 1,
+            padding: 14,
+            alignItems: "center",
+            backgroundColor: "#EAF5EE",
+          }}
+        >
           <Text size={22} weight="bold" color="#236B3D">
             {checkins}
           </Text>
-          <Text size={11} color="#357D4F" weight="semibold" style={{ marginTop: 2 }}>
+          <Text
+            size={11}
+            color="#357D4F"
+            weight="semibold"
+            style={{ marginTop: 2 }}
+          >
             Check-ins
           </Text>
         </Card>
 
-        <Card style={{ flex: 1, padding: 14, alignItems: "center", backgroundColor: "#EBF1FA" }}>
+        <Card
+          style={{
+            flex: 1,
+            padding: 14,
+            alignItems: "center",
+            backgroundColor: "#EBF1FA",
+          }}
+        >
           <Text size={22} weight="bold" color="#1A4A7A">
             {checkouts}
           </Text>
-          <Text size={11} color="#2A5B8D" weight="semibold" style={{ marginTop: 2 }}>
+          <Text
+            size={11}
+            color="#2A5B8D"
+            weight="semibold"
+            style={{ marginTop: 2 }}
+          >
             Departures
           </Text>
         </Card>
 
-        <Card style={{ flex: 1, padding: 14, alignItems: "center", backgroundColor: "#FEF7E6" }}>
+        <Card
+          style={{
+            flex: 1,
+            padding: 14,
+            alignItems: "center",
+            backgroundColor: "#FEF7E6",
+          }}
+        >
           <Text size={22} weight="bold" color="#9C6B10">
             {absences}
           </Text>
-          <Text size={11} color="#A77416" weight="semibold" style={{ marginTop: 2 }}>
+          <Text
+            size={11}
+            color="#A77416"
+            weight="semibold"
+            style={{ marginTop: 2 }}
+          >
             Absences
           </Text>
         </Card>
@@ -305,7 +339,11 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
                 )}
 
                 {item.notes ? (
-                  <Text size={12} color="#555E69" style={{ marginTop: 8, fontStyle: "italic" }}>
+                  <Text
+                    size={12}
+                    color="#555E69"
+                    style={{ marginTop: 8, fontStyle: "italic" }}
+                  >
                     “{item.notes}”
                   </Text>
                 ) : null}
@@ -314,7 +352,13 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
           </Card>
         ))
       ) : (
-        <Card style={{ alignItems: "center", paddingVertical: 40, paddingHorizontal: 24 }}>
+        <Card
+          style={{
+            alignItems: "center",
+            paddingVertical: 40,
+            paddingHorizontal: 24,
+          }}
+        >
           <View
             style={{
               width: 56,
@@ -328,11 +372,20 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
           >
             <CalendarBlank size={30} color="#798290" />
           </View>
-          <Text size={18} weight="semibold" style={{ textAlign: "center", marginBottom: 6 }}>
+          <Text
+            size={18}
+            weight="semibold"
+            style={{ textAlign: "center", marginBottom: 6 }}
+          >
             No Attendance Events Found
           </Text>
-          <Text size={13} color="#7A828E" style={{ textAlign: "center", lineHeight: 19 }}>
-            No check-in or checkout records match the selected filter. As daycare staff log attendance events, they appear here instantly.
+          <Text
+            size={13}
+            color="#7A828E"
+            style={{ textAlign: "center", lineHeight: 19 }}
+          >
+            No check-in or checkout records match the selected filter. As
+            daycare staff log attendance events, they appear here instantly.
           </Text>
         </Card>
       )}

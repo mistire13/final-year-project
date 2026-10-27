@@ -14,8 +14,8 @@ const pool = new Pool({
   host:     process.env.DB_HOST     || 'localhost',
   port:     parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME     || 'ankelba_dev',
-  user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD,
+  user:     process.env.APP_DB_USER || 'ankelba_tenant_app',
+  password: process.env.APP_DB_PASSWORD,
 
   // Pool settings — tuned for a small pilot daycare workload (§6.6)
   max:                    10,    // max 10 concurrent DB connections
@@ -32,6 +32,21 @@ pool.on('error', (err) => {
 });
 
 const tenantPool = createTenantPool(pool);
+
+// Authentication must look up identity before a tenant is known. Its separate
+// role can access identity/governance tables, never private child records.
+const control = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 5432),
+  database: process.env.DB_NAME || 'ankelba_dev',
+  user: process.env.CONTROL_DB_USER || 'ankelba_control_app',
+  password: process.env.CONTROL_DB_PASSWORD,
+  max: 4, connectionTimeoutMillis: 3000,
+});
+control.on('error', err => logger.error('Control database pool error', { message: err.message }));
+tenantPool.control = control;
+tenantPool.verifyRuntime = () => require('../db/runtime-policy').verifyRuntime(pool, control);
+tenantPool.closeAll = () => Promise.all([pool.end(), control.end()]);
 
 module.exports = tenantPool;
 

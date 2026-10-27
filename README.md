@@ -216,8 +216,12 @@ The platform features a **Pro Max Design System** tailored for childcare ergonom
    node scripts/seed_parent_data.js
    ```
 
-7. **Start the backend server:**
+7. **Provision restricted runtime logins and start the backend:**
+   Configure independent `APP_DB_*` and `CONTROL_DB_*` credentials in `.env`
+   using `backend/.env.example`. `DB_*` credentials are used only for migrations
+   and provisioning. Then run:
    ```bash
+   npm run db:runtime:setup
    node server.js
    # Server runs on http://localhost:5000
    ```

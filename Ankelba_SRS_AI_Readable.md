@@ -2,9 +2,9 @@
 
 **Project:** Parent Communication and Child Activity Reporting Platform for Daycare Centers  
 **Institution:** HiLCoE — School of Computer Science and Technology  
-**Version:** 1.0 — Draft for Advisor Review  
+**Version:** 1.2 — Draft for Advisor Review
 **Prepared by:** Arsema Alemayehu; Helina Fikru; Melat Hailu; Mistire Tilahun  
-**Date:** August 2026
+**Date:** 25 October 2026
 
 > **AI-readable conversion note:** This Markdown version preserves the document's textual requirements, tables, use cases, business rules, traceability, and validation criteria. Word-only visual styling and embedded diagrams were removed to reduce parsing overhead; each omitted diagram is referenced at its original location and its content is represented by the surrounding textual sections.
 
@@ -12,10 +12,10 @@
 | **Document Title**  | Software Requirements Specification (SRS) - Ankelba                            |
 |---------------------|--------------------------------------------------------------------------------|
 | **Project**         | Parent Communication and Child Activity Reporting Platform for Daycare Centers |
-| **Version**         | 1.0                                                                            |
+| **Version**         | 1.2                                                                            |
 | **Status**          | Draft for Advisor Review                                                       |
 | **Prepared By**     | Arsema Alemayehu; Helina Fikru; Melat Hailu; Mistire Tilahun                   |
-| **Date**            | August 2026                                                                    |
+| **Date**            | 25 October 2026                                                                    |
 | **Source Baseline** | Updated Senior Project Proposal, August 2026                                   |
 
 ## Revision History
@@ -23,6 +23,7 @@
 |-------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | 1.0         | August 2026  | Initial SRS based on the updated senior project proposal and advisor-requested features.                                                                                                    | Project Team    |
 | 1.1         | October 2026 | Added multi-tenant SaaS architecture: Super Administrator role, Daycare tenant self-registration/approval workflow, 30-day trial subscriptions, and row-level database tenant isolation (`daycare_id`). | Project Team    |
+| 1.2         | 25 October 2026 | Clarified the package-first customer journey, separate subscription phases, operator entry point, guided setup and manual subscription renewal for the project pilot. | Project Team |
 
 # Table of Contents
 | **1. Introduction**                                        | 1.1 Purpose                                              |
@@ -1294,7 +1295,7 @@ This checklist is included to make the next advisor meeting productive. Items ch
 | Usability test                  | Parent, caregiver, and administrator workflows on mobile/desktop                                         |
 | User acceptance / demonstration | End-to-end workflows with representative users or project examiners                                      |
 
-**End of Software Requirements Specification - Version 1.0**
+**End of Software Requirements Specification - Version 1.2**
 
 
 ## Implementation clarification — 3 October 2026
@@ -1308,3 +1309,21 @@ The user confirmed that the admin interface is web-based and that caregivers/day
 - **UI-DESK-01:** The admin and staff web interfaces share the approved parent app logo, typography, colors, cards and background treatment, with responsive desktop navigation and detailed operational views.
 
 These are requirements, not a statement that the current backend implements shift assignments. Detailed scope, acceptance checks and open policy/device decisions are tracked in [DELIVERY_PLAN.md](DELIVERY_PLAN.md).
+
+## Practical SaaS journey clarification — 25 October 2026
+
+The approved direction focuses on functional project workflows. Brightwheel's public onboarding and daily-care guidance are references; Ankelba retains its own scope and staff-controlled guardian verification. This clarification supersedes treating “Trial” as a package alongside Standard/Premium and the older blueprint's subscription-billing deferral for the manual workflows below.
+
+| ID | Requirement |
+| --- | --- |
+| FR-SUB-01 | Prospective daycares shall compare available packages, capacity, billing period, renewal price and included free-trial terms before applying. Prices not configured by an operator shall be explicitly identified; the system shall not invent commercial prices. |
+| FR-SUB-02 | Registration shall retain the selected package and a versioned snapshot of its terms. A stale catalog selection shall require review before submission. |
+| FR-SUB-03 | Approval shall start the selected package's accepted free trial without silently substituting another package. Trial phase and daycare approval/suspension shall be distinct from the package name. |
+| FR-SUB-04 | Applicants shall check application status using their submitted administrator credentials. Public customer pages shall not direct applicants to the internal operator console. |
+| FR-SUB-05 | Platform operators shall use a dedicated login entry and browser session storage. Server authorization shall continue to restrict operator actions; a separate URL alone is not an access control. |
+| FR-SUB-06 | Authorized operators shall configure future package offers and manage trial extension, agreed package changes, cancellation, resumption and manually confirmed renewal with reasons, concurrency checks and attributable history. |
+| FR-SUB-07 | Manual renewal shall match the accepted amount and record a unique receipt/payment reference. Repeating the same successful request shall not create a second renewal. No automatic charge or gateway verification shall be implied. Subscription collection is separate from parent store orders and daycare tuition. |
+| FR-SUB-08 | Daycare administrators shall see only their own package terms, dates and subscription history. Guided center setup shall derive progress from saved center, classroom, staff, family, assignment and current-duty records. |
+| FR-SUB-09 | For the project pilot, expired/cancelled subscription state shall be displayed for renewal review without abruptly preventing child care or safe pickup. This is an explicit pilot policy, not automatic paid-access enforcement. |
+
+The implementation and verification scope is documented in [PRACTICAL_SAAS_IMPLEMENTATION.md](docs/PRACTICAL_SAAS_IMPLEMENTATION.md). External invitation-mail delivery and automated recurring payment collection are separate integrations. This clarification does not waive the earlier biometric, privacy, backup-restore or other unresolved acceptance requirements.

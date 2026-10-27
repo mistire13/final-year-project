@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Pressable } from "react-native";
-import {
-  CalendarBlank,
-  ChatCircle,
-  Heart,
-  UsersThree,
-  ForkKnife,
-  ShieldCheck,
-  Phone,
-  Pill,
-  Warning,
-  PencilSimple,
-  ArrowClockwise,
-} from "phosphor-react-native";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { Heart } from "phosphor-react-native/src/icons/Heart";
+import { UsersThree } from "phosphor-react-native/src/icons/UsersThree";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
+import { Phone } from "phosphor-react-native/src/icons/Phone";
+import { Pill } from "phosphor-react-native/src/icons/Pill";
+import { Warning } from "phosphor-react-native/src/icons/Warning";
+import { PencilSimple } from "phosphor-react-native/src/icons/PencilSimple";
+import { ArrowClockwise } from "phosphor-react-native/src/icons/ArrowClockwise";
 import {
   Page,
   Text,
@@ -24,6 +22,7 @@ import {
   s,
   Notice,
 } from "../../components/design/System";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { artwork } from "../../theme/assets";
 import { useAuth } from "../../context/AuthContext";
 import { useChild } from "../../context/ChildContext";
@@ -32,42 +31,35 @@ import { getMyChild, FullChildProfile } from "../../api/parentApi";
 export function ChildProfileScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const { selectedChild } = useChild();
-  const childId = route?.params?.childId || selectedChild?.id || 1;
+  const childId = route?.params?.childId || selectedChild?.id;
 
-  const [profile, setProfile] = useState<FullChildProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const loadData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await getMyChild(childId);
-      if (data && data.full_name) {
-        setProfile(data);
-      } else {
-        setError("Unable to find child profile details.");
-      }
-    } catch (e: any) {
-      setError(e?.response?.data?.error || "Unable to load child profile.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const {
+    data: profile,
+    loading,
+    error,
+    refresh: loadData,
+  } = useRemoteResource<FullChildProfile | null>(
+    `child:${childId ?? "none"}`,
+    () => (childId ? getMyChild(childId) : Promise.resolve(null)),
+    null,
+  );
   useEffect(() => {
-    loadData();
-    const unsubscribe = navigation.addListener?.("focus", () => {
-      loadData();
-    });
-    return () => {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
-  }, [navigation, childId]);
-
+    const remove = navigation.addListener?.("focus", loadData);
+    return () => remove?.();
+  }, [navigation, loadData]);
+  if (!childId)
+    return (
+      <Page title="Child profile" back>
+        <Notice>
+          No child is linked to this account yet. Contact your daycare
+          administrator.
+        </Notice>
+      </Page>
+    );
   const childName = profile?.full_name || selectedChild?.full_name || "Child";
-  const groupName = profile?.group_name || selectedChild?.group_name || "Daycare Group";
-  
+  const groupName =
+    profile?.group_name || selectedChild?.group_name || "Daycare Group";
+
   // Calculate age string
   const formatAge = (dob?: string) => {
     if (!dob) return "";
@@ -77,10 +69,18 @@ export function ChildProfileScreen({ route, navigation }: any) {
     return years > 0 ? `${years} years old` : "Under 1 year";
   };
 
-  const allergies = (profile?.care_instructions || []).filter(c => c.category === "allergy");
-  const dietary = (profile?.care_instructions || []).filter(c => c.category === "dietary");
-  const medical = (profile?.care_instructions || []).filter(c => c.category === "medical_note");
-  const general = (profile?.care_instructions || []).filter(c => c.category === "general");
+  const allergies = (profile?.care_instructions || []).filter(
+    (c) => c.category === "allergy",
+  );
+  const dietary = (profile?.care_instructions || []).filter(
+    (c) => c.category === "dietary",
+  );
+  const medical = (profile?.care_instructions || []).filter(
+    (c) => c.category === "medical_note",
+  );
+  const general = (profile?.care_instructions || []).filter(
+    (c) => c.category === "general",
+  );
   const contacts = profile?.emergency_contacts || [];
 
   return (
@@ -88,20 +88,33 @@ export function ChildProfileScreen({ route, navigation }: any) {
       {loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
-          <Text size={14} color="#858A93" style={{ marginTop: 12 }}>Loading profile…</Text>
+          <Text size={14} color="#858A93" style={{ marginTop: 12 }}>
+            Loading profile…
+          </Text>
         </Card>
       ) : error ? (
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>
           <Notice tone="error">{error}</Notice>
-          <Button title="Retry" icon={ArrowClockwise} onPress={loadData} style={{ marginTop: 16 }} />
+          <Button
+            title="Retry"
+            icon={ArrowClockwise}
+            onPress={loadData}
+            style={{ marginTop: 16 }}
+          />
         </Card>
       ) : (
         <>
           {/* Child Hero Card */}
           <Card style={{ alignItems: "center", paddingVertical: 28 }}>
-            <Avatar source={artwork.profileChild} size={90} />
+            <Avatar source={profile?.photo_url ? {uri:profile.photo_url} : undefined} initials={childName.split(' ').map(n=>n[0]).join('').slice(0,2)} size={90} />
             <View style={{ marginTop: -5, marginBottom: 14 }}>
-              <Badge title={profile?.enrollment_status === "active" ? "● Active Enrollment" : "● Daycare Enrolled"} />
+              <Badge
+                title={
+                  profile?.enrollment_status === "active"
+                    ? "● Active Enrollment"
+                    : "● Daycare Enrolled"
+                }
+              />
             </View>
             <Text size={23} weight="semibold">
               {childName}
@@ -141,22 +154,39 @@ export function ChildProfileScreen({ route, navigation }: any) {
               title="Update Care, Allergies & Safety"
               icon={PencilSimple}
               variant="outline"
-              onPress={() => navigation.navigate("ChildProfileWizard")}
+              onPress={() =>
+                navigation.navigate("ChildProfileWizard", { childId })
+              }
             />
           </View>
 
           {/* Basic Info */}
           <Section title="Basic Information" />
           <Card>
-            <Text size={11} color="#89909B">DATE OF BIRTH</Text>
-            <Text style={{ marginTop: 4 }}>
-              {profile?.dob ? new Date(profile.dob).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "—"}
+            <Text size={11} color="#89909B">
+              DATE OF BIRTH
             </Text>
-            <Text size={11} color="#89909B" style={{ marginTop: 18 }}>GENDER</Text>
             <Text style={{ marginTop: 4 }}>
-              {profile?.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : "—"}
+              {profile?.dob
+                ? new Date(profile.dob).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "—"}
             </Text>
-            <Text size={11} color="#89909B" style={{ marginTop: 18 }}>DAYCARE GROUP</Text>
+            <Text size={11} color="#89909B" style={{ marginTop: 18 }}>
+              GENDER
+            </Text>
+            <Text style={{ marginTop: 4 }}>
+              {profile?.gender
+                ? profile.gender.charAt(0).toUpperCase() +
+                  profile.gender.slice(1)
+                : "—"}
+            </Text>
+            <Text size={11} color="#89909B" style={{ marginTop: 18 }}>
+              DAYCARE GROUP
+            </Text>
             <Text style={{ marginTop: 4 }}>{groupName}</Text>
           </Card>
 
@@ -182,7 +212,13 @@ export function ChildProfileScreen({ route, navigation }: any) {
                     borderLeftColor: "#E76F51",
                   }}
                 >
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
                     <Warning size={16} color="#A32420" weight="bold" />
                     <Text size={14} weight="semibold" color="#A32420">
                       {a.instruction_text}
@@ -191,16 +227,22 @@ export function ChildProfileScreen({ route, navigation }: any) {
                 </View>
               ))
             ) : (
-              <Text color="#7C838F" size={13}>No food allergies recorded.</Text>
+              <Text color="#7C838F" size={13}>
+                No food allergies recorded.
+              </Text>
             )}
 
             {dietary.length > 0 && (
               <View style={{ marginTop: 16 }}>
-                <Text size={11} color="#89909B" style={{ marginBottom: 6 }}>DIETARY RESTRICTIONS</Text>
+                <Text size={11} color="#89909B" style={{ marginBottom: 6 }}>
+                  DIETARY RESTRICTIONS
+                </Text>
                 {dietary.map((d, idx) => (
                   <View key={d.id || idx} style={[s.row, { marginBottom: 6 }]}>
                     <ForkKnife size={16} color="#B99A3E" />
-                    <Text size={13} color="#2D3748">{d.instruction_text}</Text>
+                    <Text size={13} color="#2D3748">
+                      {d.instruction_text}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -235,7 +277,9 @@ export function ChildProfileScreen({ route, navigation }: any) {
                 </View>
               ))
             ) : (
-              <Text color="#7C838F" size={13}>No regular medications or medical conditions recorded.</Text>
+              <Text color="#7C838F" size={13}>
+                No regular medications or medical conditions recorded.
+              </Text>
             )}
           </Card>
 
@@ -246,7 +290,9 @@ export function ChildProfileScreen({ route, navigation }: any) {
               <Card>
                 {general.map((g, idx) => (
                   <View key={g.id || idx} style={{ marginBottom: 10 }}>
-                    <Text size={13} color="#2D3748">• {g.instruction_text}</Text>
+                    <Text size={13} color="#2D3748">
+                      • {g.instruction_text}
+                    </Text>
                   </View>
                 ))}
               </Card>
@@ -261,12 +307,31 @@ export function ChildProfileScreen({ route, navigation }: any) {
                 <View key={c.id || idx}>
                   <View style={[s.between, { paddingVertical: 8 }]}>
                     <View>
-                      <Text weight="semibold" size={15}>{c.name}</Text>
-                      <Text size={12} color="#858B96">{c.relationship || "Contact"}</Text>
+                      <Text weight="semibold" size={15}>
+                        {c.name}
+                      </Text>
+                      <Text size={12} color="#858B96">
+                        {c.relationship || "Contact"}
+                      </Text>
                     </View>
-                    <View style={[s.row, { backgroundColor: "#E8F5EE", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }]}>
+                    <View
+                      style={[
+                        s.row,
+                        {
+                          backgroundColor: "#E8F5EE",
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          borderRadius: 20,
+                        },
+                      ]}
+                    >
                       <Phone size={14} color="#2D6A4F" />
-                      <Text size={13} weight="semibold" color="#2D6A4F" style={{ marginLeft: 6 }}>
+                      <Text
+                        size={13}
+                        weight="semibold"
+                        color="#2D6A4F"
+                        style={{ marginLeft: 6 }}
+                      >
                         {c.phone}
                       </Text>
                     </View>
@@ -275,7 +340,9 @@ export function ChildProfileScreen({ route, navigation }: any) {
                 </View>
               ))
             ) : (
-              <Text color="#7C838F" size={13}>No emergency contacts recorded.</Text>
+              <Text color="#7C838F" size={13}>
+                No emergency contacts recorded.
+              </Text>
             )}
 
             <Button

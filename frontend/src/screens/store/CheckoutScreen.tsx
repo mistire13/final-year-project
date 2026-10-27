@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
-import {
-  Storefront,
-  DeviceMobile,
-  CheckCircle,
-  WarningCircle,
-} from "phosphor-react-native";
+import { Storefront } from "phosphor-react-native/src/icons/Storefront";
+import { DeviceMobile } from "phosphor-react-native/src/icons/DeviceMobile";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
+import { WarningCircle } from "phosphor-react-native/src/icons/WarningCircle";
 import {
   Page,
   Text,
@@ -20,20 +18,23 @@ import { useChild } from "../../context/ChildContext";
 import { useDesign } from "../../context/DesignContext";
 import { artwork } from "../../theme/assets";
 import { formatMoney } from "./catalog";
-import { placeStoreOrder } from "../../api/parentApi";
+import { placeStoreOrder, getPaymentCapabilities } from "../../api/parentApi";
 
 export function CheckoutScreen({ navigation }: any) {
   const { selectedChild, cart, cartTotal, clearCart } = useChild();
   const { setOrder } = useDesign();
-  const [method, setMethod] = useState<"pay_at_daycare" | "digital">(
+  const [method, setMethod] = useState<"pay_at_daycare" | "demo">(
     "pay_at_daycare",
   );
+  const [demoEnabled,setDemoEnabled]=useState(false);
+  useEffect(()=>{let active=true;getPaymentCapabilities().then(c=>{if(active)setDemoEnabled(c.demo_enabled);}).catch(()=>{});return()=>{active=false;};},[]);
+  const orderKey = useRef(`order-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const childName = selectedChild?.full_name?.split(" ")[0] || "Child";
-  const groupName = selectedChild?.group_name || "Sunflower Group";
+  const groupName = selectedChild?.group_name || "Classroom not assigned";
 
   const handlePlaceOrder = async () => {
     if (!cart.length || submitting) return;
@@ -46,7 +47,7 @@ export function CheckoutScreen({ navigation }: any) {
         quantity: i.quantity,
       }));
 
-      const created = await placeStoreOrder(orderItems);
+      const created = await placeStoreOrder(orderItems, note.trim(), orderKey.current);
       const reference = `#ORD-${created.id}`;
 
       setOrder({
@@ -62,7 +63,7 @@ export function CheckoutScreen({ navigation }: any) {
       });
 
       clearCart();
-      if (method === "digital") {
+      if (method === "demo" && Number(created.total)>0) {
         navigation.replace("PaymentVerification", {
           orderId: created.id,
           orderRef: reference,
@@ -96,7 +97,7 @@ export function CheckoutScreen({ navigation }: any) {
       <Card style={{ marginBottom: 20 }}>
         <View style={s.row}>
           <Avatar
-            source={artwork.guardianChild}
+            source={selectedChild?.photo_url ? {uri:selectedChild.photo_url} : undefined}
             initials={childName.slice(0, 2).toUpperCase()}
             size={56}
           />
@@ -175,12 +176,8 @@ export function CheckoutScreen({ navigation }: any) {
           text: "Collect your receipt and settle payment at the daycare office.",
           Icon: Storefront,
         },
-        {
-          key: "digital" as const,
-          title: "Digital / Mobile Payment",
-          text: "Authorized mobile money or digital payment at pickup.",
-          Icon: DeviceMobile,
-        },
+        ...(demoEnabled?[{key:'demo' as const,title:'Demo payment',text:'Simulate success for this demo. No money is transferred.',Icon:DeviceMobile}]:[]),
+
       ].map((p) => (
         <Pressable
           key={p.key}
@@ -252,7 +249,7 @@ export function CheckoutScreen({ navigation }: any) {
       ) : null}
 
       <Notice>
-        Orders are prepared by the daycare facility and charged upon pickup confirmation.
+        {method==='demo'?'Demo payment is a simulation. Continue to record simulated success.':'Your order is paid when the daycare records settlement. Zero-total orders require no payment.'}
       </Notice>
 
       <Button

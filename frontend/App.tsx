@@ -2,7 +2,7 @@ import React from "react";
 import PortalGate from "./src/portal/PortalGate";
 import { MotionProvider } from "./src/components/design/Motion";
 import { DesignProvider } from "./src/context/DesignContext";
-import { View, ActivityIndicator, Platform } from "react-native";
+import { View, ActivityIndicator, Platform, Text } from "react-native";
 import {
   useFonts,
   Quicksand_400Regular,
@@ -14,7 +14,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/context/AuthContext";
 import { ChildProvider } from "./src/context/ChildContext";
-import { RootNavigator } from "./src/navigation/RootNavigator";
+import {RootNavigator} from "./src/navigation/RootNavigator";
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({

@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { View, Pressable, TextInput, Platform, Linking } from "react-native";
-import {
-  Lock,
-  Eye,
-  EyeSlash,
-  ArrowRight,
-  ArrowLeft,
-  House,
-  EnvelopeSimple,
-  ShieldCheck,
-} from "phosphor-react-native";
+import { Lock } from "phosphor-react-native/src/icons/Lock";
+import { Eye } from "phosphor-react-native/src/icons/Eye";
+import { EyeSlash } from "phosphor-react-native/src/icons/EyeSlash";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { House } from "phosphor-react-native/src/icons/House";
+import { EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
 import {
   Page,
   Text,
@@ -77,11 +75,8 @@ export function LoginScreen({ navigation, route }: any) {
         }
       }
 
-      if (result.role === "parent" && result.profileComplete === false) {
-        navigation.replace("ChildProfileWizard");
-      } else {
-        navigation.replace("MainTabs");
-      }
+      // AuthProvider remounts this navigator for the new account. Its Splash
+      // screen routes only after role-specific screens have been registered.
     } else {
       setError(result.error || "Unable to sign in. Please check your credentials.");
     }
@@ -127,7 +122,7 @@ export function LoginScreen({ navigation, route }: any) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go to Home Feed"
-          onPress={() => navigation.navigate("MainTabs")}
+          onPress={() => setError("Sign in below to open your home feed.")}
           style={{
             flexDirection: "row",
             alignItems: "center",

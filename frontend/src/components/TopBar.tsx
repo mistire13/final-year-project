@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { BellSimple, Sparkle } from 'phosphor-react-native';
+import { BellSimple } from "phosphor-react-native/src/icons/BellSimple";
+import { Sparkle } from "phosphor-react-native/src/icons/Sparkle";
 import { colors, radii, shadows } from '../theme/tokens';
 import { useAuth } from '../context/AuthContext';
 

@@ -37,6 +37,7 @@ const dashboardRoutes     = require('./modules/dashboard/dashboard.routes');
 const notificationsRoutes = require('./modules/notifications/notifications.routes');
 const searchRoutes        = require('./modules/search/search.routes');
 const saasRoutes          = require('./modules/saas/saas.routes');
+const financesRoutes      = require('./modules/finances/finances.routes');
 
 const app = express();
 
@@ -154,8 +155,9 @@ app.use([
   '/api/messages', '/api/contacts', '/api/alerts', '/api/ai', '/api/biometric',
   '/api/store', '/api/events', '/api/groups', '/api/dashboard',
   '/api/notifications', '/api/search', '/api/users', '/api/audit',
+  '/api/finances',
 ], require('./middleware/auth'), (req, res, next) => {
-  if (!req.user?.daycare_id || (!['admin', 'caregiver', 'parent'].includes(req.user.role) && !req.user.is_impersonating)) {
+  if (!req.user?.daycare_id || !['admin', 'caregiver', 'parent'].includes(req.user.role) || req.user.is_impersonating) {
     return res.status(403).json({ error: 'Daycare account required' });
   }
   next();
@@ -177,6 +179,7 @@ app.use('/api/ai',            aiGuideRoutes);
 app.use('/api/biometric',     biometricRoutes);
 app.use('/api/store',         storeRoutes);
 app.use('/api/payments',      paymentsRoutes);
+app.use('/api/finances',      financesRoutes);
 app.use('/api/events',        eventsRoutes);
 app.use('/api/audit',         auditRoutes);
 app.use('/api/groups',        groupsRoutes);

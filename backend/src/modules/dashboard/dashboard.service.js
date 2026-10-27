@@ -68,7 +68,7 @@ const getStats = async (user) => {
       SELECT
         COUNT(*) FILTER (WHERE order_status = 'placed')   AS pending_orders,
         COUNT(*) FILTER (WHERE order_status = 'confirmed') AS confirmed_orders,
-        COALESCE(SUM(total) FILTER (WHERE payment_status = 'paid'), 0) AS total_revenue
+        COALESCE(SUM(total) FILTER (WHERE payment_status = 'paid' AND NOT EXISTS(SELECT 1 FROM payments p WHERE p.order_id=orders.id AND p.method='demo')), 0) AS total_revenue
       FROM orders
       WHERE ($1::boolean = TRUE OR daycare_id = $2)
     `, [isSuper, daycareId]),

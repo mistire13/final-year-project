@@ -96,20 +96,6 @@ const activateDaycare = async (req, res, next) => {
   }
 };
 
-// Super Admin: Update plan or extend trial
-const updatePlan = async (req, res, next) => {
-  try {
-    const daycare = await saasService.updateDaycarePlan(
-      req.params.id,
-      req.body,
-      req.user.id
-    );
-    res.json({ message: 'Daycare subscription plan updated.', daycare });
-  } catch (err) {
-    next(err);
-  }
-};
-
 // Super Admin: List all platform users across daycares
 const listUsers = async (req, res, next) => {
   try {
@@ -170,6 +156,64 @@ const setBroadcast = async (req, res, next) => {
   }
 };
 
+// Super Admin: List daycare applications
+const listApplications = async (req, res, next) => {
+  try {
+    const applications = await saasService.listApplications(req.query);
+    res.json(applications);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Super Admin: Get single application
+const getApplication = async (req, res, next) => {
+  try {
+    const application = await saasService.getApplicationById(req.params.id);
+    res.json(application);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Super Admin: Approve application
+const approveApplication = async (req, res, next) => {
+  try {
+    const result = await saasService.approveApplication(
+      req.params.id,
+      req.body,
+      req.user.id
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Super Admin: Reject application
+const rejectApplication = async (req, res, next) => {
+  try {
+    const application = await saasService.rejectApplication(
+      req.params.id,
+      req.body.reason,
+      req.user.id
+    );
+    res.json({ message: 'Daycare application rejected.', application });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Super Admin: Purge rejected application
+const purgeApplication = async (req, res, next) => {
+  try {
+    const result = await saasService.purgeApplication(req.params.id, req.user.id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   registerDaycare,
   getStats,
@@ -179,7 +223,13 @@ module.exports = {
   rejectDaycare,
   suspendDaycare,
   activateDaycare,
-  updatePlan,
+
+  listApplications,
+  getApplication,
+  approveApplication,
+  rejectApplication,
+  purgeApplication,
+
   impersonateDaycare,
   getBroadcast,
   setBroadcast,

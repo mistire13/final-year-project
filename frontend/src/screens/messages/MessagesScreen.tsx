@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
-import {
-  MagnifyingGlass,
-  SpeakerHigh,
-  ChatCircle,
-  Clock,
-  User,
-} from "phosphor-react-native";
+import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
+import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { User } from "phosphor-react-native/src/icons/User";
 import {
   Page,
   Text,
@@ -38,7 +36,7 @@ interface ChatThreadSummary {
   photo?: any;
 }
 
-export function MessagesScreen({ navigation }: any) {
+export function MessagesScreen({ navigation, route }: any) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"Messages" | "Announcements" | "Meal Plans">("Messages");
   const [messages, setMessages] = useState<DirectMessage[]>([]);
@@ -46,6 +44,9 @@ export function MessagesScreen({ navigation }: any) {
   const [contacts, setContacts] = useState<CommunicationContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  useEffect(() => {
+    if (["Messages", "Announcements", "Meal Plans"].includes(route?.params?.tab)) setTab(route.params.tab);
+  }, [route?.params?.tab]);
 
   const loadData = useCallback(async () => {
     try {
@@ -103,11 +104,11 @@ export function MessagesScreen({ navigation }: any) {
         message: latest
           ? latest.body
           : isCaregiver
-          ? "Direct messages with your child's primary caregiver"
+          ? (contact.child_names?.length ? "Direct messages with your child's assigned caregiver" : "Direct messages with daycare care staff")
           : "Questions about enrollment, schedules, or payments",
         time: latest ? formatTime(latest.created_at) : "Available",
         unread: contactMsgs.filter((m) => !m.read_at && m.sender_id === contact.id).length,
-        photo: isCaregiver ? artwork.caregiver : undefined,
+        photo: undefined,
       });
     });
   }
@@ -326,6 +327,7 @@ export function MessagesScreen({ navigation }: any) {
         visibleAnnouncements.map((a) => (
           <Card
             key={a.id}
+            onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: a.id })}
             tint={a.announcement_type === "meal_plan" ? "#F5F8F4" : "#FFFAE5"}
             style={{ marginBottom: 14, padding: 18 }}
           >

@@ -160,25 +160,24 @@ const markNotified = async (recordIdParam, user) => {
     throw err;
   }
 
-  const { rows } = await db.query(
-    `UPDATE health_records SET parent_notified = TRUE WHERE id = $1 RETURNING *`,
-    [recordId]
-  );
+  const client=await db.connect();
+  try{
+    await client.query('BEGIN');
+    const {rows:[locked]}=await client.query(`SELECT h.*,c.caregiver_id FROM health_records h JOIN children c ON c.id=h.child_id
+      WHERE h.id=$1 AND h.daycare_id=$2 FOR UPDATE OF h FOR SHARE OF c`,[recordId,user.daycare_id]);
+    if(!locked||user.role==='caregiver'&&locked.caregiver_id!==user.id)throw Object.assign(new Error('Health record unavailable'),{statusCode:403});
+    if(!locked.parent_notified){
+      const sent=await client.query(`INSERT INTO messages(sender_id,recipient_id,subject,body,daycare_id)
+        SELECT $1,u.id,'Health update from your daycare',$2,$3 FROM users u
+        WHERE u.status='active' AND u.daycare_id=$3 AND EXISTS(SELECT 1 FROM guardian_links gl WHERE gl.user_id=u.id AND gl.child_id=$4) RETURNING id`,
+        [user.id,`A ${locked.record_type==='incident'?'new incident':'health observation'} was recorded for your child. ${locked.description}`,user.daycare_id,locked.child_id]);
+      if(!sent.rowCount)throw Object.assign(new Error('No active guardian account can receive this update.'),{statusCode:422});
+      await client.query('UPDATE health_records SET parent_notified=TRUE WHERE id=$1',[recordId]);
+      await client.query(`INSERT INTO audit_logs(actor_id,action,target_table,target_id,metadata,daycare_id) VALUES($1,'HEALTH_RECORD_NOTIFIED','health_records',$2,$3,$4)`,[user.id,recordId,JSON.stringify({child_id:locked.child_id,parent_notified:true}),user.daycare_id]);
+    }
+    await client.query('COMMIT');return{...locked,parent_notified:true,disclaimer:MEDICAL_DISCLAIMER};
+  }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
 
-  await logAudit(
-    user.id,
-    'HEALTH_RECORD_NOTIFIED',
-    'health_records',
-    recordId,
-    { child_id: existing.child_id, parent_notified: true },
-    null,
-    existing.daycare_id
-  );
-
-  return {
-    ...rows[0],
-    disclaimer: MEDICAL_DISCLAIMER,
-  };
 };
 
 module.exports = {

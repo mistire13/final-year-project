@@ -5,13 +5,15 @@
  * SRS Refs: FR-CH-05, FR-DB-02
  */
 const db = require('../../config/db');
+const { auditedWrite } = require('../../utils/auditedWrite');
+const { assertChildVersions } = require('../../utils/editVersions');
 
 const listGroups = async (user = null) => {
   const isSuperAdmin = user && user.role === 'super_admin';
   const daycareId = user ? user.daycare_id : null;
 
   const { rows } = await db.query(
-    `SELECT g.id, g.name, g.description, g.daycare_id, g.lead_caregiver_id,
+    `SELECT g.id, g.name, g.description, g.daycare_id, g.lead_caregiver_id, g.version,
             u.name AS lead_caregiver_name,
             COUNT(c.id) FILTER (WHERE c.enrollment_status = 'active') AS active_children_count
      FROM groups g
@@ -43,11 +45,13 @@ const createGroup = async (body, user = null) => {
   }
 
   try {
-    const { rows } = await db.query(
+    return await auditedWrite(user,'GROUP_CREATED','groups',async client=>{
+    const { rows } = await client.query(
       `INSERT INTO groups (name, description, lead_caregiver_id, daycare_id) VALUES ($1, $2, $3, $4) RETURNING *`,
       [body.name.trim(), body.description?.trim() || null, leadCaregiverId, daycareId]
     );
     return rows[0];
+    });
   } catch (err) {
     if (err.code === '23505') {
       const e = new Error('A group with this name already exists in your daycare');
@@ -62,6 +66,19 @@ const updateGroup = async (groupIdParam, body, user = null) => {
   const groupId = parseInt(groupIdParam, 10);
   const isSuperAdmin = user && user.role === 'super_admin';
   const daycareId = user ? user.daycare_id : null;
+  return auditedWrite(user, 'GROUP_UPDATED', 'groups', async client => {
+    const existing = await client.query(
+      `SELECT id, version FROM groups WHERE id = $1 AND ($2::boolean OR daycare_id = $3) FOR UPDATE`,
+      [groupId, isSuperAdmin, daycareId]
+    );
+    if (existing.rows.length === 0) {
+      const err = new Error('Classroom not found.');
+      err.statusCode = 404;
+      throw err;
+    }
+    if (!Number.isSafeInteger(body.version) || body.version < 1 || existing.rows[0].version !== body.version) {
+      throw Object.assign(new Error('This classroom changed in another view. Refresh before saving again.'), {statusCode:409});
+    }
 
   const fields = [];
   const vals = [];
@@ -78,8 +95,8 @@ const updateGroup = async (groupIdParam, body, user = null) => {
   if (body.lead_caregiver_id !== undefined) {
     const leadCaregiverId = body.lead_caregiver_id ? parseInt(body.lead_caregiver_id, 10) : null;
     if (leadCaregiverId) {
-      const { rows: cgRows } = await db.query(
-        `SELECT id FROM users WHERE id = $1 AND ($2::boolean OR daycare_id = $3) AND role_id = (SELECT id FROM roles WHERE name = 'caregiver') AND status = 'active'`,
+      const { rows: cgRows } = await client.query(
+        `SELECT id FROM users WHERE id = $1 AND ($2::boolean OR daycare_id = $3) AND role_id = (SELECT id FROM roles WHERE name = 'caregiver') AND status = 'active' FOR SHARE`,
         [leadCaregiverId, isSuperAdmin, daycareId]
       );
       if (cgRows.length === 0) {
@@ -104,28 +121,33 @@ const updateGroup = async (groupIdParam, body, user = null) => {
   const saIdx = idx++;
   vals.push(daycareId);
   const dcIdx = idx++;
+  vals.push(body.version);
+  const versionIdx = idx++;
 
-  const { rows } = await db.query(
-    `UPDATE groups SET ${fields.join(', ')} WHERE id = $${idIdx} AND ($${saIdx}::boolean OR daycare_id = $${dcIdx}) RETURNING *`,
+  const { rows } = await client.query(
+    `UPDATE groups SET ${fields.join(', ')} WHERE id = $${idIdx} AND ($${saIdx}::boolean OR daycare_id = $${dcIdx}) AND version=$${versionIdx} RETURNING *`,
     vals
   );
 
   if (rows.length === 0) {
-    const err = new Error('Group not found');
-    err.statusCode = 404;
+    const err = new Error('This classroom changed in another view. Refresh before saving again.');
+    err.statusCode = 409;
     throw err;
   }
 
   // If assign_children is requested, propagate lead caregiver to all active children in this group
   if (body.assign_children) {
-    const targetCaregiverId = body.lead_caregiver_id ? parseInt(body.lead_caregiver_id, 10) : null;
-    await db.query(
-      `UPDATE children SET caregiver_id = $1 WHERE group_id = $2 AND ($3::boolean OR daycare_id = $4)`,
+    const targetCaregiverId = rows[0].lead_caregiver_id;
+    const children = await client.query("SELECT id,version FROM children WHERE group_id=$1 AND daycare_id=$2 AND enrollment_status='active' ORDER BY id FOR UPDATE", [groupId,daycareId]);
+    assertChildVersions(children.rows, body.child_versions);
+    await client.query(
+      `UPDATE children SET caregiver_id = $1 WHERE group_id = $2 AND enrollment_status='active' AND ($3::boolean OR daycare_id = $4)`,
       [targetCaregiverId, groupId, isSuperAdmin, daycareId]
     );
   }
 
   return rows[0];
+  }, {}, daycareId);
 };
 
 const deleteGroup = async (groupIdParam, user = null) => {

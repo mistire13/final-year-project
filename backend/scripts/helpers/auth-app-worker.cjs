@@ -25,7 +25,7 @@ async function shutdown() {
       await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     }
   } catch { failed = true; }
-  try { if (pool) await pool.end(); } catch { failed = true; }
+  try { if (pool) await pool.closeAll(); } catch { failed = true; }
   if (process.connected) process.send({ type: 'stopped', failed }, () => process.disconnect());
   process.exitCode = failed ? 1 : 0;
 }

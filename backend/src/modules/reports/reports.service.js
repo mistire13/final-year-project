@@ -6,6 +6,7 @@
  * Architecture Plan: §6.2 Query 3 & 6
  */
 const db = require('../../config/db');
+const { writeAudit } = require('../../utils/auditedWrite');
 const { isParentLinked } = require('../children/children.service');
 
 /**
@@ -103,6 +104,7 @@ const createReport = async (body, user) => {
       }
     }
 
+    await writeAudit(client,user,'DAILY_REPORT_CREATED','daily_reports',reportHeader.id,{child_id:childId,report_date:reportDate});
     await client.query('COMMIT');
 
     return {

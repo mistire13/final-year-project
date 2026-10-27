@@ -21,16 +21,11 @@ router.get('/children', ...parentOnly, parentService.listMyChildren);
 // Get full profile for one linked child (care + contacts)
 router.get('/children/:id', ...parentOnly, parentService.getMyChild);
 
-// Update child basic profile (full_name, dob, gender, group_id, relationship)
-router.put('/children/:id/profile', ...parentOnly, parentService.updateChildProfile);
-
-// Replace all care instructions for a linked child
-router.put('/children/:id/care', ...parentOnly, parentService.updateCareInstructions);
-
-// Replace emergency contacts for a linked child
-router.put('/children/:id/emergency-contacts', ...parentOnly, parentService.updateEmergencyContacts);
-
-// Mark parent account profile as complete
-router.patch('/profile-complete', ...parentOnly, parentService.markProfileComplete);
+// Older replacement endpoints cannot silently overwrite an editor's state.
+const atomicRequired=(req,res)=>res.status(428).json({error:'Use the versioned care-profile endpoint to save this profile atomically.'});
+router.put('/children/:id/profile', ...parentOnly, atomicRequired);
+router.put('/children/:id/care', ...parentOnly, atomicRequired);
+router.put('/children/:id/emergency-contacts', ...parentOnly, atomicRequired);
+router.patch('/profile-complete', ...parentOnly, atomicRequired);
 
 module.exports = router;

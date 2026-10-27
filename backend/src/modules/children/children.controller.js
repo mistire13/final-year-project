@@ -12,11 +12,11 @@ const removeGuardian = async (req, res, next) => { try { await svc.removeGuardia
 // Emergency Contacts
 const addContact     = async (req, res, next) => { try { res.status(201).json(await careSvc.addContact(req.params.id, req.body, req.user)); } catch(e) { next(e); } };
 const updateContact  = async (req, res, next) => { try { res.json(await careSvc.updateContact(req.params.cid, req.body, req.user)); } catch(e) { next(e); } };
-const deleteContact  = async (req, res, next) => { try { res.json(await careSvc.deleteContact(req.params.cid, req.user)); } catch(e) { next(e); } };
+const deleteContact  = async (req, res, next) => { try { res.json(await careSvc.deleteContact(req.params.cid, req.user, req.body)); } catch(e) { next(e); } };
 // Care Instructions
 const addInstruction    = async (req, res, next) => { try { res.status(201).json(await careSvc.addInstruction(req.params.id, req.body, req.user)); } catch(e) { next(e); } };
 const updateInstruction = async (req, res, next) => { try { res.json(await careSvc.updateInstruction(req.params.iid, req.body, req.user)); } catch(e) { next(e); } };
-const deleteInstruction = async (req, res, next) => { try { res.json(await careSvc.deleteInstruction(req.params.iid, req.user)); } catch(e) { next(e); } };
+const deleteInstruction = async (req, res, next) => { try { res.json(await careSvc.deleteInstruction(req.params.iid, req.user, req.body)); } catch(e) { next(e); } };
 const enrollFamily   = async (req, res, next) => { try { res.status(201).json(await svc.enrollFamily(req.body, req.user)); } catch(e) { next(e); } };
 const assignCaregiver = async (req, res, next) => { try { res.json(await svc.assignCaregiver(req.body, req.user)); } catch(e) { next(e); } };
 module.exports = { listChildren, createChild, getChild, updateChild, addGuardian, getGuardians, removeGuardian, enrollFamily, assignCaregiver, addContact, updateContact, deleteContact, addInstruction, updateInstruction, deleteInstruction };

@@ -48,6 +48,12 @@ async function withAppWorker(name, enabled, work) {
       ...securityEnvironment,
       DB_NAME: name,
       DB_HOST: process.env.DB_HOST || 'localhost',
+      // Migration-017 wiring fixtures intentionally use their generated DB's
+      // owner. Restricted current-schema wiring is covered by essential-security.
+      APP_DB_USER: process.env.DB_USER || 'postgres',
+      APP_DB_PASSWORD: process.env.DB_PASSWORD,
+      CONTROL_DB_USER: process.env.DB_USER || 'postgres',
+      CONTROL_DB_PASSWORD: process.env.DB_PASSWORD,
       AUTH_TEST_FORBIDDEN_DB: forbiddenDatabase,
       NODE_ENV: 'test',
       DAYCARE_AUTH_ENABLED: String(enabled),
@@ -297,7 +303,7 @@ test('actual application preview wiring closes legacy bypasses and authenticates
       });
     });
 
-    await t.test('preview disabled retains the existing login validator and legacy token path', async () => {
+    await t.test('preview disabled retains legacy validation but rejects unversioned JWTs', async () => {
       await withAppWorker(name, false, async request => {
         // Invalid input stops at the legacy validator and performs no login or
         // credential write. Missing daycare code is not part of that schema.
@@ -305,7 +311,7 @@ test('actual application preview wiring closes legacy bypasses and authenticates
         assert.equal(invalid.status, 422);
         const token = jwt.sign({ userId: f.admin.id, role: 'admin', daycareId: f.daycare.id }, 'synthetic-app-wiring-secret-only');
         const profile = await request('GET', '/api/auth/me', undefined, { Authorization: `Bearer ${token}` });
-        assert.equal(profile.status, 200, profile.text);
+        assert.equal(profile.status, 401, profile.text);
       });
     });
   });

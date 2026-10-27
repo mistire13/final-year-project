@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ShieldWarning, Info, Heartbeat } from 'phosphor-react-native';
+import { ShieldWarning } from "phosphor-react-native/src/icons/ShieldWarning";
+import { Info } from "phosphor-react-native/src/icons/Info";
+import { Heartbeat } from "phosphor-react-native/src/icons/Heartbeat";
 import { colors, radii } from '../theme/tokens';
 
 export type DisclaimerVariant = 'ai' | 'biometric' | 'medical';

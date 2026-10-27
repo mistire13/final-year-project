@@ -1,24 +1,22 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Image, Pressable, RefreshControl, ActivityIndicator } from "react-native";
-import {
-  ChatCircle,
-  FileText,
-  Robot,
-  CalendarBlank,
-  ForkKnife,
-  Moon,
-  PuzzlePiece,
-  Car,
-  Smiley,
-  Eye,
-  Palette,
-  ArrowRight,
-  ArrowBendUpLeft,
-  Warning,
-  Clock,
-  Heart,
-  SpeakerHigh,
-} from "phosphor-react-native";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { FileText } from "phosphor-react-native/src/icons/FileText";
+import { Robot } from "phosphor-react-native/src/icons/Robot";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { Moon } from "phosphor-react-native/src/icons/Moon";
+import { PuzzlePiece } from "phosphor-react-native/src/icons/PuzzlePiece";
+import { Car } from "phosphor-react-native/src/icons/Car";
+import { Smiley } from "phosphor-react-native/src/icons/Smiley";
+import { Eye } from "phosphor-react-native/src/icons/Eye";
+import { Palette } from "phosphor-react-native/src/icons/Palette";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { ArrowBendUpLeft } from "phosphor-react-native/src/icons/ArrowBendUpLeft";
+import { Warning } from "phosphor-react-native/src/icons/Warning";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { Heart } from "phosphor-react-native/src/icons/Heart";
+import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
 import {
   Page,
   Text,
@@ -53,7 +51,7 @@ export function HomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { selectedChild, childrenList, setSelectedChild } = useChild();
 
-  const childId = selectedChild?.id || 1;
+  const childId = selectedChild?.id;
   const childFirstName = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "Your Child";
   const groupName = selectedChild?.group_name || "Daycare Group";
 
@@ -62,11 +60,13 @@ export function HomeScreen({ navigation }: any) {
     if (!dob) return "";
     const birth = new Date(dob);
     const today = new Date();
-    const years = today.getFullYear() - birth.getFullYear();
+    let years = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) years--;
     return years > 0 ? `${years} years` : "Infant";
   };
 
   // State from real database queries
+  const [loadError,setLoadError]=useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [latestAttendance, setLatestAttendance] = useState<AttendanceRecord | null>(null);
@@ -81,64 +81,41 @@ export function HomeScreen({ navigation }: any) {
     return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   };
 
+  const requestRevision = useRef(0);
   const loadDashboardData = useCallback(async () => {
+    const revision = ++requestRevision.current;
+    setLoadError("");
+    if (!childId) {
+      setLatestAttendance(null); setTodayReport(null); setUpcomingEvent(null); setLatestMessage(null); setLatestAnnouncement(null);
+      setLoading(false); setRefreshing(false); return;
+    }
     try {
-      // 1. Fetch child attendance
-      const attendanceList = await getChildAttendance(childId).catch(() => []);
-      if (attendanceList.length > 0) {
-        setLatestAttendance(attendanceList[0]);
-      } else {
-        setLatestAttendance(null);
-      }
-
-      // 2. Fetch child daily reports
-      const reports = await getChildReports(childId).catch(() => []);
-      if (reports.length > 0) {
-        const latestSummary = reports[0];
-        const detailed = await getDailyReport(latestSummary.id).catch(() => null);
-        setTodayReport(detailed);
-      } else {
-        setTodayReport(null);
-      }
-
-      // 3. Fetch upcoming events
-      const events = await getDaycareEvents(false).catch(() => []);
-      if (events.length > 0) {
-        setUpcomingEvent(events[0]);
-      } else {
-        setUpcomingEvent(null);
-      }
-
-      // 4. Fetch latest caregiver message
-      const messages = await getDirectMessages().catch(() => []);
-      if (messages.length > 0) {
-        setLatestMessage(messages[0]);
-      } else {
-        setLatestMessage(null);
-      }
-
-      // 5. Fetch center announcements
-      const annList = await getAnnouncements().catch(() => []);
-      if (annList.length > 0) {
-        setLatestAnnouncement(annList[0]);
-      } else {
-        setLatestAnnouncement(null);
-      }
+      const [attendance, reports, events, messages, announcements] = await Promise.all([
+        getChildAttendance(childId),getChildReports(childId),getDaycareEvents(false),getDirectMessages(),getAnnouncements()
+      ]);
+      const localDay = (value: string | Date) => new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
+      const todayKey = localDay(new Date());
+      const currentReport = reports.find(report => localDay(report.report_date) === todayKey);
+      const detailed = currentReport ? await getDailyReport(currentReport.id) : null;
+      if (revision !== requestRevision.current) return;
+      setLatestAttendance(attendance.find(record => localDay(record.event_time) === todayKey) || null); setTodayReport(detailed); setUpcomingEvent(events[0] || null);
+      setLatestMessage(messages[0] || null); setLatestAnnouncement(announcements[0] || null);
     } catch {
-      // Silently handle network drops during background sync
+      if (revision === requestRevision.current) setLoadError("Updates could not be loaded. Refresh to retry.");
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (revision === requestRevision.current) { setLoading(false); setRefreshing(false); }
     }
   }, [childId]);
 
   useEffect(() => {
     setLoading(true);
+    setLatestAttendance(null); setTodayReport(null); setUpcomingEvent(null); setLatestMessage(null); setLatestAnnouncement(null);
     loadDashboardData();
     const unsubscribe = navigation.addListener?.("focus", () => {
       loadDashboardData();
     });
     return () => {
+      requestRevision.current++;
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [navigation, loadDashboardData]);
@@ -147,6 +124,12 @@ export function HomeScreen({ navigation }: any) {
     setRefreshing(true);
     loadDashboardData();
   };
+
+  if (!childId) return <Page title={`Welcome, ${user?.name?.split(" ")[0] || "parent"}`}>
+    <Notice>No child is linked to this account yet. Contact your daycare administrator to complete enrollment.</Notice>
+    <Button title="Message daycare" onPress={()=>navigation.navigate("MainTabs",{screen:"Messages"})}/>
+    <Button title="Daycare calendar" variant="outline" onPress={()=>navigation.navigate("CalendarPage")} style={{marginTop:12}}/>
+  </Page>;
 
   const report = () =>
     navigation.navigate("FullDailyReport", {
@@ -188,7 +171,7 @@ export function HomeScreen({ navigation }: any) {
     if (todayReport.meals && todayReport.meals.length > 0) {
       const m = todayReport.meals[0];
       highlights.push({
-        title: `${m.meal_type ? m.meal_type.charAt(0).toUpperCase() + m.meal_type.slice(1) : "Meal"}: ${m.portion || "completed"}`,
+        title: `${m.meal_type ? m.meal_type.charAt(0).toUpperCase() + m.meal_type.slice(1) : "Meal"}: ${m.portion || "recorded"}`,
         label: "MEALS",
         Icon: ForkKnife,
         bg: "#FFF7CF",
@@ -209,7 +192,7 @@ export function HomeScreen({ navigation }: any) {
     if (todayReport.activities && todayReport.activities.length > 0) {
       const a = todayReport.activities[0];
       highlights.push({
-        title: a.description || "Activity completed",
+        title: a.description || "Activity recorded",
         label: (a.activity_type || "LEARNING").toUpperCase(),
         Icon: PuzzlePiece,
         bg: "#E8F6F3",
@@ -261,11 +244,18 @@ export function HomeScreen({ navigation }: any) {
       attendanceSubText = `Marked absent on ${new Date(latestAttendance.event_time).toLocaleDateString()}`;
     }
   }
+  if (loading) {
+    attendanceBadgeText = '● LOADING ATTENDANCE';
+    attendanceSubText = 'Checking today’s attendance record…';
+  } else if (loadError) {
+    attendanceBadgeText = '● ATTENDANCE UNAVAILABLE';
+    attendanceSubText = 'Refresh to check today’s attendance.';
+  }
 
   return (
     <Page contentStyle={{ paddingHorizontal: 28 }}>
       <Text size={16}>
-        Good morning, {user?.name?.split(" ")[0] || "Parent"}
+        Hello, {user?.name?.split(" ")[0] || "Parent"}
       </Text>
       <Text
         color="#6F727A"
@@ -283,6 +273,9 @@ export function HomeScreen({ navigation }: any) {
             return (
               <Pressable
                 key={c.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Select ${c.full_name}`}
+                accessibilityState={{selected:isSelected}}
                 onPress={() => setSelectedChild(c)}
                 style={{
                   paddingVertical: 7,
@@ -298,7 +291,7 @@ export function HomeScreen({ navigation }: any) {
                   weight={isSelected ? "bold" : "medium"}
                   color={isSelected ? "#FFFFFF" : "#444B54"}
                 >
-                  {c.full_name.split(" ")[0]} ({c.group_name || "Daycare"})
+                  {c.full_name} ({c.group_name || "Daycare"})
                 </Text>
               </Pressable>
             );
@@ -308,14 +301,11 @@ export function HomeScreen({ navigation }: any) {
 
       {/* Child Status Hero Card */}
       <Card
-        onPress={() =>
-          navigation.navigate("ChildProfile", { childId: selectedChild?.id })
-        }
         style={{ padding: 18, overflow: "hidden" }}
       >
         <CardGlow />
         <View style={s.row}>
-          <Avatar source={artwork.child} size={66} />
+          <Avatar source={selectedChild?.photo_url ? {uri:selectedChild.photo_url} : undefined} initials={(selectedChild?.full_name||'Child').split(' ').map(n=>n[0]).join('').slice(0,2)} size={66} />
           <View style={{ flex: 1 }}>
             <View style={s.between}>
               <Text size={18} weight="medium">
@@ -340,8 +330,11 @@ export function HomeScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
+        <Button title="View child profile" variant="outline" onPress={()=>navigation.navigate('ChildProfile',{childId:selectedChild?.id})} style={{marginTop:12}}/>
       </Card>
 
+      {!childId && <Notice>No child is linked to this account yet. Contact your daycare administrator to complete enrollment.</Notice>}
+      {!!loadError && <Notice>{loadError}</Notice>}
       {/* Latest Center Announcement Banner */}
       {latestAnnouncement && (
         <Card
@@ -353,7 +346,7 @@ export function HomeScreen({ navigation }: any) {
             padding: 16,
             borderRadius: 20,
           }}
-          onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
+          onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: latestAnnouncement.id })}
         >
           <View style={[s.row, { marginBottom: 6 }]}>
             <SpeakerHigh size={18} color="#9C6B10" weight="fill" />
@@ -372,7 +365,7 @@ export function HomeScreen({ navigation }: any) {
               Posted by {latestAnnouncement.author_name || "Center Administration"}
             </Text>
             <Text size={11} color="#855B09" weight="bold">
-              View announcement feed →
+              Read announcement →
             </Text>
           </View>
         </Card>
@@ -479,7 +472,7 @@ export function HomeScreen({ navigation }: any) {
             </Text>
           </View>
           <Text size={13} color="#747984" style={{ marginTop: 6, lineHeight: 18 }}>
-            Caregivers submit meals, naps, and activity reports during the afternoon. Check back shortly.
+            No daily report has been saved for today. Contact your daycare if you need an update.
           </Text>
         </Card>
       )}
@@ -519,14 +512,16 @@ export function HomeScreen({ navigation }: any) {
               <Text size={18} weight="medium">
                 {todayReport.activities[0].description || "Daily Activity"}
               </Text>
-              <Text
-                size={14}
-                color="#707782"
-                style={{ marginTop: 4 }}
-                numberOfLines={3}
-              >
-                Location: {todayReport.activities[0].location || "Daycare Room"}
-              </Text>
+              {todayReport.activities[0].location ? (
+                <Text
+                  size={14}
+                  color="#707782"
+                  style={{ marginTop: 4 }}
+                  numberOfLines={3}
+                >
+                  Location: {todayReport.activities[0].location}
+                </Text>
+              ) : null}
             </View>
           </View>
         </Card>

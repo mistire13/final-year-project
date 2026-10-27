@@ -1,19 +1,18 @@
 import React from "react";
 import { View, Switch, Pressable, Linking } from "react-native";
-import {
-  PencilSimple,
-  UsersThree,
-  Package,
-  Smiley,
-  ChatCircle,
-  SpeakerHigh,
-  User,
-  LockKey,
-  Globe,
-  Question,
-  SignOut,
-  CaretRight,
-} from "phosphor-react-native";
+import { PencilSimple } from "phosphor-react-native/src/icons/PencilSimple";
+import { UsersThree } from "phosphor-react-native/src/icons/UsersThree";
+import { Package } from "phosphor-react-native/src/icons/Package";
+import { Receipt } from "phosphor-react-native/src/icons/Receipt";
+import { Smiley } from "phosphor-react-native/src/icons/Smiley";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
+import { User } from "phosphor-react-native/src/icons/User";
+import { LockKey } from "phosphor-react-native/src/icons/LockKey";
+import { Globe } from "phosphor-react-native/src/icons/Globe";
+import { Question } from "phosphor-react-native/src/icons/Question";
+import { SignOut } from "phosphor-react-native/src/icons/SignOut";
+import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
 import {
   Page,
   Text,
@@ -32,7 +31,7 @@ import { getWebPortalUrl } from "../../utils/host";
 
 export function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
-  const { preferences, togglePreference } = useDesign();
+  const { preferences, togglePreference, persistenceError } = useDesign();
   const { selectedChild } = useChild();
 
   const childrenList = user?.linked_children?.length
@@ -43,6 +42,7 @@ export function ProfileScreen({ navigation }: any) {
 
   return (
     <Page>
+      {!!persistenceError && <Notice>{persistenceError}</Notice>}
       <Card>
         <View style={[s.row, { alignItems: "flex-start" }]}>
           <Avatar
@@ -105,7 +105,7 @@ export function ProfileScreen({ navigation }: any) {
           <Card key={ch.id} style={{ marginBottom: 12 }}>
             <View style={s.row}>
               <Avatar
-                source={artwork.child}
+                source={ch.photo_url?{uri:ch.photo_url}:undefined}
                 initials={ch.full_name ? ch.full_name.slice(0, 2).toUpperCase() : "CH"}
               />
               <View style={{ flex: 1, marginLeft: 10 }}>
@@ -143,16 +143,24 @@ export function ProfileScreen({ navigation }: any) {
       <View style={[s.row, { marginTop: 22, gap: 14 }]}>
         {[
           {
+            title: "Care Fees",
+            sub: "Bills & receipts",
+            Icon: Receipt,
+            go: "ChildCareFees",
+            bg: "#EAF5ED",
+            ink: "#2E7D32",
+          },
+          {
             title: "Guardians",
-            sub: "View pickup contacts",
+            sub: "Pickup contacts",
             Icon: UsersThree,
             go: "AuthorizedGuardians",
             bg: "#FFF0CA",
             ink: "#967317",
           },
           {
-            title: "My Orders",
-            sub: "View store status",
+            title: "Orders",
+            sub: "Store supplies",
             Icon: Package,
             go: "Orders",
             bg: "#E8EFFC",
@@ -247,10 +255,11 @@ export function ProfileScreen({ navigation }: any) {
           onPress={() => navigation.navigate("DaycareStore")}
         />
         {[
+          ["Care Fees & Receipts", "ChildCareFees"],
           ["Attendance History", "AttendanceHistory"],
           ["Health & Incidents", "HealthNotices"],
           ["Report Archive", "ReportsHistory"],
-          ["Pickup Pass & Status", "PickupVerification"],
+          ["Pickup status", "PickupVerification"],
           ["Shopping Cart", "ShoppingCart"],
           ["Order History", "Orders"],
           ["Calendar & Events", "CalendarPage"],
@@ -263,7 +272,7 @@ export function ProfileScreen({ navigation }: any) {
         <MenuRow
           title="Help & Support"
           icon={Question}
-          onPress={() => navigation.navigate("CaregiverChat", { threadId: 2 })}
+          onPress={() => navigation.navigate("HelpSupport")}
           last
         />
       </Card>
@@ -273,7 +282,6 @@ export function ProfileScreen({ navigation }: any) {
         variant="danger"
         onPress={async () => {
           await logout();
-          navigation.reset({ index: 0, routes: [{ name: "Login" }] });
         }}
         style={{ alignSelf: "center", minHeight: 46, marginTop: 32 }}
       />

@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import {
-  Heart,
-  Warning,
-  FirstAid,
-  Clock,
-  ChatCircle,
-  ShieldCheck,
-  ArrowClockwise,
-  User,
-  Info,
-} from "phosphor-react-native";
+  View,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { Heart } from "phosphor-react-native/src/icons/Heart";
+import { Warning } from "phosphor-react-native/src/icons/Warning";
+import { FirstAid } from "phosphor-react-native/src/icons/FirstAid";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
+import { ArrowClockwise } from "phosphor-react-native/src/icons/ArrowClockwise";
+import { User } from "phosphor-react-native/src/icons/User";
+import { Info } from "phosphor-react-native/src/icons/Info";
 import {
   Page,
   Text,
@@ -21,61 +25,55 @@ import {
   Notice,
   s,
 } from "../../components/design/System";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
 import { getChildHealth, HealthRecord } from "../../api/parentApi";
 
 export function HealthNoticesScreen({ navigation, route }: any) {
-  const { selectedChild } = useChild();
-  const childId = route?.params?.childId || selectedChild?.id || 1;
-  const childName = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "Your Child";
+  const { selectedChild:activeChild, childrenList } = useChild();
+  const childId = route?.params?.childId || activeChild?.id;
+  const selectedChild=childrenList.find(c=>c.id===childId)||(activeChild?.id===childId?activeChild:null);
+  const childName = selectedChild?.full_name
+    ? selectedChild.full_name.split(" ")[0]
+    : "Your Child";
   const groupName = selectedChild?.group_name || "Daycare Classroom";
 
   const [filter, setFilter] = useState<"All" | "health" | "incident">("All");
-  const [records, setRecords] = useState<HealthRecord[]>([]);
-  const [disclaimer, setDisclaimer] = useState(
-    "Reporting functionality only. This record does not constitute medical diagnosis or advice."
+  const {
+    data: result,
+    loading,
+    error,
+    refresh: loadHealthData,
+  } = useRemoteResource<{ data: HealthRecord[]; disclaimer?: string }>(
+    `health:${childId ?? "none"}`,
+    () => (childId ? getChildHealth(childId) : Promise.resolve({ data: [] })),
+    { data: [] },
   );
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
-
-  const loadHealthData = useCallback(async () => {
-    try {
-      setError("");
-      const res = await getChildHealth(childId);
-      setRecords(res.data || []);
-      if (res.disclaimer) {
-        setDisclaimer(res.disclaimer);
-      }
-    } catch (err: any) {
-      setError("Unable to load health and incident notices. Please pull to refresh.");
-      setRecords([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [childId]);
-
+  const records = result.data;
+  const disclaimer =
+    result.disclaimer ||
+    "Reporting functionality only. This record does not constitute medical diagnosis or advice.";
+  const refreshing = loading;
+  const onRefresh = loadHealthData;
   useEffect(() => {
-    setLoading(true);
-    loadHealthData();
-    const unsubscribe = navigation.addListener?.("focus", () => {
-      loadHealthData();
-    });
-    return () => {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
+    const remove = navigation.addListener?.("focus", loadHealthData);
+    return () => remove?.();
   }, [navigation, loadHealthData]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadHealthData();
-  };
+  if (!childId)
+    return (
+      <Page title="Health records" back>
+        <Notice>No child is linked to this account yet.</Notice>
+      </Page>
+    );
 
   const filteredRecords = records.filter((r) => {
     if (filter === "All") return true;
-    if (filter === "health") return r.record_type === "health" || (r.record_type as string) === "health_observation";
+    if (filter === "health")
+      return (
+        r.record_type === "health" ||
+        (r.record_type as string) === "health_observation"
+      );
     return r.record_type === filter;
   });
 
@@ -91,7 +89,9 @@ export function HealthNoticesScreen({ navigation, route }: any) {
     });
   };
 
-  const getSeverityTone = (sev?: string): "green" | "gold" | "red" | "neutral" => {
+  const getSeverityTone = (
+    sev?: string,
+  ): "green" | "gold" | "red" | "neutral" => {
     switch (sev) {
       case "high":
         return "red";
@@ -115,7 +115,7 @@ export function HealthNoticesScreen({ navigation, route }: any) {
       {/* Child Header Card */}
       <Card tint="#F3F1F8" style={{ marginBottom: 16, padding: 16 }}>
         <View style={s.row}>
-          <Avatar source={artwork.child} size={54} />
+          <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={selectedChild?.full_name?.slice(0,2).toUpperCase()||'CH'} size={54} />
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text size={18} weight="semibold">
               {selectedChild?.full_name || childName}
@@ -150,13 +150,22 @@ export function HealthNoticesScreen({ navigation, route }: any) {
         }}
       >
         <View style={[s.row, { alignItems: "flex-start" }]}>
-          <Info size={20} color="#B26A00" style={{ marginTop: 2, marginRight: 10 }} />
+          <Info
+            size={20}
+            color="#B26A00"
+            style={{ marginTop: 2, marginRight: 10 }}
+          />
           <View style={{ flex: 1 }}>
             <Text size={12} weight="bold" color="#8C5300">
               NON-DIAGNOSTIC NOTICE
             </Text>
-            <Text size={12} color="#7A4B06" style={{ marginTop: 3, lineHeight: 17 }}>
-              {disclaimer} Staff log factual day-to-day observations for parent awareness.
+            <Text
+              size={12}
+              color="#7A4B06"
+              style={{ marginTop: 3, lineHeight: 17 }}
+            >
+              {disclaimer} Staff log factual day-to-day observations for parent
+              awareness.
             </Text>
           </View>
         </View>
@@ -288,13 +297,21 @@ export function HealthNoticesScreen({ navigation, route }: any) {
                 icon={ChatCircle}
                 variant="outline"
                 style={{ marginTop: 14, backgroundColor: "#FFFFFF" }}
-                onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
+                onPress={() =>
+                  navigation.navigate("MainTabs", { screen: "Messages" })
+                }
               />
             </Card>
           );
         })
       ) : (
-        <Card style={{ alignItems: "center", paddingVertical: 40, paddingHorizontal: 24 }}>
+        <Card
+          style={{
+            alignItems: "center",
+            paddingVertical: 40,
+            paddingHorizontal: 24,
+          }}
+        >
           <View
             style={{
               width: 60,
@@ -308,11 +325,21 @@ export function HealthNoticesScreen({ navigation, route }: any) {
           >
             <ShieldCheck size={32} color="#008794" weight="fill" />
           </View>
-          <Text size={18} weight="semibold" style={{ textAlign: "center", marginBottom: 6 }}>
-            All Clear & Healthy!
+          <Text
+            size={18}
+            weight="semibold"
+            style={{ textAlign: "center", marginBottom: 6 }}
+          >
+            No health updates recorded
           </Text>
-          <Text size={13} color="#7A828E" style={{ textAlign: "center", lineHeight: 19 }}>
-            No health observations or incident flags have been recorded for {childName}. Caregivers log any temperature checks, bumps, or minor notes here immediately.
+          <Text
+            size={13}
+            color="#7A828E"
+            style={{ textAlign: "center", lineHeight: 19 }}
+          >
+            No health observations or incident flags have been recorded for{" "}
+            {childName}. Caregivers log any temperature checks, bumps, or minor
+            notes here immediately.
           </Text>
         </Card>
       )}

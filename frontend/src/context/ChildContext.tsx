@@ -24,35 +24,28 @@ interface ChildContextType {
   cartItemCount: number;
 }
 
-const DEFAULT_CHILD: ChildSummary = {
-  id: 1,
-  full_name: "Liya Hana",
-  dob: "2022-05-12",
-  gender: "female",
-  enrollment_status: "active",
-  relationship: "Mother",
-  group_name: "Sunflower Group",
-};
-
 const ChildContext = createContext<ChildContextType | undefined>(undefined);
 
 export const ChildProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
-  const [selectedChild, setSelectedChild] = useState<ChildSummary | null>(
-    DEFAULT_CHILD,
-  );
-  const [childrenList, setChildrenList] = useState<ChildSummary[]>([DEFAULT_CHILD]);
+  const [selectedChild, setSelectedChild] = useState<ChildSummary | null>(null);
+  const [childrenList, setChildrenList] = useState<ChildSummary[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  useEffect(()=>{setCart([]);},[user?.id,user?.daycare_id]);
 
   useEffect(() => {
+    let cancelled = false;
+    setChildrenList([]);
+    setSelectedChild(null);
     if (user?.linked_children && user.linked_children.length > 0) {
       setChildrenList(user.linked_children);
       setSelectedChild(user.linked_children[0]);
-    } else if (user) {
+    } else if (user?.role === "parent") {
       getMyChildren()
         .then((kids) => {
+          if (cancelled) return;
           if (kids && kids.length > 0) {
             setChildrenList(kids);
             setSelectedChild(kids[0]);
@@ -62,13 +55,12 @@ export const ChildProvider: React.FC<{ children: ReactNode }> = ({
           }
         })
         .catch(() => {
+          if (cancelled) return;
           setChildrenList([]);
           setSelectedChild(null);
         });
-    } else {
-      setChildrenList([DEFAULT_CHILD]);
-      setSelectedChild(DEFAULT_CHILD);
     }
+    return () => { cancelled = true; };
   }, [user]);
 
   const addToCart = (product: Product, quantity: number = 1) => {

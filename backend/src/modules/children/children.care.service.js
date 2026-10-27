@@ -1,155 +1,53 @@
 'use strict';
-/**
- * Service functions for Emergency Contacts & Care Instructions (standalone CRUD).
- * Added as Phase 5 Priority 1 — child profile editing support.
- */
-const db = require('../../config/db');
 const { auditedWrite } = require('../../utils/auditedWrite');
+const conflict = () => Object.assign(new Error('This child’s care details changed in another view. Refresh the profile before saving again.'), {statusCode:409});
 
-// ── Emergency Contacts ───────────────────────────────────────────────────────
-
-const addContact = async (childId, body, actor) => {
-  const actorId = typeof actor === 'object' && actor !== null ? actor.id : actor;
-  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
-  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
-  const cId = parseInt(childId, 10);
-
-  return auditedWrite(actor, 'EMERGENCY_CONTACT_ADDED', 'emergency_contacts', async client => {
-    const check = await client.query(`SELECT id, daycare_id FROM children WHERE id = $1`, [cId]);
-    if (check.rows.length === 0 || (!isSuperAdmin && check.rows[0].daycare_id !== daycareId)) {
-      const e = new Error('Child not found');
-      e.statusCode = 404;
-      throw e;
+// Parent care-profile saves lock this same child before replacing collections.
+async function careWrite(actor, table, targetId, body, operation, work) {
+  const actions = table === 'emergency_contacts'
+    ? {add:'EMERGENCY_CONTACT_ADDED',update:'EMERGENCY_CONTACT_UPDATED',delete:'EMERGENCY_CONTACT_DELETED'}
+    : {add:'CARE_INSTRUCTION_ADDED',update:'CARE_INSTRUCTION_UPDATED',delete:'CARE_INSTRUCTION_DELETED'};
+  return auditedWrite(actor, actions[operation], table, async client => {
+    let childId = Number(targetId);
+    if (operation !== 'add') {
+      // table is selected only by the fixed exports below, never from input.
+      const {rows:[record]} = await client.query('SELECT child_id FROM '+table+' WHERE id=$1', [targetId]);
+      if (!record) throw Object.assign(new Error('Care record not found. Refresh the profile.'), {statusCode:404});
+      childId = record.child_id;
     }
+    const {rows:[child]} = await client.query('SELECT id,daycare_id,version FROM children WHERE id=$1 FOR UPDATE', [childId]);
+    if (!child || child.daycare_id !== actor.daycare_id) throw Object.assign(new Error('Child not found.'), {statusCode:404});
+    if (!Number.isSafeInteger(body?.child_version) || body.child_version !== child.version) throw conflict();
+    const record = await work(client, childId);
+    if (!record) throw conflict();
+    // The edit_version trigger advances the shared revision in this transaction.
+    await client.query('UPDATE children SET version=version WHERE id=$1', [childId]);
+    return record;
+  }, {}, actor.daycare_id);
+}
 
-    const { rows } = await client.query(
-      `INSERT INTO emergency_contacts (child_id, name, relationship, phone)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [cId, body.name, body.relationship, body.phone]
-    );
-    return rows[0];
-  }, {}, daycareId);
-};
-
-const updateContact = async (contactId, body, actor) => {
-  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
-  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
-  const id = parseInt(contactId, 10);
-
-  return auditedWrite(actor, 'EMERGENCY_CONTACT_UPDATED', 'emergency_contacts', async client => {
-    const check = await client.query(
-      `SELECT ec.id FROM emergency_contacts ec JOIN children c ON c.id = ec.child_id WHERE ec.id = $1 AND ($2::boolean OR c.daycare_id = $3)`,
-      [id, isSuperAdmin, daycareId]
-    );
-    if (check.rows.length === 0) {
-      const e = new Error('Emergency contact not found');
-      e.statusCode = 404;
-      throw e;
-    }
-
-    const fields = []; const vals = []; let idx = 1;
-    if (body.name !== undefined) { fields.push(`name = $${idx++}`); vals.push(body.name); }
-    if (body.relationship !== undefined) { fields.push(`relationship = $${idx++}`); vals.push(body.relationship); }
-    if (body.phone !== undefined) { fields.push(`phone = $${idx++}`); vals.push(body.phone); }
-    if (fields.length === 0) { const e = new Error('No fields provided'); e.statusCode = 422; throw e; }
-    vals.push(id);
-    const { rows } = await client.query(
-      `UPDATE emergency_contacts SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
-      vals
-    );
-    return rows[0];
-  }, {}, daycareId);
-};
-
-const deleteContact = async (contactId, actor = null) => {
-  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
-  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
-  const id = parseInt(contactId, 10);
-
-  const check = await db.query(
-    `SELECT ec.id FROM emergency_contacts ec JOIN children c ON c.id = ec.child_id WHERE ec.id = $1 AND ($2::boolean OR c.daycare_id = $3)`,
-    [id, isSuperAdmin, daycareId]
-  );
-  if (check.rows.length === 0) {
-    const e = new Error('Emergency contact not found');
-    e.statusCode = 404;
-    throw e;
-  }
-
-  const { rows } = await db.query(`DELETE FROM emergency_contacts WHERE id = $1 RETURNING id`, [id]);
-  return { message: 'Emergency contact deleted' };
-};
-
-// ── Care Instructions ────────────────────────────────────────────────────────
-
-const addInstruction = async (childId, body, actor) => {
-  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
-  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
-  const cId = parseInt(childId, 10);
-
-  return auditedWrite(actor, 'CARE_INSTRUCTION_ADDED', 'care_instructions', async client => {
-    const check = await client.query(`SELECT id, daycare_id FROM children WHERE id = $1`, [cId]);
-    if (check.rows.length === 0 || (!isSuperAdmin && check.rows[0].daycare_id !== daycareId)) {
-      const e = new Error('Child not found');
-      e.statusCode = 404;
-      throw e;
-    }
-
-    const { rows } = await client.query(
-      `INSERT INTO care_instructions (child_id, category, instruction_text)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [cId, body.category, body.instruction_text]
-    );
-    return rows[0];
-  }, {}, daycareId);
-};
-
-const updateInstruction = async (instructionId, body, actor) => {
-  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
-  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
-  const id = parseInt(instructionId, 10);
-
-  return auditedWrite(actor, 'CARE_INSTRUCTION_UPDATED', 'care_instructions', async client => {
-    const check = await client.query(
-      `SELECT ci.id FROM care_instructions ci JOIN children c ON c.id = ci.child_id WHERE ci.id = $1 AND ($2::boolean OR c.daycare_id = $3)`,
-      [id, isSuperAdmin, daycareId]
-    );
-    if (check.rows.length === 0) {
-      const e = new Error('Care instruction not found');
-      e.statusCode = 404;
-      throw e;
-    }
-
-    const fields = []; const vals = []; let idx = 1;
-    if (body.category !== undefined) { fields.push(`category = $${idx++}`); vals.push(body.category); }
-    if (body.instruction_text !== undefined) { fields.push(`instruction_text = $${idx++}`); vals.push(body.instruction_text); }
-    if (fields.length === 0) { const e = new Error('No fields provided'); e.statusCode = 422; throw e; }
-    vals.push(id);
-    const { rows } = await client.query(
-      `UPDATE care_instructions SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
-      vals
-    );
-    return rows[0];
-  }, {}, daycareId);
-};
-
-const deleteInstruction = async (instructionId, actor = null) => {
-  const isSuperAdmin = typeof actor === 'object' && actor !== null && actor.role === 'super_admin';
-  const daycareId = typeof actor === 'object' && actor !== null ? actor.daycare_id : null;
-  const id = parseInt(instructionId, 10);
-
-  const check = await db.query(
-    `SELECT ci.id FROM care_instructions ci JOIN children c ON c.id = ci.child_id WHERE ci.id = $1 AND ($2::boolean OR c.daycare_id = $3)`,
-    [id, isSuperAdmin, daycareId]
-  );
-  if (check.rows.length === 0) {
-    const e = new Error('Care instruction not found');
-    e.statusCode = 404;
-    throw e;
-  }
-
-  const { rows } = await db.query(`DELETE FROM care_instructions WHERE id = $1 RETURNING id`, [id]);
-  return { message: 'Care instruction deleted' };
-};
-
-module.exports = { addContact, updateContact, deleteContact, addInstruction, updateInstruction, deleteInstruction };
+const addContact = (childId, body, actor) => careWrite(actor,'emergency_contacts',childId,body,'add',async(client,id)=>{
+  const {rows:[record]} = await client.query('INSERT INTO emergency_contacts(child_id,name,relationship,phone) VALUES($1,$2,$3,$4) RETURNING *', [id,body.name,body.relationship,body.phone]);
+  return record;
+});
+const updateContact = (id, body, actor) => careWrite(actor,'emergency_contacts',id,body,'update',async client=>{
+  const {rows:[record]} = await client.query('UPDATE emergency_contacts SET name=$2,relationship=$3,phone=$4 WHERE id=$1 RETURNING *', [id,body.name,body.relationship,body.phone]);
+  return record;
+});
+const deleteContact = (id, actor, body={}) => careWrite(actor,'emergency_contacts',id,body,'delete',async client=>{
+  const {rows:[record]} = await client.query('DELETE FROM emergency_contacts WHERE id=$1 RETURNING id,child_id', [id]);
+  return record;
+});
+const addInstruction = (childId, body, actor) => careWrite(actor,'care_instructions',childId,body,'add',async(client,id)=>{
+  const {rows:[record]} = await client.query('INSERT INTO care_instructions(child_id,category,instruction_text) VALUES($1,$2,$3) RETURNING *', [id,body.category,body.instruction_text]);
+  return record;
+});
+const updateInstruction = (id, body, actor) => careWrite(actor,'care_instructions',id,body,'update',async client=>{
+  const {rows:[record]} = await client.query('UPDATE care_instructions SET category=$2,instruction_text=$3 WHERE id=$1 RETURNING *', [id,body.category,body.instruction_text]);
+  return record;
+});
+const deleteInstruction = (id, actor, body={}) => careWrite(actor,'care_instructions',id,body,'delete',async client=>{
+  const {rows:[record]} = await client.query('DELETE FROM care_instructions WHERE id=$1 RETURNING id,child_id', [id]);
+  return record;
+});
+module.exports = {addContact,updateContact,deleteContact,addInstruction,updateInstruction,deleteInstruction};

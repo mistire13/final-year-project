@@ -1,0 +1,6 @@
+﻿"id","full_name","dob","gender","photo_url","group_id","caregiver_id","enrollment_status","created_at","daycare_id","version","parent_name","parent_email","parent_relationship","parent_phone"
+"27","Alemitu Atomic Rollback Child","2023-02-15","female","","58","","active","2026-10-23T18:20:41.691Z","25","1","Alemitu Atomic Rollback Parent","alemitucodex.rollback.parent@example.invalid","Mother","'+251900000006"
+"21","Alemitu Isolation Child","2023-05-10","female","","54","","active","2026-10-23T05:42:31.960Z","25","1","Alemitu Isolation Parent","alemitucodex.isolationparent@example.com","Mother","'+251900000002"
+"25","Alemitu Quota Boundary Test Child","2023-02-15","female","","53","","waitlist","2026-10-23T18:04:04.194Z","25","3","","","",""
+"20","Alemitu Test Child","2022-06-15","female","","53","151","active","2026-10-23T05:03:33.958Z","25","4","Alemitu Test Parent","alemitucodex.parent@example.com","Mother","'+251900000000"
+"22","Alemitu Test Sibling","2024-02-10","female","","53","151","active","2026-10-23T15:05:44.081Z","25","4","Alemitu Test Parent","alemitucodex.parent@example.com","Mother","'+251900000000"

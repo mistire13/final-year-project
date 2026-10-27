@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('node:crypto');
 const db = require('../../config/db');
+const control = db.control || db;
+const { withTenant } = require('../../db/tenant-pool');
 const logger = require('../../config/logger');
 const security = require('./legacy-security');
 const { inbox } = require('./legacy-inbox');
@@ -28,22 +30,22 @@ function validateNewPassword(value) {
 
 async function publicProfile(user) {
   const result = {
-    id: user.id, name: user.name, email: user.email, role: user.role, status: user.status,
+    id: user.id, name: user.name, email: user.email, phone:user.phone || null, role: user.role, status: user.status,
     daycare_id: user.daycare_id, daycare_name: user.daycare_name, daycare_status: user.daycare_status,
     subscription_plan: user.subscription_plan, trial_ends_at: user.trial_ends_at,
     profile_complete: user.profile_complete,
   };
   if (user.role === 'parent') {
-    result.linked_children = (await db.query(
+    result.linked_children = (await withTenant(user.daycare_id, () => db.query(
       `SELECT c.id, c.full_name, c.dob, c.gender, c.enrollment_status, c.photo_url, g.name AS group_name, gl.relationship
        FROM guardian_links gl JOIN children c ON c.id = gl.child_id LEFT JOIN groups g ON g.id = c.group_id
-       WHERE gl.user_id = $1 AND c.daycare_id = $2`, [user.id, user.daycare_id])).rows;
+       WHERE gl.user_id = $1 AND c.daycare_id = $2`, [user.id, user.daycare_id]))).rows;
   }
   return result;
 }
 
 const login = async (email, password) => {
-  const user = await security.findAccount(db, { email: emailValue(email) });
+  const user = await security.findAccount(control, { email: emailValue(email) });
   if (!user || typeof password !== 'string' || !await bcrypt.compare(password, user.password_hash)) {
     throw failure(401, 'Invalid credentials');
   }
@@ -55,7 +57,7 @@ const login = async (email, password) => {
 };
 
 const getCurrentUser = async userId => {
-  const user = await security.findAccount(db, { id: userId });
+  const user = await security.findAccount(control, { id: userId });
   if (!security.activeAccount(user)) throw failure(401, 'Account or daycare is inactive or unavailable');
   return publicProfile(user);
 };
@@ -65,7 +67,7 @@ const getCurrentUser = async userId => {
 const forgotPassword = async email => {
   const normalizedEmail = emailValue(email);
   inbox.assertAvailable();
-  await security.transaction(db, async client => {
+  await security.transaction(control, async client => {
     const user = await security.lockAccount(client, { email: normalizedEmail });
     if (!security.activeAccount(user)) return;
     // Bound local delivery per account as well as the router's IP rate limit.
@@ -90,7 +92,7 @@ const resetPassword = async (rawToken, newPassword) => {
   validateNewPassword(newPassword);
   const tokenHash = hash(rawToken);
   const newHash = await bcrypt.hash(newPassword, 12);
-  await security.transaction(db, async client => {
+  await security.transaction(control, async client => {
     const hint = (await client.query('SELECT user_id FROM password_reset_tokens WHERE token_hash = $1', [tokenHash])).rows[0];
     const user = hint && await security.lockAccount(client, { id: hint.user_id });
     if (!security.activeAccount(user) || !security.matchesState(rawToken.split('.')[2], user)) {
@@ -110,7 +112,7 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   if (typeof currentPassword !== 'string' || currentPassword.length > 128) throw failure(422, 'Current password is required');
   if (currentPassword === newPassword) throw failure(422, 'New password must be different from current password');
   const newHash = await bcrypt.hash(newPassword, 12);
-  await security.transaction(db, async client => {
+  await security.transaction(control, async client => {
     const user = await security.lockAccount(client, { id: userId });
     if (!security.activeAccount(user) || !await bcrypt.compare(currentPassword, user.password_hash)) {
       throw failure(401, 'Current password is incorrect or account is unavailable');

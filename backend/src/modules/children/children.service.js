@@ -8,17 +8,18 @@
 const db = require('../../config/db');
 const bcrypt = require('bcryptjs');
 const {auditedWrite,writeAudit} = require('../../utils/auditedWrite');
+const {assertChildVersions} = require('../../utils/editVersions');
 async function validateAssignment(client, body, daycareId = null) {
   if (body.caregiver_id) {
     const { rows } = await client.query(
-      "SELECT u.id FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1 AND u.status = 'active' AND r.name = 'caregiver' AND ($2::int IS NULL OR u.daycare_id = $2)",
+      "SELECT u.id FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1 AND u.status = 'active' AND r.name = 'caregiver' AND ($2::int IS NULL OR u.daycare_id = $2) FOR SHARE OF u",
       [body.caregiver_id, daycareId || null]
     );
     if (!rows.length) throw Object.assign(new Error('Choose an active caregiver from your daycare center.'), { statusCode: 422 });
   }
   if (body.group_id) {
     const { rows } = await client.query(
-      "SELECT id FROM groups WHERE id = $1 AND ($2::int IS NULL OR daycare_id = $2)",
+      "SELECT id FROM groups WHERE id = $1 AND ($2::int IS NULL OR daycare_id = $2) FOR SHARE",
       [body.group_id, daycareId || null]
     );
     if (!rows.length) throw Object.assign(new Error('Choose a valid classroom group from your daycare center.'), { statusCode: 422 });
@@ -81,7 +82,7 @@ const listChildren = async (query = {}, user) => {
   // Data query with group and caregiver details
   params.push(limit, offset);
   const { rows } = await db.query(
-    `SELECT c.id, c.full_name, c.dob, c.gender, c.enrollment_status, c.photo_url, c.daycare_id, c.created_at,
+    `SELECT c.id, c.full_name, c.dob, c.gender, c.enrollment_status, c.photo_url, c.daycare_id, c.created_at, c.version,
             g.name AS group_name, u.name AS caregiver_name
      FROM children c
      LEFT JOIN groups g ON g.id = c.group_id
@@ -117,8 +118,8 @@ const createChild = async (body, actor) => {
     await validateAssignment(client, body, daycareId);
 
     const insertChildText = `
-      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, monthly_care_fee)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
     const childVals = [
@@ -129,6 +130,7 @@ const createChild = async (body, actor) => {
       body.caregiver_id || null,
       body.enrollment_status || 'active',
       daycareId,
+      body.monthly_care_fee ? parseFloat(body.monthly_care_fee) : 3500.00,
     ];
     const childRes = await client.query(insertChildText, childVals);
     const child = childRes.rows[0];
@@ -268,7 +270,7 @@ const updateChild = async (id, body, actor) => {
     const values = [];
     let idx = 1;
 
-    const allowedKeys = ['full_name', 'dob', 'gender', 'group_id', 'caregiver_id', 'enrollment_status', 'photo_url'];
+    const allowedKeys = ['full_name', 'dob', 'gender', 'group_id', 'caregiver_id', 'monthly_care_fee', 'enrollment_status', 'photo_url'];
 
     for (const key of allowedKeys) {
       if (Object.prototype.hasOwnProperty.call(body, key)) {
@@ -284,10 +286,11 @@ const updateChild = async (id, body, actor) => {
       throw err;
     }
 
-    values.push(childId);
-    const queryText = `UPDATE children SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`;
+    values.push(childId, body.version);
+    const queryText = `UPDATE children SET ${fields.join(', ')} WHERE id = $${idx} AND version = $${idx+1} RETURNING *`;
 
     const { rows } = await client.query(queryText, values);
+    if (!rows[0]) throw Object.assign(new Error('This child profile changed in another view. Refresh before saving again.'), {statusCode:409});
     return rows[0];
   }, {}, daycareId);
 };
@@ -503,13 +506,20 @@ const enrollFamily = async (body, actor) => {
       }
     }
 
+    // Classroom creation belongs to the family transaction, including quota failures.
+    if (body.child.new_group_name) {
+      const {rows:[group]} = await client.query('INSERT INTO groups(name,description,daycare_id) VALUES($1,$2,$3) RETURNING *', [body.child.new_group_name.trim(), 'Classroom group', daycareId]);
+      body.child.group_id = group.id;
+      await writeAudit(client, actorId, 'GROUP_CREATED', 'groups', group.id, {}, daycareId);
+    }
+
     // 2. Validate child assignments (caregiver and group)
     await validateAssignment(client, body.child, daycareId);
 
     // 3. Insert child profile
     const insertChildSql = `
-      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, photo_url)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, photo_url, monthly_care_fee)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
     const childVals = [
@@ -521,6 +531,7 @@ const enrollFamily = async (body, actor) => {
       body.child.enrollment_status || 'active',
       daycareId,
       body.child.photo_url || null,
+      body.child.monthly_care_fee ? parseFloat(body.child.monthly_care_fee) : 3500.00,
     ];
     const { rows: childRows } = await client.query(insertChildSql, childVals);
     const child = childRows[0];
@@ -616,35 +627,30 @@ const assignCaregiver = async (body, actor) => {
     }
   }
 
-  return auditedWrite(actor, 'CAREGIVER_ASSIGNED', 'children', async client => {
-    let updatedCount = 0;
-
-    // 1. If group_id is provided, assign all active children in that group
+  return auditedWrite(actor, 'CAREGIVER_ASSIGNED', 'users', async client => {
+    if (childIds.some(id=>!Number.isSafeInteger(id)||id<1)) throw Object.assign(new Error('Choose valid children.'),{statusCode:422});
+    const activeCaregiver = await client.query("SELECT id FROM users WHERE id=$1 AND daycare_id=$2 AND role_id=2 AND status='active' FOR UPDATE", [caregiverId,daycareId]);
+    if (!activeCaregiver.rows[0]) throw Object.assign(new Error('Choose an active caregiver.'),{statusCode:422});
+    // Lock the classroom before its children, as in the classroom editor.
     if (groupId) {
-      const res = await client.query(
-        `UPDATE children SET caregiver_id = $1 WHERE group_id = $2 AND ($3::boolean OR daycare_id = $4) RETURNING id`,
-        [caregiverId, groupId, isSuperAdmin, daycareId]
-      );
-      updatedCount += res.rowCount;
-
-      // Also set lead_caregiver_id on the group
-      await client.query(
-        `UPDATE groups SET lead_caregiver_id = $1 WHERE id = $2 AND ($3::boolean OR daycare_id = $4)`,
-        [caregiverId, groupId, isSuperAdmin, daycareId]
-      );
+      const current = await client.query('SELECT id FROM groups WHERE id=$1 AND daycare_id=$2 AND version=$3 FOR UPDATE', [groupId,daycareId,body.group_version]);
+      if (!current.rows[0]) throw Object.assign(new Error('This classroom changed. Refresh before assigning children.'),{statusCode:409});
     }
-
-    // 2. If specific child_ids are provided
-    if (childIds.length > 0) {
-      const res = await client.query(
-        `UPDATE children SET caregiver_id = $1 WHERE id = ANY($2::int[]) AND ($3::boolean OR daycare_id = $4) RETURNING id`,
-        [caregiverId, childIds, isSuperAdmin, daycareId]
-      );
-      updatedCount += res.rowCount;
+    const selected = await client.query("SELECT id,version FROM children WHERE daycare_id=$1 AND enrollment_status='active' AND (id=ANY($2::int[]) OR caregiver_id=$3) ORDER BY id FOR UPDATE", [daycareId,childIds,caregiverId]);
+    assertChildVersions(selected.rows, body.child_versions);
+    if (childIds.some(id=>!selected.rows.some(row=>row.id===id))) throw Object.assign(new Error('Child not available in this daycare.'),{statusCode:404});
+    const selectedIds = selected.rows.map(row=>row.id);
+    if (selectedIds.length) {
+      await client.query('UPDATE children SET caregiver_id=CASE WHEN id=ANY($4::int[]) THEN $1::int ELSE NULL END WHERE id=ANY($2::int[]) AND daycare_id=$3', [caregiverId,selectedIds,daycareId,childIds]);
     }
-
-    return { success: true, updated_count: updatedCount, caregiver_id: caregiverId };
-  });
+    if (groupId) {
+      const members = await client.query("SELECT id FROM children WHERE group_id=$1 AND daycare_id=$2 AND enrollment_status='active'", [groupId,daycareId]);
+      if (members.rows.length && members.rows.every(row=>childIds.includes(row.id))) {
+        await client.query('UPDATE groups SET lead_caregiver_id=$1 WHERE id=$2 AND daycare_id=$3', [caregiverId,groupId,daycareId]);
+      }
+    }
+    return { id: caregiverId, success: true, updated_count: selectedIds.length, caregiver_id: caregiverId };
+  }, {child_ids:childIds,group_id:groupId}, daycareId);
 };
 
 module.exports = {

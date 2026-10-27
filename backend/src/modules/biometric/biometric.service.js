@@ -5,24 +5,26 @@
  * SRS Refs: FR-BIO-01–10, FR-AUD-03
  */
 const db = require('../../config/db');
-const { isParentLinked } = require('../children/children.service');
-const { logAudit } = require('../audit/audit.service');
+const { auditedWrite } = require('../../utils/auditedWrite');
 
 /**
  * Enroll biometric reference for an authorized adult guardian link (Admin only).
  */
 const enroll = async (body, user) => {
   const linkId = parseInt(body.guardian_link_id, 10);
-  const isSuperAdmin = user && user.role === 'super_admin';
   const daycareId = user?.daycare_id || null;
+  if (!daycareId || user?.role !== 'admin') {
+    throw Object.assign(new Error('Daycare administrator required'), { statusCode: 403 });
+  }
 
+  return auditedWrite(user, 'BIOMETRIC_ENROLLED', 'biometric_references', async client => {
   // 1. Verify guardian link exists with child tenant and guardian user status
-  const { rows: linkRows } = await db.query(
+  const { rows: linkRows } = await client.query(
     `SELECT gl.id, gl.user_id, gl.child_id, gl.pickup_authorized, c.daycare_id, u.status AS user_status
      FROM guardian_links gl
      JOIN children c ON c.id = gl.child_id
      JOIN users u ON u.id = gl.user_id
-     WHERE gl.id = $1`,
+     WHERE gl.id = $1 FOR UPDATE OF gl,u`,
     [linkId]
   );
 
@@ -34,7 +36,7 @@ const enroll = async (body, user) => {
 
   const link = linkRows[0];
 
-  if (!isSuperAdmin && daycareId && link.daycare_id !== daycareId) {
+  if (link.daycare_id !== daycareId) {
     const err = new Error('Guardian link not found');
     err.statusCode = 404;
     throw err;
@@ -53,7 +55,7 @@ const enroll = async (body, user) => {
   }
 
   // 2. Upsert biometric reference
-  const { rows } = await db.query(
+  const { rows } = await client.query(
     `INSERT INTO biometric_references (guardian_link_id, user_id, reference_data, enrolled_by, active)
      VALUES ($1, $2, $3, $4, TRUE)
      ON CONFLICT (guardian_link_id)
@@ -62,13 +64,8 @@ const enroll = async (body, user) => {
     [linkId, link.user_id, body.reference_data, user.id]
   );
 
-  await logAudit(user.id, 'BIOMETRIC_ENROLLED', 'biometric_references', rows[0].id, {
-    guardian_link_id: linkId,
-    user_id: link.user_id,
-    daycare_id: link.daycare_id,
-  });
-
   return rows[0];
+  }, { guardian_link_id: linkId }, daycareId);
 };
 
 /**
@@ -84,8 +81,10 @@ const verify = async () => {
  */
 const getGuardianBiometric = async (guardianLinkIdParam, user = null) => {
   const linkId = parseInt(guardianLinkIdParam, 10);
-  const isSuperAdmin = user && user.role === 'super_admin';
   const daycareId = user?.daycare_id || null;
+  if (!daycareId || user?.role !== 'admin') {
+    throw Object.assign(new Error('Daycare administrator required'), { statusCode: 403 });
+  }
 
   const { rows } = await db.query(
     `SELECT br.id, br.guardian_link_id, br.user_id, br.enrolled_at, br.active,
@@ -105,7 +104,7 @@ const getGuardianBiometric = async (guardianLinkIdParam, user = null) => {
   }
 
   const bio = rows[0];
-  if (!isSuperAdmin && daycareId && bio.daycare_id !== daycareId) {
+  if (bio.daycare_id !== daycareId) {
     const err = new Error('No active biometric reference enrolled for this guardian link');
     err.statusCode = 404;
     throw err;

@@ -1,3 +1,4 @@
+import { StaffHomeScreen, StaffReportsScreen, StaffAccountScreen } from "../screens/profile/StaffScreens";
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { HomeScreen } from "../screens/home/HomeScreen";
@@ -12,7 +13,7 @@ import { useAuth } from "../context/AuthContext";
 export type MainTabParamList = {
   Home: undefined;
   Reports: undefined;
-  Messages: undefined;
+  Messages: { tab?: "Messages" | "Announcements" | "Meal Plans" } | undefined;
   Shop: undefined;
   Workspace: undefined;
   Profile: undefined;
@@ -42,15 +43,15 @@ export function MainTabNavigator() {
         />
       )}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Reports" component={ReportsScreen} />
+      <Tab.Screen name="Home" component={staff ? StaffHomeScreen : HomeScreen} />
+      <Tab.Screen name="Reports" component={staff ? StaffReportsScreen : ReportsScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       {staff ? (
         <Tab.Screen name="Workspace" component={WorkspaceScreen} />
       ) : (
         <Tab.Screen name="Shop" component={DaycareStoreScreen} />
       )}
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={staff ? StaffAccountScreen : ProfileScreen} />
     </Tab.Navigator>
   );
 }

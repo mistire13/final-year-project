@@ -15,7 +15,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const bcrypt = require('bcryptjs');
-const { withIsolatedDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
+const { withCurrentDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
 
 const password = 'Test-password-phase4!';
 const secret = 'synthetic-phase-four-jwt-secret-for-testing';
@@ -151,7 +151,7 @@ function setupContext(pool) {
 }
 
 test('Phase 4: Attendance, Front-Desk Shifts & Verified Pickup Transitions', async (t) => {
-  await withIsolatedDatabase(async ({ db, pool, name }) => {
+  await withCurrentDatabase(async ({ db, pool, name }) => {
     assertTestDatabaseName(name);
     const f = await fixture(db);
     const mod = setupContext(pool);

@@ -6,11 +6,12 @@ const { loadDaycareAuthConfig } = require('../../config/daycare-auth');
 const config = loadDaycareAuthConfig();
 if (!config.enabled) throw new Error('Daycare authentication preview is not enabled.');
 
-const pool = require('../../config/db');
+const tenantPool = require('../../config/db');
+const pool = tenantPool.control || tenantPool;
 const { createDaycareAuth } = require('./index');
 const { createDaycareUsers } = require('../daycare-users');
 const auth = createDaycareAuth({ pool, config });
-const users = createDaycareUsers({ pool, authenticate: auth.authenticate });
+const users = createDaycareUsers({ pool: tenantPool, authenticate: auth.authenticate });
 const { createPlatformAuth } = require('../platform-auth');
 const platform = createPlatformAuth({ pool, config, mfa: auth.mfa, security: auth.security });
 platform.router.use(auth.recovery.platformRouter);

@@ -5,6 +5,9 @@
  * SRS Refs: FR-COM-01–08, UC-07
  */
 const db = require('../../config/db');
+const {transaction} = require('../auth/legacy-security');
+const {writeAudit} = require('../../utils/auditedWrite');
+const crypto = require('node:crypto');
 
 // ─────────────────────────────────────────────────────────────
 // 1. ANNOUNCEMENTS
@@ -31,9 +34,20 @@ const createAnnouncement = async (body, user) => {
     }
   }
 
-  const { rows } = await db.query(
-    `INSERT INTO announcements (author_id, title, body, announcement_type, audience, target_group_id, expires_at, daycare_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  return transaction(db,async client=>{
+  const input={title:body.title,body:body.body,announcement_type:body.announcement_type||'general',audience:body.audience||'all',target_group_id:body.target_group_id||null,expires_at:body.expires_at?new Date(body.expires_at).toISOString():null};
+  const requestHash=crypto.createHash('sha256').update(JSON.stringify(input)).digest('hex');
+  if(body.request_key){
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`announcement:${daycareId}:${user.id}:${body.request_key}`]);
+    const {rows:[previous]}=await client.query('SELECT * FROM announcements WHERE daycare_id=$1 AND author_id=$2 AND request_key=$3',[daycareId,user.id,body.request_key]);
+    if(previous){
+      if(previous.request_hash!==requestHash)throw Object.assign(new Error('This announcement was already submitted with different content. Check Communication before publishing a new announcement.'),{statusCode:409});
+      return previous;
+    }
+  }
+  const { rows } = await client.query(
+    `INSERT INTO announcements (author_id, title, body, announcement_type, audience, target_group_id, expires_at, daycare_id, request_key, request_hash)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
     [
       user.id,
@@ -44,9 +58,13 @@ const createAnnouncement = async (body, user) => {
       body.target_group_id || null,
       body.expires_at || null,
       daycareId,
+      body.request_key||null,
+      requestHash,
     ]
   );
+  await writeAudit(client,user,'ANNOUNCEMENT_CREATED','announcements',rows[0].id,{audience:input.audience});
   return rows[0];
+  });
 };
 
 const listAnnouncements = async (query = {}, user) => {

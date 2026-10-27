@@ -1,6 +1,12 @@
-import React, { useState } from "react";
+import { apiClient } from "../../api/client";
+import React, { useState, useEffect } from "react";
 import { View, Switch, ActivityIndicator } from "react-native";
-import { User, Phone, EnvelopeSimple, ForkKnife, Sparkle, CheckCircle } from "phosphor-react-native";
+import { User } from "phosphor-react-native/src/icons/User";
+import { Phone } from "phosphor-react-native/src/icons/Phone";
+import { EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { Sparkle } from "phosphor-react-native/src/icons/Sparkle";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
 import {
   Page,
   Text,
@@ -18,19 +24,20 @@ import { updateMyProfile } from "../../api/parentApi";
 
 export function ParentProfileScreen({ navigation }: any) {
   const { user } = useAuth();
-  const [name, setName] = useState(user?.name || "Hana Tesfaye");
-  const [phone, setPhone] = useState(user?.phone || "+251 91 123 4567");
-  const [email, setEmail] = useState(user?.email || "hana.tesfaye@example.com");
+  const [name, setName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [email, setEmail] = useState(user?.email || "");
 
   // Meal Suggestions & Food Preferences (feature_design_plan_v2 §5.9)
-  const [cuisine, setCuisine] = useState("Ethiopian, Whole foods");
-  const [householdDiet, setHouseholdDiet] = useState("No pork, limit refined sugars");
+  const [cuisine, setCuisine] = useState("");
+  const [householdDiet, setHouseholdDiet] = useState("");
   const [aiConsent, setAiConsent] = useState(true);
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [message, setMessage] = useState("");
 
+  useEffect(()=>{apiClient.get('/notifications/preferences').then(({data})=>{setCuisine(data.food?.cuisine||'');setHouseholdDiet(data.food?.diet||'');setAiConsent(data.food?.ai_consent??false);}).catch(()=>setMessage('Food preferences could not be loaded. Please reconnect before editing.'));},[]);
   const handleSave = async () => {
     const valErr = contactError(name, phone, email, true);
     if (valErr) {
@@ -44,6 +51,7 @@ export function ParentProfileScreen({ navigation }: any) {
     setSuccess(false);
 
     try {
+      await apiClient.patch("/notifications/preferences",{food:{cuisine:cuisine.trim(),diet:householdDiet.trim(),ai_consent:aiConsent}});
       await updateMyProfile({
         name: name.trim(),
         email: email.trim().toLowerCase(),
@@ -130,7 +138,7 @@ export function ParentProfileScreen({ navigation }: any) {
               </Text>
             </View>
             <Text size={11} color="#78818D" style={{ marginTop: 3 }}>
-              Allow Ankelba AI to use these preferences when suggesting home dinners and snack ideas.
+              Save your meal-planning preferences for your account. Personalization requires the AI guide integration.
             </Text>
           </View>
           <Switch

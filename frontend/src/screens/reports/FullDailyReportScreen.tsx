@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Pressable } from "react-native";
-import {
-  SignIn,
-  SignOut,
-  ForkKnife,
-  Moon,
-  Palette,
-  PuzzlePiece,
-  Tree,
-  Smiley,
-  ChatCircle,
-  ArrowClockwise,
-  Heart,
-  CheckCircle,
-} from "phosphor-react-native";
+import { SignIn } from "phosphor-react-native/src/icons/SignIn";
+import { SignOut } from "phosphor-react-native/src/icons/SignOut";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { Moon } from "phosphor-react-native/src/icons/Moon";
+import { Palette } from "phosphor-react-native/src/icons/Palette";
+import { PuzzlePiece } from "phosphor-react-native/src/icons/PuzzlePiece";
+import { Tree } from "phosphor-react-native/src/icons/Tree";
+import { Smiley } from "phosphor-react-native/src/icons/Smiley";
+import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
+import { ArrowClockwise } from "phosphor-react-native/src/icons/ArrowClockwise";
+import { Heart } from "phosphor-react-native/src/icons/Heart";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
 import {
   Page,
   Text,
@@ -25,77 +23,62 @@ import {
   s,
   Notice,
 } from "../../components/design/System";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
-import { getDailyReport, getChildReports, DetailedDailyReport } from "../../api/parentApi";
+import {
+  getDailyReport,
+  getChildReports,
+  DetailedDailyReport,
+} from "../../api/parentApi";
 
 export function FullDailyReportScreen({ navigation, route }: any) {
-  const { selectedChild } = useChild();
+  const { selectedChild, childrenList } = useChild();
   const targetReportId = route.params?.reportId;
-  const childId = route.params?.childId || selectedChild?.id || 1;
+  const childId = route.params?.childId || selectedChild?.id;
 
-  const [report, setReport] = useState<DetailedDailyReport | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [emptyState, setEmptyState] = useState(false);
-
-  const loadReport = async () => {
-    setLoading(true);
-    setError("");
-    setEmptyState(false);
-    try {
-      // 1. Try target report ID if passed
-      if (targetReportId) {
-        try {
-          const data = await getDailyReport(targetReportId);
-          if (data && data.id) {
-            setReport(data);
-            return;
-          }
-        } catch {
-          // If specified ID failed, fallback to searching for child's reports
-        }
-      }
-
-      // 2. Fetch reports list for this child
+  const {
+    data: report,
+    loading,
+    error,
+    refresh: loadReport,
+  } = useRemoteResource<DetailedDailyReport | null>(
+    `report:${targetReportId ?? "latest"}:${childId ?? "none"}`,
+    async () => {
+      if (targetReportId) return getDailyReport(targetReportId);
+      if (!childId) return null;
       const summaries = await getChildReports(childId);
-      if (summaries && summaries.length > 0) {
-        const latest = await getDailyReport(summaries[0].id);
-        if (latest && latest.id) {
-          setReport(latest);
-          return;
-        }
-      }
-
-      // No reports exist for this child yet
-      setReport(null);
-      setEmptyState(true);
-    } catch (e: any) {
-      setError(e?.response?.data?.error || "This daily report could not be loaded from the database.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadReport();
-  }, [targetReportId, childId]);
-
-  const childName = selectedChild?.full_name || "Child";
-  const groupName = selectedChild?.group_name || "Daycare Group";
+      return summaries.length ? getDailyReport(summaries[0].id) : null;
+    },
+    null,
+  );
+  const emptyState = !loading && !report && !error;
+  const reportChild =
+    childrenList.find((c) => c.id === report?.child_id) || selectedChild;
+  const childName = reportChild?.full_name || "Child";
+  const groupName = reportChild?.group_name || "Daycare Group";
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
   };
+
+  if (!childId && !targetReportId) return <Page title="Daily report" back><Notice>No child is linked to this account yet.</Notice></Page>;
 
   if (loading) {
     return (
       <Page title="Daily Report" back tabs activeTab="Reports">
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
-          <Text size={14} color="#858A93" style={{ marginTop: 12 }}>Loading report details…</Text>
+          <Text size={14} color="#858A93" style={{ marginTop: 12 }}>
+            Loading report details…
+          </Text>
         </Card>
       </Page>
     );
@@ -104,20 +87,46 @@ export function FullDailyReportScreen({ navigation, route }: any) {
   if (emptyState || (!loading && !report && !error)) {
     return (
       <Page title="Daily Report" back tabs activeTab="Reports">
-        <Card style={{ alignItems: "center", paddingVertical: 36, paddingHorizontal: 20 }}>
-          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#FFF7CF", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+        <Card
+          style={{
+            alignItems: "center",
+            paddingVertical: 36,
+            paddingHorizontal: 20,
+          }}
+        >
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              backgroundColor: "#FFF7CF",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
+            }}
+          >
             <ForkKnife size={30} color="#DD7B13" />
           </View>
-          <Text size={18} weight="semibold" style={{ textAlign: "center", marginBottom: 8 }}>
-            No Daily Report Yet Today
+          <Text
+            size={18}
+            weight="semibold"
+            style={{ textAlign: "center", marginBottom: 8 }}
+          >
+            No daily reports available
           </Text>
-          <Text size={14} color="#7B818D" style={{ textAlign: "center", lineHeight: 20, marginBottom: 20 }}>
-            Caregivers record meal times, nap duration, play, and learning activities throughout the day. Check back in the afternoon or view past reports.
+          <Text
+            size={14}
+            color="#7B818D"
+            style={{ textAlign: "center", lineHeight: 20, marginBottom: 20 }}
+          >
+            Caregivers record meal times, nap duration, play, and learning
+            activities throughout the day. Check back in the afternoon or view
+            past reports.
           </Text>
           <View style={{ width: "100%", gap: 10 }}>
             <Button
               title="View Report History"
-              onPress={() => navigation.navigate("Reports")}
+              onPress={() => navigation.navigate("ReportsHistory", { childId })}
             />
             <Button
               title="Refresh"
@@ -136,7 +145,12 @@ export function FullDailyReportScreen({ navigation, route }: any) {
       <Page title="Daily Report" back tabs activeTab="Reports">
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>
           <Notice tone="error">{error || "Report not found."}</Notice>
-          <Button title="Retry" icon={ArrowClockwise} onPress={loadReport} style={{ marginTop: 16 }} />
+          <Button
+            title="Retry"
+            icon={ArrowClockwise}
+            onPress={loadReport}
+            style={{ marginTop: 16 }}
+          />
         </Card>
       </Page>
     );
@@ -153,7 +167,7 @@ export function FullDailyReportScreen({ navigation, route }: any) {
       {/* Child & Caregiver Banner */}
       <Card tint="#F2F0F8">
         <View style={s.row}>
-          <Avatar source={artwork.child} />
+          <Avatar source={reportChild?.photo_url?{uri:reportChild.photo_url}:undefined} initials={childName.slice(0,2).toUpperCase()} />
           <View style={{ flex: 1 }}>
             <Text size={18} weight="semibold">
               {childName}
@@ -172,12 +186,24 @@ export function FullDailyReportScreen({ navigation, route }: any) {
           report.meals.map((m, idx) => (
             <View key={m.id || idx}>
               <View style={[s.row, { paddingVertical: 8 }]}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FFF7CF", alignItems: "center", justifyContent: "center" }}>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: "#FFF7CF",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <ForkKnife size={18} color="#DD7B13" />
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text weight="semibold" size={14}>
-                    {m.meal_type ? m.meal_type.charAt(0).toUpperCase() + m.meal_type.slice(1) : "Meal"}
+                    {m.meal_type
+                      ? m.meal_type.charAt(0).toUpperCase() +
+                        m.meal_type.slice(1)
+                      : "Meal"}
                   </Text>
                   <Text size={13} color="#606B74" style={{ marginTop: 2 }}>
                     {m.description}
@@ -191,7 +217,9 @@ export function FullDailyReportScreen({ navigation, route }: any) {
             </View>
           ))
         ) : (
-          <Text color="#7B818D" size={13}>No meals recorded for this day.</Text>
+          <Text color="#7B818D" size={13}>
+            No meals recorded for this day.
+          </Text>
         )}
 
         {report.meals && report.meals.length > 0 && (
@@ -219,7 +247,12 @@ export function FullDailyReportScreen({ navigation, route }: any) {
             }}
           >
             <ForkKnife size={18} color="#D78B23" weight="bold" />
-            <Text size={13} weight="semibold" color="#A86308" style={{ flex: 1 }}>
+            <Text
+              size={13}
+              weight="semibold"
+              color="#A86308"
+              style={{ flex: 1 }}
+            >
               💡 Get dinner ideas based on today’s meals →
             </Text>
           </Pressable>
@@ -230,15 +263,26 @@ export function FullDailyReportScreen({ navigation, route }: any) {
       <Section title="Sleep & Rest" />
       <Card>
         <View style={s.row}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1EDF6", alignItems: "center", justifyContent: "center" }}>
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: "#F1EDF6",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <Moon size={18} color="#6745AF" />
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text weight="semibold" size={14}>
-              {report.sleep_duration_min ? `Nap: ${report.sleep_duration_min} minutes` : "Rest Period"}
+              {report.sleep_duration_min
+                ? `Nap: ${report.sleep_duration_min} minutes`
+                : "Rest Period"}
             </Text>
             <Text size={13} color="#606B74" style={{ marginTop: 2 }}>
-              {report.sleep_notes || "Child rested comfortably during scheduled nap time."}
+              {report.sleep_notes || "No sleep notes recorded."}
             </Text>
           </View>
         </View>
@@ -251,12 +295,23 @@ export function FullDailyReportScreen({ navigation, route }: any) {
           report.activities.map((a, idx) => (
             <View key={a.id || idx}>
               <View style={[s.row, { paddingVertical: 8 }]}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8F6F3", alignItems: "center", justifyContent: "center" }}>
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: "#E8F6F3",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <PuzzlePiece size={18} color="#008794" />
                 </View>
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text weight="semibold" size={14}>
-                    {(a.activity_type || "Activity").replace("_", " ").toUpperCase()}
+                    {(a.activity_type || "Activity")
+                      .replace("_", " ")
+                      .toUpperCase()}
                   </Text>
                   <Text size={13} color="#606B74" style={{ marginTop: 2 }}>
                     {a.description}
@@ -272,7 +327,9 @@ export function FullDailyReportScreen({ navigation, route }: any) {
             </View>
           ))
         ) : (
-          <Text color="#7B818D" size={13}>No specific activity items logged for this day.</Text>
+          <Text color="#7B818D" size={13}>
+            No specific activity items logged for this day.
+          </Text>
         )}
       </Card>
 
@@ -280,17 +337,25 @@ export function FullDailyReportScreen({ navigation, route }: any) {
       <Section title="Daily Observations & Mood" />
       <Card>
         <View style={{ paddingVertical: 6 }}>
-          <Text size={12} color="#7B818D">RECORDED MOOD</Text>
+          <Text size={12} color="#7B818D">
+            RECORDED MOOD
+          </Text>
           <Text weight="medium" style={{ marginTop: 3 }}>
-            {report.mood ? (report.mood.charAt(0).toUpperCase() + report.mood.slice(1)) : "Calm and happy"}
+            {report.mood
+              ? report.mood.charAt(0).toUpperCase() + report.mood.slice(1)
+              : "Calm and happy"}
           </Text>
         </View>
         {report.behavior_notes ? (
           <>
             <View style={s.divider} />
             <View style={{ paddingVertical: 6 }}>
-              <Text size={12} color="#7B818D">BEHAVIOR & SOCIAL ENGAGEMENT</Text>
-              <Text weight="medium" style={{ marginTop: 3 }}>{report.behavior_notes}</Text>
+              <Text size={12} color="#7B818D">
+                BEHAVIOR & SOCIAL ENGAGEMENT
+              </Text>
+              <Text weight="medium" style={{ marginTop: 3 }}>
+                {report.behavior_notes}
+              </Text>
             </View>
           </>
         ) : null}
@@ -298,8 +363,12 @@ export function FullDailyReportScreen({ navigation, route }: any) {
           <>
             <View style={s.divider} />
             <View style={{ paddingVertical: 6 }}>
-              <Text size={12} color="#7B818D">CAREGIVER OBSERVATIONS</Text>
-              <Text weight="medium" style={{ marginTop: 3 }}>{report.general_observations}</Text>
+              <Text size={12} color="#7B818D">
+                CAREGIVER OBSERVATIONS
+              </Text>
+              <Text weight="medium" style={{ marginTop: 3 }}>
+                {report.general_observations}
+              </Text>
             </View>
           </>
         ) : null}
@@ -318,15 +387,26 @@ export function FullDailyReportScreen({ navigation, route }: any) {
             </Text>
           </View>
         </View>
-        <Text color="#E4EAF1" size={14} style={{ marginTop: 14, lineHeight: 20 }}>
-          {report.general_observations || report.behavior_notes || "Thank you for another wonderful day at Ankelba daycare!"}
+        <Text
+          color="#E4EAF1"
+          size={14}
+          style={{ marginTop: 14, lineHeight: 20 }}
+        >
+          {report.general_observations ||
+            report.behavior_notes ||
+            "Thank you for another wonderful day at Ankelba daycare!"}
         </Text>
       </Card>
 
       <Button
         title="Message Caregiver"
         icon={ChatCircle}
-        onPress={() => navigation.navigate("CaregiverChat", { threadId: 1 })}
+        onPress={() =>
+          navigation.navigate("MainTabs", {
+            screen: "Messages",
+            params: { tab: "Messages" },
+          })
+        }
         style={{ marginTop: 24, marginBottom: 20 }}
       />
     </Page>

@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const bcrypt = require('bcryptjs');
-const { withIsolatedDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
+const { withCurrentDatabase, assertTestDatabaseName } = require('./helpers/auth-test-database.cjs');
 
 const password = 'Test-password-phase6!';
 const secret = 'synthetic-phase-six-jwt-secret-for-testing';
@@ -126,7 +126,7 @@ function setupContext(pool) {
 }
 
 test('Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F13)', async (t) => {
-  await withIsolatedDatabase(async ({ db, pool, name }) => {
+  await withCurrentDatabase(async ({ db, pool, name }) => {
     assertTestDatabaseName(name);
     const f = await fixture(db);
     const { commService, searchService } = setupContext(pool);
@@ -147,9 +147,11 @@ test('Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F1
       await db('alerts').where({ id: foreign.id }).delete();
     });
 
-    await t.test('Unowned products cannot be listed, searched, purchased or edited', async () => {
+    await t.test('Unowned products are rejected and foreign products cannot be listed, searched, purchased or edited', async () => {
       const store = require('../src/modules/store/store.service');
-      const [product] = await db('products').insert({ name: 'OrphanRegression', price: 10, stock_qty: 5, available: true, created_by: f.adminB.id, daycare_id: null }).returning('*');
+      const draft = { name: 'OrphanRegression', price: 10, stock_qty: 5, available: true, created_by: f.adminB.id, daycare_id: null };
+      await assert.rejects(db('products').insert(draft), {code:'23514'});
+      const [product] = await db('products').insert({...draft,daycare_id:f.daycareB.id}).returning('*');
       assert.ok(!(await store.listProducts({}, f.adminA)).data.some(row => row.id === product.id));
       assert.ok(!(await searchService.globalSearch('OrphanRegression', f.adminA)).results.products.length);
       await assert.rejects(store.updateProduct(product.id, { name: 'Changed' }, f.adminA), { statusCode: 404 });

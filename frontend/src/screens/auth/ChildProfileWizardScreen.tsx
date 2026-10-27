@@ -1,3 +1,5 @@
+import { apiClient } from "../../api/client";
+import { useChild } from "../../context/ChildContext";
 /**
  * ChildProfileWizardScreen.tsx
  * 5-step wizard that collects child care profile data from the parent.
@@ -23,31 +25,29 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import {
-  Warning,
-  Pill,
-  Phone,
-  FileText,
-  CheckCircle,
-  Plus,
-  Trash,
-  ArrowRight,
-  ArrowLeft,
-  Baby,
-  User,
-  ShieldCheck,
-  Info,
-  CalendarBlank,
-  Check,
-  Users,
-  CaretDown,
-  CaretUp,
-  MagnifyingGlass,
-  X,
-  SignOut,
-  House,
-  ForkKnife,
-} from "phosphor-react-native";
+import { Warning } from "phosphor-react-native/src/icons/Warning";
+import { Pill } from "phosphor-react-native/src/icons/Pill";
+import { Phone } from "phosphor-react-native/src/icons/Phone";
+import { FileText } from "phosphor-react-native/src/icons/FileText";
+import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
+import { Plus } from "phosphor-react-native/src/icons/Plus";
+import { Trash } from "phosphor-react-native/src/icons/Trash";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { Baby } from "phosphor-react-native/src/icons/Baby";
+import { User } from "phosphor-react-native/src/icons/User";
+import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
+import { Info } from "phosphor-react-native/src/icons/Info";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { Check } from "phosphor-react-native/src/icons/Check";
+import { Users } from "phosphor-react-native/src/icons/Users";
+import { CaretDown } from "phosphor-react-native/src/icons/CaretDown";
+import { CaretUp } from "phosphor-react-native/src/icons/CaretUp";
+import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
+import { X } from "phosphor-react-native/src/icons/X";
+import { SignOut } from "phosphor-react-native/src/icons/SignOut";
+import { House } from "phosphor-react-native/src/icons/House";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
 import {
   Text,
   Button,
@@ -329,9 +329,7 @@ function StepChildInfo({
         color={TEXT_MUTED}
         style={{ textAlign: "center", marginBottom: 20, lineHeight: 22 }}
       >
-        Please fulfill your child’s identity, date of birth, age, gender, group, and
-        parent relationship. All records are directly saved to the daycare’s centralized
-        database.
+        Review your child’s details and your relationship. Your daycare manages the classroom assignment.
       </Text>
 
       {/* ─── PARENT INFORMATION SECTION ─── */}
@@ -407,7 +405,7 @@ function StepChildInfo({
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
             <Text size={12} color={TEXT_MUTED}>Account Role:</Text>
             <Text size={12} weight="semibold" color={BRAND}>
-              Parent / Guardian (Role ID: 3)
+              Parent / Guardian
             </Text>
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -598,7 +596,7 @@ function StepChildInfo({
             color={TEXT_MUTED}
             style={{ marginBottom: 8 }}
           >
-            Classroom / Daycare Group *
+            Classroom assignment (managed by daycare)
           </Text>
           <View
             style={{
@@ -608,12 +606,11 @@ function StepChildInfo({
               marginBottom: 8,
             }}
           >
-            {groups.map((grp: GroupRecord) => {
+            {groups.filter((grp:GroupRecord)=>grp.id===groupId).map((grp: GroupRecord) => {
               const active = groupId === grp.id;
               return (
-                <Pressable
+                <View
                   key={grp.id}
-                  onPress={() => setGroupId(grp.id)}
                   style={{
                     paddingHorizontal: 14,
                     paddingVertical: 10,
@@ -635,10 +632,11 @@ function StepChildInfo({
                       {grp.description}
                     </Text>
                   ) : null}
-                </Pressable>
+                </View>
               );
             })}
           </View>
+          <Text size={12} color={TEXT_MUTED}>Contact the office to request a classroom change.</Text>
         </View>
       </View>
 
@@ -774,7 +772,7 @@ function StepChildInfo({
             </View>
             <Text size={12} color={pickupAuthorized ? "#15803D" : "#B45309"} style={{ marginTop: 4, lineHeight: 17 }}>
               Authorizes you to collect {fullName ? fullName : "your child"} during checkout. Recorded in
-              the database for front desk verification and biometric checkout (FR-BIO-03).
+              the database for front desk identity and pickup checks.
             </Text>
           </View>
         </Pressable>
@@ -887,7 +885,7 @@ function StepAllergies({
         style={{ textAlign: "center", marginBottom: 20, lineHeight: 22 }}
       >
         Select your child’s food allergies from the dropdown list or add custom items.
-        Caregivers and the AI Guide strictly verify this data to safeguard meal and snack times.
+        These notes are shared with your daycare team. Contact the team directly about meal safety or changes to your child’s allergies.
       </Text>
 
       {/* ─── ALLERGEN DROPDOWN SELECTOR ─── */}
@@ -1388,8 +1386,7 @@ function StepEmergency({ contacts, setContacts }: any) {
         color={TEXT_MUTED}
         style={{ textAlign: "center", marginBottom: 24, lineHeight: 22 }}
       >
-        Provide at least one emergency contact who can be reached if you are
-        unavailable.
+        Provide emergency contact details for your daycare team. Add another trusted adult who can be reached when you are unavailable.
       </Text>
 
       {contacts.map((c: ContactEntry, idx: number) => (
@@ -1507,7 +1504,7 @@ function StepCareNotes({
         label="Any Other Notes for Caregivers"
         value={extraNotes}
         onChangeText={setExtraNotes}
-        placeholder="Anything else you’d like Liya’s caregivers to know…"
+        placeholder="Anything else you’d like your child’s caregivers to know…"
         multiline
       />
     </View>
@@ -1515,8 +1512,10 @@ function StepCareNotes({
 }
 
 // ─── MAIN WIZARD SCREEN ───────────────────────────────────────────────────────
-export function ChildProfileWizardScreen({ navigation }: any) {
+export function ChildProfileWizardScreen({ navigation, route }: any) {
   const { user, refreshUser, logout } = useAuth();
+  const {selectedChild}=useChild();
+  const [version,setVersion]=useState("");
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -1528,13 +1527,10 @@ export function ChildProfileWizardScreen({ navigation }: any) {
   // Child data states (Step 1 fulfillment)
   const [childId, setChildId] = useState<number | null>(null);
   const [fullName, setFullName] = useState("");
-  const [dob, setDob] = useState("2023-04-15");
+  const [dob, setDob] = useState("");
   const [gender, setGender] = useState("female");
-  const [groupId, setGroupId] = useState<number | null>(1);
-  const [groups, setGroups] = useState<GroupRecord[]>([
-    { id: 1, name: "Toddlers (1-2 yrs)" },
-    { id: 2, name: "Pre-K (3-5 yrs)" },
-  ]);
+  const [groupId, setGroupId] = useState<number | null>(null);
+  const [groups, setGroups] = useState<GroupRecord[]>([]);
   const [relationship, setRelationship] = useState("Mother");
   const [pickupAuthorized, setPickupAuthorized] = useState(true);
 
@@ -1567,23 +1563,28 @@ export function ChildProfileWizardScreen({ navigation }: any) {
   useEffect(() => {
     (async () => {
       try {
-        const [children, groupsList] = await Promise.all([
-          getMyChildren().catch(() => []),
-          getGroups().catch(() => []),
-        ]);
+        const [children, groupsList] = await Promise.all([getMyChildren(),getGroups()]);
 
         if (groupsList.length > 0) {
           setGroups(groupsList);
         }
 
         if (children.length > 0) {
-          const c = children[0];
+          const summary=children.find(c=>c.id===(route?.params?.childId||selectedChild?.id))||children[0];
+          const {data:snapshot}=await apiClient.get(`/parent/children/${summary.id}/care-profile`);
+          setVersion(snapshot.version);
+          const c=snapshot.child;
+          setAllergies(c.care_instructions.filter((r:any)=>r.category==='allergy').map((r:any)=>({id:uid(),text:r.instruction_text})));
+          setDietNotes(c.care_instructions.filter((r:any)=>r.category==='dietary').map((r:any)=>r.instruction_text).join('\n'));
+          setConditions(c.care_instructions.filter((r:any)=>r.category==='medical_note').map((r:any)=>r.instruction_text).join('\n'));
+          setExtraNotes(c.care_instructions.filter((r:any)=>r.category==='general').map((r:any)=>r.instruction_text).join('\n'));
+          setContacts(c.emergency_contacts.length?c.emergency_contacts.map((r:any)=>({...r,id:uid()})):[{id:uid(),name:'',relationship:'',phone:''}]);
           setChildId(c.id);
           setFullName(c.full_name && !c.full_name.includes("'s Child") && c.full_name !== "My Child" ? c.full_name : "");
           if (c.dob) setDob(c.dob.slice(0, 10));
           if (c.gender) setGender(c.gender.toLowerCase());
           if (c.group_id) setGroupId(c.group_id);
-          else if (groupsList.length > 0) setGroupId(groupsList[0].id);
+          else setGroupId(null);
           if (c.relationship) setRelationship(c.relationship);
           if (c.pickup_authorized !== undefined) setPickupAuthorized(Boolean(c.pickup_authorized));
         }
@@ -1625,24 +1626,6 @@ export function ChildProfileWizardScreen({ navigation }: any) {
     }
     setError("");
 
-    // If moving from step 1, persist child profile immediately
-    if (step === 1 && childId) {
-      try {
-        await updateChildProfile(childId, {
-          full_name: fullName.trim(),
-          dob: dob.trim(),
-          gender: gender || "female",
-          group_id: groupId,
-          relationship: relationship.trim(),
-          pickup_authorized: pickupAuthorized,
-          parent_name: parentName.trim() || undefined,
-        });
-      } catch (e: any) {
-        setError(e?.response?.data?.error || "Failed to update child profile.");
-        return;
-      }
-    }
-
     setStep((s) => s + 1);
     scrollTop();
   };
@@ -1668,17 +1651,6 @@ export function ChildProfileWizardScreen({ navigation }: any) {
     setError("");
 
     try {
-      // 1. Update child basic profile (full_name, dob, gender, group, relationship, pickup_authorized, parent_name)
-      await updateChildProfile(childId, {
-        full_name: fullName.trim(),
-        dob: dob.trim(),
-        gender: gender || "female",
-        group_id: groupId,
-        relationship: relationship.trim(),
-        pickup_authorized: pickupAuthorized,
-        parent_name: parentName.trim() || undefined,
-      });
-
       // 2. Build care instructions array
       const careInstructions: CareInstructionInput[] = [];
 
@@ -1729,27 +1701,15 @@ export function ChildProfileWizardScreen({ navigation }: any) {
           instruction_text: extraNotes.trim(),
         });
 
-      if (careInstructions.length > 0) {
-        await updateCareInstructions(childId, careInstructions);
-      }
-
-      // 3. Save emergency contacts (only non-empty ones)
-      const validContacts = contacts.filter(
-        (c) => c.name.trim() && c.phone.trim()
-      );
-      if (validContacts.length > 0) {
-        await updateEmergencyContacts(
-          childId,
-          validContacts.map((c) => ({
-            name: c.name.trim(),
-            relationship: c.relationship.trim(),
-            phone: c.phone.trim(),
-          }))
-        );
-      }
-
-      // 4. Mark profile complete
-      await markProfileComplete();
+      if(!version) throw new Error('Reload the profile before saving.');
+      const result=await apiClient.patch(`/parent/children/${childId}/care-profile`,{
+        version,profile:{full_name:fullName.trim(),dob:dob.trim(),gender:gender||'female',relationship:relationship.trim()},
+        parent_name:parentName.trim()||undefined,
+        care_instructions:careInstructions,
+        emergency_contacts:contacts.filter(c=>c.name.trim()&&c.phone.trim()).map(c=>({name:c.name.trim(),relationship:c.relationship.trim(),phone:c.phone.trim()})),
+        complete_profile:true,
+      });
+      setVersion(result.data.version);
 
       // 5. Refresh user in context
       await refreshUser();
@@ -1886,7 +1846,6 @@ export function ChildProfileWizardScreen({ navigation }: any) {
               accessibilityLabel="Go to First Page / Welcome"
               onPress={async () => {
                 await logout();
-                navigation.replace("Splash");
               }}
               style={{
                 flexDirection: "row",
@@ -1907,10 +1866,9 @@ export function ChildProfileWizardScreen({ navigation }: any) {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Sign out or register new account"
+              accessibilityLabel="Sign out"
               onPress={async () => {
                 await logout();
-                navigation.replace("Register");
               }}
               style={{
                 flexDirection: "row",
@@ -1925,7 +1883,7 @@ export function ChildProfileWizardScreen({ navigation }: any) {
             >
               <SignOut size={13} color={DANGER} weight="bold" style={{ marginRight: 3 }} />
               <Text size={11} weight="bold" color={DANGER}>
-                New Acct
+                Sign out
               </Text>
             </Pressable>
           </View>

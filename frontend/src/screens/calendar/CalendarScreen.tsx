@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
-import {
-  CaretLeft,
-  CaretRight,
-  Clock,
-  CalendarBlank,
-} from "phosphor-react-native";
+import { CaretLeft } from "phosphor-react-native/src/icons/CaretLeft";
+import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
 import {
   Page,
   Text,
@@ -15,31 +13,27 @@ import {
   s,
   IconButton,
   Section,
+  Notice,
 } from "../../components/design/System";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { getDaycareEvents, CalendarEvent } from "../../api/parentApi";
 
 export function CalendarScreen({ navigation, route }: any) {
-  const [eventsList, setEventsList] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const {
+    data: eventsList,
+    loading,
+    error,
+    refresh,
+  } = useRemoteResource<CalendarEvent[]>(
+    "calendar",
+    () => getDaycareEvents(true),
+    [],
+  );
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
   const [day, setDay] = useState<number | null>(null);
   const [filter, setFilter] = useState("All");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getDaycareEvents(true);
-        setEventsList(data);
-      } catch {
-        setEventsList([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
 
   const first = new Date(year, month, 1).getDay();
   const count = new Date(year, month + 1, 0).getDate();
@@ -62,7 +56,9 @@ export function CalendarScreen({ navigation, route }: any) {
   });
 
   const upcoming = parsedEvents.filter((e) => {
-    const matchesFilter = filter === "All" || e.event_type.toLowerCase().includes(filter.toLowerCase());
+    const matchesFilter =
+      filter === "All" ||
+      e.event_type.toLowerCase().includes(filter.toLowerCase());
     if (!matchesFilter) return false;
     if (day !== null) {
       return e.day === day && e.month === month && e.year === year;
@@ -71,7 +67,17 @@ export function CalendarScreen({ navigation, route }: any) {
   });
 
   return (
-    <Page title="Calendar" back={route?.name === "CalendarPage"} subtitle="Daycare activities and schedule.">
+    <Page
+      title="Calendar"
+      back={route?.name === "CalendarPage"}
+      subtitle="Daycare activities and schedule."
+    >
+      {error ? (
+        <>
+          <Notice tone="error">{error}</Notice>
+          <Button title="Retry" onPress={refresh} />
+        </>
+      ) : null}
       <View style={[s.row, { marginBottom: 20, flexWrap: "wrap", gap: 8 }]}>
         {["All", "Special", "Meeting", "Program"].map((f) => (
           <Pressable
@@ -132,7 +138,7 @@ export function CalendarScreen({ navigation, route }: any) {
           {Array.from({ length: first + count }, (_, i) => {
             const n = i - first + 1;
             const hasEvent = parsedEvents.some(
-              (e) => e.day === n && e.month === month && e.year === year
+              (e) => e.day === n && e.month === month && e.year === year,
             );
             const isSelected = day === n;
 
@@ -180,16 +186,23 @@ export function CalendarScreen({ navigation, route }: any) {
 
       <Section title={day ? `Events on Day ${day}` : "Events this Month"} />
 
-      {loading ? (
+      {error ? null : loading ? (
         <View style={{ alignItems: "center", paddingVertical: 32 }}>
           <ActivityIndicator color="#061224" />
-          <Text size={13} color="#7E828A" style={{ marginTop: 8 }}>Loading events…</Text>
+          <Text size={13} color="#7E828A" style={{ marginTop: 8 }}>
+            Loading events…
+          </Text>
         </View>
       ) : upcoming.length > 0 ? (
         upcoming.map((e) => (
           <Card
             key={e.id}
-            onPress={() => navigation.navigate("EventDetail", { eventId: e.id, eventData: e })}
+            onPress={() =>
+              navigation.navigate("EventDetail", {
+                eventId: e.id,
+                eventData: e,
+              })
+            }
             style={{ marginBottom: 12, padding: 16 }}
           >
             <View style={s.between}>
@@ -199,11 +212,20 @@ export function CalendarScreen({ navigation, route }: any) {
               <Badge title={e.event_type.replace("_", " ")} tone="neutral" />
             </View>
             <Text size={13} color="#7E828A" style={{ marginTop: 6 }}>
-              {new Date(e.event_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              {new Date(e.event_date).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
               {e.event_time ? ` · ${e.event_time}` : ""}
             </Text>
             {e.description ? (
-              <Text size={13} color="#4A5568" style={{ marginTop: 6 }} numberOfLines={2}>
+              <Text
+                size={13}
+                color="#4A5568"
+                style={{ marginTop: 6 }}
+                numberOfLines={2}
+              >
                 {e.description}
               </Text>
             ) : null}

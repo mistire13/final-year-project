@@ -43,6 +43,7 @@ export type VerificationStatus = 'verified' | 'rejected';
 // User & Auth
 export interface User {
   id: number;
+  daycare_id?: number | null;
   name: string;
   email: string;
   phone?: string;

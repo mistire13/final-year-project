@@ -8,7 +8,7 @@ import {
   TextStyle,
   StyleProp,
 } from 'react-native';
-import { ArrowRight } from 'phosphor-react-native';
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
 import { colors, radii } from '../theme/tokens';
 
 export interface PillButtonProps {

@@ -1727,3 +1727,8 @@
     font-size: 11.5px;
   }
 }
+
+/* Shared motion: all controls, changing pages, notices and dialogs. */
+.ankelba-portal button,.ankelba-portal a,.ankelba-portal input,.ankelba-portal select,.ankelba-portal textarea{transition:background-color .18s,color .18s,border-color .18s,box-shadow .18s,opacity .18s}.ankelba-portal :focus-visible{outline:3px solid #9f7625;outline-offset:3px}.p-toast,.p-error,.p-notice{animation:ankelba-notice-in .22s ease-out}.p-table tbody tr{animation:ankelba-notice-in .22s ease-out}.p-table tbody tr:nth-child(2){animation-delay:.02s}.p-table tbody tr:nth-child(3){animation-delay:.04s}.p-table tbody tr:nth-child(4){animation-delay:.06s}@keyframes ankelba-notice-in{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.ankelba-portal *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.care-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px}.care-form label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:600}.care-form input,.care-form select,.care-form textarea{min-width:0;width:100%;padding:12px;border:1px solid #d5dbd0;border-radius:8px;font:inherit;background:#fffdf7;color:#172e2a}.care-form textarea{min-height:100px;resize:vertical}.care-wide{grid-column:1/-1}.care-history{padding:18px 0;border-bottom:1px solid #e8e7dc}.care-history p{white-space:pre-wrap;line-height:1.7}.care-history small{color:#667365}@media(max-width:600px){.care-form{grid-template-columns:1fr}.care-wide{grid-column:auto}}

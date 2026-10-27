@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Pressable, ScrollView, ActivityIndicator } from "react-native";
-import { ArrowRight, Clock, CalendarBlank, ForkKnife, Moon, Smiley, ArrowClockwise } from "phosphor-react-native";
+import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { Clock } from "phosphor-react-native/src/icons/Clock";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { ForkKnife } from "phosphor-react-native/src/icons/ForkKnife";
+import { Moon } from "phosphor-react-native/src/icons/Moon";
+import { Smiley } from "phosphor-react-native/src/icons/Smiley";
+import { ArrowClockwise } from "phosphor-react-native/src/icons/ArrowClockwise";
 import {
   Page,
   Text,
@@ -11,43 +17,43 @@ import {
   Notice,
   s,
 } from "../../components/design/System";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
 import { getChildReports, DailyReportSummary } from "../../api/parentApi";
 
 export function ReportsHistoryScreen({ navigation, route }: any) {
-  const { selectedChild } = useChild();
-  const childId = route?.params?.childId || selectedChild?.id || 1;
-  const childName = selectedChild?.full_name ? selectedChild.full_name.split(" ")[0] : "Your Child";
+  const { selectedChild:activeChild, childrenList } = useChild();
+  const childId = route?.params?.childId || activeChild?.id;
+  const selectedChild=childrenList.find(c=>c.id===childId)||(activeChild?.id===childId?activeChild:null);
+  const childName = selectedChild?.full_name
+    ? selectedChild.full_name.split(" ")[0]
+    : "Your Child";
   const groupName = selectedChild?.group_name || "Daycare Classroom";
 
-  const [reports, setReports] = useState<DailyReportSummary[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterMonth, setFilterMonth] = useState("All");
-
-  const loadReports = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await getChildReports(childId);
-      setReports(data || []);
-    } catch {
-      setReports([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [childId]);
-
+  const {
+    data: reports,
+    loading,
+    error,
+    refresh: loadReports,
+  } = useRemoteResource<DailyReportSummary[]>(
+    `archive:${childId ?? "none"}`,
+    () => (childId ? getChildReports(childId) : Promise.resolve([])),
+    [],
+  );
   useEffect(() => {
-    loadReports();
-    const unsubscribe = navigation.addListener?.("focus", loadReports);
-    return () => {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
+    const remove = navigation.addListener?.("focus", loadReports);
+    return () => remove?.();
   }, [navigation, loadReports]);
-
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   // Month filters
@@ -60,7 +66,9 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
     if (filterMonth === "All") return true;
     const rDate = new Date(r.report_date);
     if (filterMonth === "This Month") {
-      return rDate.getMonth() === thisMonthIdx && rDate.getFullYear() === thisYear;
+      return (
+        rDate.getMonth() === thisMonthIdx && rDate.getFullYear() === thisYear
+      );
     }
     if (filterMonth === "Last Month") {
       const prevMonth = thisMonthIdx === 0 ? 11 : thisMonthIdx - 1;
@@ -78,6 +86,13 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
       tabs
       activeTab="Reports"
     >
+      {!childId && <Notice>No child is linked to this account yet.</Notice>}
+      {error ? (
+        <>
+          <Notice tone="error">{error}</Notice>
+          <Button title="Retry" onPress={loadReports} />
+        </>
+      ) : null}
       {/* Child Summary Card */}
       <Card tint="#F1F0F5" style={{ padding: 16, marginBottom: 16 }}>
         <View style={s.row}>
@@ -121,7 +136,7 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
         })}
       </View>
 
-      {loading ? (
+      {error ? null : loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
           <Text size={13} color="#858A93" style={{ marginTop: 12 }}>
@@ -147,7 +162,10 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
                   {formatDate(item.report_date)}
                 </Text>
               </View>
-              <Badge title={item.mood ? item.mood.toUpperCase() : "RECORDED"} tone="green" />
+              <Badge
+                title={item.mood ? item.mood.toUpperCase() : "RECORDED"}
+                tone="green"
+              />
             </View>
 
             <View style={[s.row, { marginTop: 6, flexWrap: "wrap", gap: 14 }]}>
@@ -167,7 +185,17 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
               ) : null}
             </View>
 
-            <View style={[s.between, { marginTop: 12, borderTopWidth: 1, borderTopColor: "#EDEAE4", paddingTop: 8 }]}>
+            <View
+              style={[
+                s.between,
+                {
+                  marginTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: "#EDEAE4",
+                  paddingTop: 8,
+                },
+              ]}
+            >
               <Text size={12} color="#7B828F">
                 Tap to read full report & meals
               </Text>
@@ -176,13 +204,32 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
           </Card>
         ))
       ) : (
-        <Card style={{ alignItems: "center", paddingVertical: 36, paddingHorizontal: 20 }}>
-          <CalendarBlank size={32} color="#8A929E" style={{ marginBottom: 12 }} />
-          <Text size={17} weight="semibold" style={{ textAlign: "center", marginBottom: 6 }}>
+        <Card
+          style={{
+            alignItems: "center",
+            paddingVertical: 36,
+            paddingHorizontal: 20,
+          }}
+        >
+          <CalendarBlank
+            size={32}
+            color="#8A929E"
+            style={{ marginBottom: 12 }}
+          />
+          <Text
+            size={17}
+            weight="semibold"
+            style={{ textAlign: "center", marginBottom: 6 }}
+          >
             No Archived Reports Found
           </Text>
-          <Text size={13} color="#7B828F" style={{ textAlign: "center", lineHeight: 18 }}>
-            No past reports match the selected timeframe. As daily reports are submitted by daycare staff, they are permanently archived here.
+          <Text
+            size={13}
+            color="#7B828F"
+            style={{ textAlign: "center", lineHeight: 18 }}
+          >
+            No past reports match the selected timeframe. As daily reports are
+            submitted by daycare staff, they are permanently archived here.
           </Text>
         </Card>
       )}

@@ -74,7 +74,13 @@ const getGuidance = async (body, user) => {
   const ageStr = childContext ? ` (${childContext.age_years} years old)` : '';
 
   let answer = '';
-  if (questionText.includes('routine') || questionText.includes('morning') || questionText.includes('prep')) {
+  if (/\b(count|counting|numbers?|math|numeracy)\b/.test(questionText)) {
+    answer = `Try counting up to five large building blocks with ${nameStr}${ageStr}. Touch one block for each number, then ask how many are in the group. Let your child set the pace and stop when interest fades. Use age-appropriate objects and supervise play.`;
+  } else if (/weather|cloth|dress/.test(questionText)) {
+    answer = `For changing weather, pack removable layers, a spare outfit and a labelled bag for wet clothes. Check the local forecast and your daycare's clothing guidance before leaving. This guide does not read live weather.`;
+  } else if (/pack|backpack|prep/.test(questionText)) {
+    answer = `For daycare, prepare labelled spare clothes, a water bottle and any supplies requested by your center. Check the daycare's own list and the child's saved care instructions. Ask the office about items you are unsure of.`;
+  } else if (questionText.includes('routine') || questionText.includes('morning')) {
     answer = `For smooth morning routines with ${nameStr}${ageStr}, set out clothes the night before, use visual activity cards, and allow 15 minutes of buffer time before daycare drop-off.`;
   } else if (questionText.includes('meal') || questionText.includes('food') || questionText.includes('snack')) {
     let allergyWarning = '';
@@ -85,10 +91,12 @@ const getGuidance = async (body, user) => {
   } else if (questionText.includes('activity') || questionText.includes('play') || questionText.includes('learn')) {
     answer = `Engaging activities for ${nameStr}${ageStr} include sensory sorting games, building block towers, finger painting with non-toxic paints, and interactive storybook reading.`;
   } else {
-    answer = `Thank you for asking about ${nameStr}${ageStr}. Maintaining consistent daily routines, positive encouragement, and open communication with daycare caregivers helps build confidence and social skills.`;
+    answer = 'This guide currently has prepared suggestions for counting, play, morning routines and snacks. I do not have a specific answer for that question. Choose one of those topics or ask your daycare for help.';
   }
 
   return {
+    source: 'prepared_guidance',
+    provider_connected: false,
     question: body.question,
     child_context: childContext,
     answer,
