@@ -46,6 +46,8 @@ const paths: Record<string, string> = {
   edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
   clipboard: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2m2-2h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z",
   checkCircle: "m9 12 2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+  upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7-5-5-5 5m5-5v12",
+  image: "M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm12.5 9-6-6-8 8",
 };
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return (
@@ -361,6 +363,333 @@ export type FieldSpec = {
   min?: string;
   max?: string;
 };
+export function openDataUrlSafe(dataUrl?: string | null, fileName = "document") {
+  if (!dataUrl) return;
+  try {
+    if (dataUrl.startsWith("data:")) {
+      const parts = dataUrl.split(",");
+      const mime = parts[0].match(/:(.*?);/)?.[1] || "application/octet-stream";
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const blob = new Blob([u8arr], { type: mime });
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, "_blank");
+      if (!win) {
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.target = "_blank";
+        a.download = fileName;
+        a.click();
+      }
+      return;
+    }
+    window.open(dataUrl, "_blank");
+  } catch {
+    window.open(dataUrl, "_blank");
+  }
+}
+
+export function ImageDropzone({
+  value,
+  onChange,
+  disabled,
+  hint,
+  promptTitle,
+  promptSubtitle,
+  icon = "upload",
+  circlePreview = false,
+  allowPdf = false,
+  label = "",
+  allowUrl = false,
+}: {
+  value?: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  hint?: string;
+  promptTitle?: string;
+  promptSubtitle?: string;
+  icon?: string;
+  circlePreview?: boolean;
+  allowPdf?: boolean;
+  label?: string;
+  allowUrl?: boolean;
+}) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+  const [optimizing, setOptimizing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processFile = (file: File) => {
+    if (!file) return;
+    const isImage = file.type.startsWith("image/");
+    const isPdf = allowPdf && file.type === "application/pdf";
+    if (!isImage && !isPdf) return;
+
+    setOptimizing(true);
+    const reader = new FileReader();
+
+    if (isPdf) {
+      reader.onload = (event) => {
+        const src = event.target?.result as string;
+        onChange(src);
+        setOptimizing(false);
+      };
+      reader.onerror = () => setOptimizing(false);
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    reader.onload = (event) => {
+      const src = event.target?.result as string;
+      const img = new window.Image();
+      img.onload = () => {
+        const maxDim = 800;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          onChange(dataUrl);
+        } else {
+          onChange(src);
+        }
+        setOptimizing(false);
+      };
+      img.onerror = () => {
+        onChange(src);
+        setOptimizing(false);
+      };
+      img.src = src;
+    };
+    reader.onerror = () => setOptimizing(false);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (disabled || optimizing) return;
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (disabled || optimizing) return;
+    const items = e.clipboardData?.items;
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/") || (allowPdf && items[i].type === "application/pdf")) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            processFile(file);
+            return;
+          }
+        }
+      }
+    }
+  };
+
+  const isPdf = !!value && (value.startsWith("data:application/pdf") || value.toLowerCase().endsWith(".pdf"));
+
+  return (
+    <div className="p-image-upload-wrapper" onPaste={handlePaste}>
+      {label && <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--navy)", marginBottom: 4 }}>{label}</label>}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={allowPdf ? "image/png,image/jpeg,image/webp,image/gif,application/pdf" : "image/png,image/jpeg,image/webp,image/gif"}
+        style={{ display: "none" }}
+        disabled={disabled || optimizing}
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            processFile(e.target.files[0]);
+            e.target.value = "";
+          }
+        }}
+      />
+      {value ? (
+        <div className="p-image-preview-card">
+          <div
+            className="p-image-thumb"
+            style={circlePreview ? { borderRadius: "50%", width: 68, height: 68 } : {}}
+          >
+            {isPdf ? (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "#EFF6FF",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#1D4ED8",
+                  fontWeight: 700,
+                  fontSize: 11,
+                  gap: 2,
+                }}
+              >
+                <Icon name="file" size={24} />
+                <span>PDF DOC</span>
+              </div>
+            ) : (
+              <img src={value} alt="Preview" style={circlePreview ? { borderRadius: "50%" } : {}} />
+            )}
+          </div>
+          <div className="p-image-preview-info">
+            <div className="p-image-ready-badge">
+              <Icon name="checkCircle" size={15} />
+              <span>{isPdf ? "Official document attached" : "Photo / Image attached"}</span>
+            </div>
+            <div className="p-image-actions">
+              <button
+                type="button"
+                className="p-btn-sm p-btn-secondary"
+                disabled={disabled || optimizing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isPdf ? "Change document" : "Change photo"}
+              </button>
+              <button
+                type="button"
+                className="p-btn-sm p-btn-secondary"
+                onClick={() => openDataUrlSafe(value, isPdf ? "document.pdf" : "document_image.jpg")}
+              >
+                View file
+              </button>
+              <button
+                type="button"
+                className="p-btn-sm p-btn-danger"
+                disabled={disabled || optimizing}
+                onClick={() => {
+                  onChange("");
+                  setUrlDraft("");
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`p-dropzone ${isDragging ? "p-dropzone-active" : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+          }}
+          onDrop={handleDrop}
+          onClick={() => !disabled && !optimizing && fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+        >
+          <div className="p-dropzone-icon">
+            <Icon name={optimizing ? "refresh" : icon} size={24} />
+          </div>
+          <div className="p-dropzone-prompt">
+            {optimizing ? (
+              <strong>Optimizing file…</strong>
+            ) : (
+              <>
+                <strong>
+                  {promptTitle || (
+                    <>Drop image here, or <span>browse files</span></>
+                  )}
+                </strong>
+                <p>{promptSubtitle || (allowPdf ? "Supports PNG, JPG, WebP, PDF" : "Supports PNG, JPG, WebP · Auto-optimized")}</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Optional fallback link to paste URL */}
+      {allowUrl && (
+        <div className="p-url-toggle-bar">
+          {!showUrlInput && !value && (
+            <button
+              type="button"
+              className="p-link-btn"
+              onClick={() => setShowUrlInput(true)}
+            >
+              Or paste an image web link
+            </button>
+          )}
+          {showUrlInput && (
+            <div className="p-url-input-row">
+              <input
+                type="url"
+                placeholder="https://example.com/product.jpg"
+                value={urlDraft}
+                onChange={(e) => setUrlDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (urlDraft.trim()) {
+                      onChange(urlDraft.trim());
+                      setShowUrlInput(false);
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="p-btn-sm"
+                onClick={() => {
+                  if (urlDraft.trim()) {
+                    onChange(urlDraft.trim());
+                    setShowUrlInput(false);
+                  }
+                }}
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                className="p-btn-sm p-btn-secondary"
+                onClick={() => setShowUrlInput(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {hint && <small className="p-field-hint">{hint}</small>}
+    </div>
+  );
+}
+
 export function RecordForm({
   fields,
   initial = {},
@@ -386,7 +715,18 @@ export function RecordForm({
       onSubmit={(e) => {
         e.preventDefault();
         const submitted = new FormData(e.currentTarget);
-        onSave(Object.fromEntries(fields.map(field => [field.key, field.type === "checkbox" ? submitted.has(field.key) : submitted.get(field.key) ?? ""])));
+        onSave(
+          Object.fromEntries(
+            fields.map((field) => [
+              field.key,
+              field.type === "image"
+                ? values[field.key] ?? ""
+                : field.type === "checkbox"
+                  ? submitted.has(field.key)
+                  : submitted.get(field.key) ?? values[field.key] ?? "",
+            ]),
+          ),
+        );
       }}
     >
       <div className="p-form-grid">
@@ -402,7 +742,14 @@ export function RecordForm({
               {field.label}
               {field.required ? " *" : ""}
             </span>
-            {field.type === "select" ? (
+            {field.type === "image" ? (
+              <ImageDropzone
+                value={values[field.key]}
+                onChange={(val) => change(field.key, val)}
+                disabled={busy}
+                hint={field.hint}
+              />
+            ) : field.type === "select" ? (
               <select
                 name={field.key}
                 required={field.required}
@@ -448,7 +795,7 @@ export function RecordForm({
                 onChange={(e) => change(field.key, e.target.value)}
               />
             )}{" "}
-            {field.hint && <small>{field.hint}</small>}
+            {field.type !== "image" && field.hint && <small>{field.hint}</small>}
           </label>
         ))}
       </div>

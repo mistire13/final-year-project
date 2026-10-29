@@ -111,6 +111,16 @@ const listAnnouncements = async (query = {}, user) => {
                SELECT 1 FROM children c
                WHERE c.caregiver_id = $6 AND c.group_id = a.target_group_id
              )
+             OR EXISTS (
+               SELECT 1 FROM groups gr
+               WHERE gr.id = a.target_group_id AND gr.lead_caregiver_id = $6
+             )
+             OR EXISTS (
+               SELECT 1 FROM front_desk_assignments fda
+               WHERE fda.staff_id = $6 AND fda.daycare_id = a.daycare_id
+                 AND (fda.group_id IS NULL OR fda.group_id = a.target_group_id)
+                 AND fda.status = 'active'
+             )
            )
          )
        )
@@ -189,7 +199,12 @@ const sendMessage = async (body, user) => {
     [user.id, recipientId, body.subject || null, body.body, msgDaycareId]
   );
 
-  return rows[0];
+  const inserted = rows[0];
+  inserted.sender_name = user.name;
+  inserted.sender_role = user.role;
+  inserted.recipient_name = recipient.name;
+  inserted.recipient_role = recipient.role;
+  return inserted;
 };
 
 const listMessages = async (query = {}, user) => {
@@ -214,10 +229,13 @@ const listMessages = async (query = {}, user) => {
 
   const { rows } = await db.query(
     `SELECT m.id, m.sender_id, m.recipient_id, m.subject, m.body, m.read_at, m.created_at, m.daycare_id,
-            s.name AS sender_name, r.name AS recipient_name
+            s.name AS sender_name, sr.name AS sender_role, s.title AS sender_title,
+            r.name AS recipient_name, rr.name AS recipient_role, r.title AS recipient_title
      FROM messages m
      JOIN users s ON s.id = m.sender_id
+     JOIN roles sr ON sr.id = s.role_id
      JOIN users r ON r.id = m.recipient_id
+     JOIN roles rr ON rr.id = r.role_id
      WHERE (m.sender_id = $1 OR m.recipient_id = $1)
        AND ($2::integer IS NULL OR m.sender_id = $2 OR m.recipient_id = $2)
        AND ($3::boolean = TRUE OR m.daycare_id = $4)

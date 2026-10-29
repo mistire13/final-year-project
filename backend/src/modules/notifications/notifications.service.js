@@ -5,7 +5,7 @@
  * Computes badge counts and aggregates recent items for navigation headers.
  */
 const db = require('../../config/db');
-const { listAlerts } = require('../communication/communication.service');
+const { listAlerts, listAnnouncements } = require('../communication/communication.service');
 
 const getNotifications = async (user) => {
   if (!user?.daycare_id || !['admin', 'caregiver', 'parent'].includes(user.role)) {
@@ -36,10 +36,17 @@ const getNotifications = async (user) => {
 
   // Use the same tenant and audience policy as the alerts endpoint.
   const { data: alerts } = await listAlerts(user);
-  const {rows:[settings]}=await db.query("SELECT COALESCE(to_jsonb(u)->'ui_preferences'->'read_alert_ids','[]'::jsonb) AS read_alert_ids FROM users u WHERE id=$1 AND daycare_id=$2",[user.id,user.daycare_id]);
+  const {rows:[settings]}=await db.query("SELECT COALESCE(to_jsonb(u)->'ui_preferences'->'read_alert_ids','[]'::jsonb) AS read_alert_ids, COALESCE(to_jsonb(u)->'ui_preferences'->'read_announcement_ids','[]'::jsonb) AS read_announcement_ids FROM users u WHERE id=$1 AND daycare_id=$2",[user.id,user.daycare_id]);
   const unreadAlerts=alerts.filter(item=>!(settings?.read_alert_ids||[]).includes(item.id));
   const activeAlertsCount = unreadAlerts.length;
   const recentAlerts = unreadAlerts.slice(0, 20);
+
+  // 2b. Center Announcements (FR-COM-02, FR-COM-04)
+  const { data: announcements } = await listAnnouncements({}, user);
+  const readAnnIds = settings?.read_announcement_ids || [];
+  const unreadAnnouncements = announcements.filter(item => !readAnnIds.includes(item.id));
+  const unreadAnnouncementsCount = unreadAnnouncements.length;
+  const recentAnnouncements = unreadAnnouncements.slice(0, 10);
 
   let unnotifiedHealthCount = 0;
   let unpaidOrdersCount = 0;
@@ -72,6 +79,7 @@ const getNotifications = async (user) => {
   const totalBadges =
     unreadMessagesCount +
     activeAlertsCount +
+    unreadAnnouncementsCount +
     unnotifiedHealthCount +
     unpaidOrdersCount;
 
@@ -84,6 +92,11 @@ const getNotifications = async (user) => {
     alerts: {
       count: activeAlertsCount,
       recent: recentAlerts,
+    },
+    announcements: {
+      count: unreadAnnouncementsCount,
+      recent: recentAnnouncements,
+      all: announcements.slice(0, 20),
     },
     unnotified_health_records: {
       count: unnotifiedHealthCount,

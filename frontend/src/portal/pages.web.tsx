@@ -16,6 +16,7 @@ import {
   today,
 } from "./model";
 import { Badge, Button, Card, Empty, Icon, Person, Table } from "./ui.web";
+import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
 export type PageContext = {
   data: Dataset;
   date: string;
@@ -78,91 +79,298 @@ function AttendanceChart({
   days?: number;
   group?: string;
 }) {
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [chartMode, setChartMode] = useState<"line" | "bar">("line");
+
   const series = Array.from({ length: days }, (_, i) => {
     const day = addDays(date, i - days + 1);
     const m = metrics(data, day, group);
-    return { day, value: m.present + m.collected, absent: m.absent };
+    return {
+      day,
+      value: m.present + m.collected,
+      present: m.present,
+      collected: m.collected,
+      absent: m.absent,
+      pending: m.pending,
+      total: m.total,
+    };
   });
-  const max = Math.max(4, ...series.map((s) => s.value + s.absent));
+
+  const maxVal = Math.max(4, ...series.map((s) => Math.max(s.value, s.absent)));
   const x = (i: number) => 45 + i * (570 / (days - 1 || 1));
-  const y = (value: number) => 155 - (value / max) * 125;
+  const y = (value: number) => 155 - (value / maxVal) * 120;
+  const colWidth = Math.max(8, Math.min(32, 570 / (days * 1.6)));
   const points = series.map((s, i) => `${x(i)},${y(s.value)}`).join(" ");
+
+  const hovered = hoverIndex !== null && hoverIndex >= 0 && hoverIndex < series.length ? series[hoverIndex] : null;
+
   return (
-    <>
+    <div style={{ position: "relative", width: "100%" }}>
+      {/* Mode Switcher & Summary Info */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
+        <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 12 }}>
+          <span>Showing <strong>{days} days</strong> of attendance trends</span>
+          {hovered && (
+            <span style={{ color: "var(--navy)", fontWeight: 600 }}>
+              Hovered: {new Date(hovered.day + "T12:00:00Z").toLocaleDateString("en", { month: "short", day: "numeric", weekday: "short" })}
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 4, background: "#F1F5F9", padding: "2px 3px", borderRadius: 8 }}>
+          <button
+            type="button"
+            onClick={() => setChartMode("line")}
+            style={{
+              padding: "3px 8px",
+              fontSize: 11,
+              fontWeight: 600,
+              borderRadius: 6,
+              border: "none",
+              background: chartMode === "line" ? "#ffffff" : "transparent",
+              color: chartMode === "line" ? "var(--navy)" : "#64748B",
+              boxShadow: chartMode === "line" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+              cursor: "pointer",
+            }}
+          >
+            Trend Line
+          </button>
+          <button
+            type="button"
+            onClick={() => setChartMode("bar")}
+            style={{
+              padding: "3px 8px",
+              fontSize: 11,
+              fontWeight: 600,
+              borderRadius: 6,
+              border: "none",
+              background: chartMode === "bar" ? "#ffffff" : "transparent",
+              color: chartMode === "bar" ? "var(--navy)" : "#64748B",
+              boxShadow: chartMode === "bar" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+              cursor: "pointer",
+            }}
+          >
+            Daily Bars
+          </button>
+        </div>
+      </div>
+
+      {/* SVG Chart with Interactive Hit-Zones */}
       <svg
         className="p-chart"
-        viewBox="0 0 650 185"
+        viewBox="0 0 650 195"
         role="img"
         aria-label={`Daily children attending: ${series.map((s) => s.day + ": " + s.value).join(", ")}`}
         preserveAspectRatio="none"
+        style={{ overflow: "visible" }}
       >
         <defs>
           <linearGradient id="attendance-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#b4cbb2" stopOpacity=".38" />
-            <stop offset="1" stopColor="#f9fbf7" stopOpacity=".1" />
+            <stop offset="0" stopColor="#008794" stopOpacity=".32" />
+            <stop offset="1" stopColor="#008794" stopOpacity=".02" />
+          </linearGradient>
+          <linearGradient id="bar-green" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#008794" />
+            <stop offset="1" stopColor="#00656f" />
+          </linearGradient>
+          <linearGradient id="bar-absent" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#F87171" />
+            <stop offset="1" stopColor="#EF4444" />
           </linearGradient>
         </defs>
+
+        {/* Horizontal gridlines */}
         {[0, 1, 2, 3].map((i) => (
           <g key={i}>
             <line
               x1="42"
               x2="626"
-              y1={30 + i * 42}
-              y2={30 + i * 42}
+              y1={25 + i * 42}
+              y2={25 + i * 42}
               stroke="#edf0e9"
               strokeDasharray="3 5"
             />
-            <text x="10" y={34 + i * 42}>
-              {Math.round(max * (1 - i / 3))}
+            <text x="10" y={29 + i * 42} fill="#94A3B8" fontSize="11" fontFamily="inherit">
+              {Math.round(maxVal * (1 - i / 3))}
             </text>
           </g>
         ))}
-        <polygon
-          points={`45,155 ${points} 615,155`}
-          fill="url(#attendance-fill)"
-        />
-        <polyline
-          points={points}
-          fill="none"
-          stroke="#7ba083"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        {series.map((s, i) => (
-          <g key={s.day}>
-            {days <= 7 && (
-              <circle
-                cx={x(i)}
-                cy={y(s.value)}
-                r="3.5"
-                fill="#fff"
-                stroke="#7ba083"
-                strokeWidth="2"
+
+        {/* Line Mode: Area + Polyline */}
+        {chartMode === "line" && (
+          <>
+            <polygon
+              points={`45,155 ${points} 615,155`}
+              fill="url(#attendance-fill)"
+            />
+            <polyline
+              points={points}
+              fill="none"
+              stroke="#008794"
+              strokeWidth="2.8"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          </>
+        )}
+
+        {/* Bar Mode: Rounded Columns */}
+        {chartMode === "bar" &&
+          series.map((s, i) => {
+            const barH = Math.max(3, (s.value / maxVal) * 120);
+            const absentH = Math.max(0, (s.absent / maxVal) * 120);
+            const isHovered = hoverIndex === i;
+            return (
+              <g key={"bar-" + s.day}>
+                <rect
+                  x={x(i) - colWidth / 2}
+                  y={155 - barH}
+                  width={colWidth}
+                  height={barH}
+                  rx="4"
+                  fill="url(#bar-green)"
+                  opacity={isHovered ? 1 : 0.85}
+                  style={{ transition: "all 0.15s ease" }}
+                />
+                {s.absent > 0 && (
+                  <rect
+                    x={x(i) - colWidth / 2}
+                    y={155 - barH - absentH - 2}
+                    width={colWidth}
+                    height={absentH}
+                    rx="3"
+                    fill="url(#bar-absent)"
+                    opacity={isHovered ? 1 : 0.75}
+                    style={{ transition: "all 0.15s ease" }}
+                  />
+                )}
+              </g>
+            );
+          })}
+
+        {/* Active Hover Indicator Line */}
+        {hoverIndex !== null && (
+          <line
+            x1={x(hoverIndex)}
+            x2={x(hoverIndex)}
+            y1={20}
+            y2={155}
+            stroke="#008794"
+            strokeWidth="1.5"
+            strokeDasharray="3 3"
+          />
+        )}
+
+        {/* Points and Dates */}
+        {series.map((s, i) => {
+          const isHovered = hoverIndex === i;
+          return (
+            <g key={s.day}>
+              {chartMode === "line" && (
+                <circle
+                  cx={x(i)}
+                  cy={y(s.value)}
+                  r={isHovered ? "6" : "3.5"}
+                  fill={isHovered ? "#008794" : "#ffffff"}
+                  stroke="#008794"
+                  strokeWidth={isHovered ? "2.5" : "2"}
+                  style={{ transition: "r 0.15s ease" }}
+                />
+              )}
+              {(days <= 7 || i % (days > 14 ? 5 : 2) === 0 || i === days - 1) && (
+                <text
+                  x={x(i)}
+                  y="180"
+                  textAnchor="middle"
+                  fill={isHovered ? "#008794" : "#64748B"}
+                  fontWeight={isHovered ? "700" : "500"}
+                  fontSize="11"
+                  fontFamily="inherit"
+                >
+                  {new Date(s.day + "T12:00:00Z").toLocaleDateString("en", {
+                    [days <= 7 ? "weekday" : "day"]: "short" as any,
+                    ...(days > 7 ? { day: "numeric" } : {}),
+                  })}
+                </text>
+              )}
+
+              {/* Invisible Hit Zone for Touch/Mouse */}
+              <rect
+                x={x(i) - (570 / (days - 1 || 1)) / 2}
+                y={15}
+                width={570 / (days - 1 || 1)}
+                height={165}
+                fill="transparent"
+                style={{ cursor: "pointer" }}
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
               />
-            )}
-            {(days <= 7 || i % 5 === 0 || i === days - 1) && (
-              <text x={x(i)} y="182" textAnchor="middle">
-                {new Date(s.day + "T12:00:00Z").toLocaleDateString("en", {
-                  [days <= 7 ? "weekday" : "day"]: "short" as any,
-                  ...(days > 7 ? { day: "numeric" } : {}),
-                })}
-              </text>
-            )}
-          </g>
-        ))}
+            </g>
+          );
+        })}
       </svg>
-      <div className="p-legend">
-        <span>
-          <i className="p-dot" />
-          Attended (including collected)
-        </span>
-        <span>Daily unique children</span>
+
+      {/* Floating Interactive Tooltip */}
+      {hovered && (
+        <div
+          style={{
+            position: "absolute",
+            top: 25,
+            left: Math.min(Math.max(12, (x(hoverIndex!) / 650) * 100), 75) + "%",
+            transform: "translate(-50%, -100%)",
+            background: "rgba(16, 38, 59, 0.94)",
+            color: "#ffffff",
+            padding: "8px 12px",
+            borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.22)",
+            fontSize: 12,
+            zIndex: 10,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            lineHeight: 1.4,
+          }}
+        >
+          <div style={{ fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: 4, marginBottom: 4 }}>
+            {new Date(hovered.day + "T12:00:00Z").toLocaleDateString("en", { weekday: "long", month: "short", day: "numeric" })}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#34D399" }}>
+            <span style={{ fontSize: 9 }}>●</span>
+            <strong>{hovered.value} Attended</strong> ({hovered.present} on-site, {hovered.collected} picked up)
+          </div>
+          {hovered.absent > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#F87171" }}>
+              <span style={{ fontSize: 9 }}>●</span>
+              <span>{hovered.absent} Absent</span>
+            </div>
+          )}
+          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
+            Attendance Rate: <strong>{hovered.total ? Math.round((hovered.value / hovered.total) * 100) : (hovered.value > 0 ? 100 : 0)}%</strong>
+          </div>
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="p-legend" style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 16 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#008794" }} />
+            Attended ({series.reduce((acc, s) => acc + s.value, 0)} total check-ins)
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }} />
+            Absent
+          </span>
+        </div>
+        <small style={{ color: "var(--muted)" }}>Hover columns for daily breakdown</small>
       </div>
-    </>
+    </div>
   );
 }
+
 export function Overview(ctx: PageContext) {
   const { data, date, go, open, staff, actor } = ctx;
+  const [overviewDays, setOverviewDays] = useState(7);
   const m = metrics(data, date);
   const reportRate = m.total ? Math.round((m.submitted / m.total) * 100) : 0;
   const lowStock = data.products.filter((p) => p.stock_qty <= 5).length;
@@ -212,16 +420,31 @@ export function Overview(ctx: PageContext) {
       </div>
       <div className="p-grid main">
         <Card>
-          <div className="p-card-head">
+          <div className="p-card-head" style={{ alignItems: "center" }}>
             <div>
               <h2>Little steps, every day</h2>
-              <p>Attendance across the last seven days</p>
+              <p>Attendance trends across the last {overviewDays} days</p>
             </div>
-            <Button variant="quiet" onClick={() => go("analytics")}>
-              View analytics <Icon name="arrow" size={15} />
-            </Button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="p-tabs" style={{ margin: 0, padding: 2 }}>
+                {[7, 14, 30].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={overviewDays === n ? "active" : ""}
+                    onClick={() => setOverviewDays(n)}
+                    style={{ padding: "4px 8px", fontSize: 11.5 }}
+                  >
+                    {n}D
+                  </button>
+                ))}
+              </div>
+              <Button variant="quiet" onClick={() => go("analytics")}>
+                Analytics <Icon name="arrow" size={14} />
+              </Button>
+            </div>
           </div>
-          <AttendanceChart data={data} date={date} />
+          <AttendanceChart data={data} date={date} days={overviewDays} />
         </Card>
         <Card>
           <div className="p-card-head">
@@ -589,7 +812,7 @@ export function Analytics({ data, date }: PageContext) {
     <>
       <div className="p-filters">
         <div className="p-tabs" style={{ margin: 0 }}>
-          {[7, 30].map((n) => (
+          {[7, 14, 30].map((n) => (
             <button
               key={n}
               className={days === n ? "active" : ""}
@@ -1813,7 +2036,9 @@ export function Monitoring(ctx: PageContext & { page: string }) {
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
                     ) : (
-                      <span style={{ fontSize: 18 }}>🛍️</span>
+                      <span style={{ color: "var(--muted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon name="bag" size={18} />
+                      </span>
                     )}
                   </div>
                   <div>
@@ -1937,8 +2162,16 @@ export function Monitoring(ctx: PageContext & { page: string }) {
             {
               key: "target_table",
               title: "Record",
-              render: (r) =>
-                label(r.target_table) + " #" + (r.target_id || "—"),
+              render: (r) => formatTargetEntity(r.target_table, r.target_id),
+            },
+            {
+              key: "details",
+              title: "Details",
+              render: (r) => (
+                <span style={{ color: "#3B4651", fontSize: 13 }}>
+                  {formatAuditDetails(r.action, r.metadata, r.target_table, r.target_id)}
+                </span>
+              ),
             },
           ]}
         />
@@ -1964,68 +2197,57 @@ export function DaycareSettings(ctx: PageContext) {
     contact_email: "contact@daycare.com",
     contact_phone: "",
     address: "Addis Ababa, Ethiopia",
-    subscription_plan: actor.subscription_plan || "standard",
-    trial_ends_at: actor.trial_ends_at,
-    max_children: 50,
     status: "active",
   };
-  const daysLeft = dc.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(dc.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
   const childCount = data.children?.length || 0;
-  const maxCap = dc.max_children || 50;
-  const capPct = Math.min(100, Math.round((childCount / maxCap) * 100));
   const staffCount = data.users?.filter((u) => ["admin", "caregiver"].includes(u.role)).length || 0;
+  const groupCount = data.groups?.length || 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
-      {/* Subscription & Quota Card */}
+      {/* Center Operational Status Card */}
       <Card>
         <div className="p-card-head">
           <div>
-            <h2>Subscription Plan & Enrollment Capacity</h2>
-            <p>Your selected package and active enrollment capacity. Subscription terms and history are shown above.</p>
+            <h2>Center Operational Capacity & Overview</h2>
+            <p>Active child enrollment, classroom assignments, and authorized professional care staff.</p>
           </div>
           <Badge
-            value={dc.subscription_plan}
-            tone={dc.subscription_plan === "premium" ? "green" : "gold"}
+            value="Active License"
+            tone="green"
           />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, margin: "16px 0" }}>
           <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
-            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Active Plan</small>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#10263B", textTransform: "capitalize", margin: "4px 0" }}>
-              {dc.subscription_plan} Care
+            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Enrolled Students</small>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
+              {childCount} Children
             </div>
-            <div style={{ fontSize: 13, color: daysLeft !== null && daysLeft <= 5 ? "#c0392b" : "#417B61", fontWeight: 600 }}>
-              View current trial or paid-period status in your subscription details above.
-            </div>
-          </div>
-
-          <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
-            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Enrolled Children</small>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
-              {childCount} / {maxCap} ({capPct}%)
-            </div>
-            <div style={{ background: "#e8e5dc", borderRadius: 999, height: 6, width: "100%", overflow: "hidden", marginTop: 6 }}>
-              <div style={{ background: capPct > 90 ? "#e07a5f" : "#417B61", height: "100%", width: `${capPct}%` }} />
+            <div style={{ fontSize: 13, color: "#417B61", fontWeight: 600 }}>
+              Active student roster
             </div>
           </div>
 
           <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
             <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Active Staff Team</small>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
               {staffCount} Staff Accounts
             </div>
             <div style={{ fontSize: 13, color: "#76818B" }}>
-              {data.groups?.length || 0} Classroom Groups
+              Teachers, caregivers and office directors
             </div>
           </div>
-        </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 10 }}>
-          <p>Contact platform support to request a subscription change.</p>
+          <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
+            <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Classroom Groups</small>
+            <div style={{ fontSize: 24, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
+              {groupCount} Active Classrooms
+            </div>
+            <div style={{ fontSize: 13, color: "#76818B" }}>
+              Organized learning environments
+            </div>
+          </div>
         </div>
       </Card>
 

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Pressable } from "react-native";
 import {
   Page,
   Card,
@@ -15,6 +15,8 @@ import { ClipboardText } from "phosphor-react-native/src/icons/ClipboardText";
 import { Heart } from "phosphor-react-native/src/icons/Heart";
 import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
 import { SignOut } from "phosphor-react-native/src/icons/SignOut";
+import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
+import { X } from "phosphor-react-native/src/icons/X";
 function useAssigned() {
   const [kids, setKids] = useState<any[]>([]);
   const [error, setError] = useState("");
@@ -41,11 +43,133 @@ function useAssigned() {
 export function StaffHomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { kids, error, loading, load } = useAssigned();
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [dismissed, setDismissed] = useState<number[]>([]);
+
+  const loadAnnouncements = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get("/communication/announcements");
+      setAnnouncements(data.data || []);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadAnnouncements();
+    const unsubscribe = navigation.addListener?.("focus", loadAnnouncements);
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [navigation, loadAnnouncements]);
+
+  const activeAnn = announcements.find((a) => !dismissed.includes(a.id));
+
   return (
     <Page
       title={`Hello, ${user?.name?.split(" ")[0] || "team"}`}
       subtitle="Your care workspace"
     >
+      {activeAnn && (
+        <Card
+          tint="#FFFBEA"
+          style={{
+            borderColor: "#F6E4AC",
+            borderWidth: 1.5,
+            marginBottom: 16,
+            padding: 16,
+            borderRadius: 20,
+            shadowColor: "#9C6B10",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 10,
+          }}
+          onPress={() =>
+            navigation.navigate("MainTabs", {
+              screen: "Messages",
+              params: { tab: "Announcements" },
+            })
+          }
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 6,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <SpeakerHigh size={18} color="#9C6B10" weight="fill" />
+              <Text
+                size={11}
+                color="#855B09"
+                weight="bold"
+                style={{ letterSpacing: 0.8, marginLeft: 6 }}
+              >
+                DAYCARE DIRECTIVE & ANNOUNCEMENT
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "#BD4264",
+                  paddingHorizontal: 6,
+                  paddingVertical: 1.5,
+                  borderRadius: 10,
+                  marginLeft: 8,
+                }}
+              >
+                <Text size={9} color="#fff" weight="bold">
+                  NEW
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss announcement"
+              hitSlop={12}
+              onPress={(e: any) => {
+                e?.stopPropagation?.();
+                setDismissed((prev) => [...prev, activeAnn.id]);
+                apiClient
+                  .patch("/notifications/preferences", {
+                    read_announcement_id: activeAnn.id,
+                  })
+                  .catch(() => {});
+              }}
+              style={{ padding: 4 }}
+            >
+              <X size={16} color="#855B09" />
+            </Pressable>
+          </View>
+          <Text size={16} weight="bold" color="#10263D">
+            {activeAnn.title}
+          </Text>
+          <Text
+            size={13}
+            color="#454D57"
+            numberOfLines={2}
+            style={{ marginTop: 4, lineHeight: 18 }}
+          >
+            {activeAnn.body}
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 10,
+              paddingTop: 8,
+              borderTopWidth: 1,
+              borderColor: "#EFE0BF",
+            }}
+          >
+            <Text size={11} color="#855B09">
+              Posted by {activeAnn.author_name || "Center Administration"}
+            </Text>
+            <Text size={11} color="#855B09" weight="bold">
+              View bulletin →
+            </Text>
+          </View>
+        </Card>
+      )}
       <Card>
         <Text weight="bold">Today’s care</Text>
         <Text style={{ marginVertical: 12 }}>

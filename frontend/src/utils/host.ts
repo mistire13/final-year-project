@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-const FALLBACK_HOST = '192.168.8.114';
+const FALLBACK_HOST = '192.168.100.201';
 
 /**
  * Resolves the host IP or domain of the dev server / host machine.

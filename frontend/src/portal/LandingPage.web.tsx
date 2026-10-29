@@ -5,7 +5,6 @@ import { Modal } from "./ui.web";
 import { portalApi, apiError } from "./api";
 import { Icon } from "./ui.web";
 
-import PackageCards from './PackageCards.web';
 import {PackageOffer,Cycle,priceLabel} from './subscriptions';
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
 
@@ -60,8 +59,8 @@ export default function LandingPage() {
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
-  const openRegisterModal = (offer:PackageOffer) => {
-    setForm(prev=>({...prev,requestedPlan:offer.code,termsVersion:offer.version}));
+  const openRegisterModal = (offer?: PackageOffer) => {
+    setForm(prev=>({...prev,requestedPlan:offer?.code || "standard",termsVersion:offer?.version || 1}));
     setError(null);setSuccessResult(null);setModalOpen(true);
   };
 
@@ -96,7 +95,7 @@ export default function LandingPage() {
         <nav aria-label="Main navigation">
           <a href="#features">A better day</a>
           <a href="#how-it-works">How it works</a>
-          <a href="#packages">Packages</a>
+          <a href="#register">Register Center</a>
           <a href="/application-status">Application status</a>
           <a href="#questions">Questions</a>
         </nav>
@@ -130,9 +129,9 @@ export default function LandingPage() {
             <div className="landing-actions">
               <button
                 className="saas-btn saas-btn-primary"
-                onClick={() => document.getElementById("packages")?.scrollIntoView({behavior:reduce?"auto":"smooth"})}
+                onClick={() => openRegisterModal()}
               >
-                Choose your package <Icon name="arrow" size={18} />
+                Register your daycare <Icon name="arrow" size={18} />
               </button>
               <a href="#how-it-works" className="landing-text-link">
                 Take a look around <span>↗</span>
@@ -274,11 +273,19 @@ export default function LandingPage() {
             ))}
           </div>
         </section>
-        <section id="packages" className="landing-section">
-          <span className="landing-eyebrow">A PACKAGE FOR YOUR CENTER</span>
-          <h2>Choose your package. Start with a free trial.</h2>
-          <p>Compare capacity and renewal terms before applying. Your selected package follows you into setup.</p>
-          {catalogLoading?<p role="status">Loading current packages…</p>:catalogError?<div role="alert"><p>{catalogError}</p><button onClick={loadPackages}>Retry packages</button></div>:offers.length?<PackageCards offers={offers} cycle={form.billingCycle} onCycle={billingCycle=>setForm(prev=>({...prev,billingCycle}))} onChoose={openRegisterModal}/>:<p>No packages are accepting applications right now. Please check again later.</p>}
+        <section id="register" className="landing-section">
+          <span className="landing-eyebrow">DAYCARE REGISTRATION</span>
+          <h2>Ready to bring your daycare online?</h2>
+          <p>Register your center to set up digital attendance, parent messaging, daily activity reports, and safety verification.</p>
+          <div style={{ textAlign: "center", marginTop: 24 }}>
+            <button
+              className="saas-btn saas-btn-primary"
+              onClick={() => openRegisterModal()}
+              style={{ fontSize: 16, padding: "14px 28px" }}
+            >
+              Register Your Daycare Center <Icon name="arrow" size={18} />
+            </button>
+          </div>
         </section>
         <section className="landing-section landing-invite">
           <motion.div {...reveal}>
@@ -288,13 +295,13 @@ export default function LandingPage() {
               <br />A little more connected.
             </h2>
             <p>
-              Choose a package and apply for your daycare’s workspace. Once approved, your team can start the included free trial.
+              Register your center today. Once approved by administration, your team can immediately sign in to set up classrooms, invite staff, and enroll families.
             </p>
             <button
               className="saas-btn saas-btn-primary"
-              onClick={() => document.getElementById("packages")?.scrollIntoView({behavior:reduce?"auto":"smooth"})}
+              onClick={() => openRegisterModal()}
             >
-              Apply for your center <Icon name="arrow" size={18} />
+              Register your center <Icon name="arrow" size={18} />
             </button>
           </motion.div>
           <span aria-hidden="true" className="landing-invite-flower">
@@ -396,7 +403,7 @@ export default function LandingPage() {
                 >
                   Thank you for applying to join Ankelba,{" "}
                   <strong>{successResult.name}</strong>! Your application is in
-                  review. Your selected package’s free trial starts after approval. Use your administrator credentials to check the application status.
+                  review. Upon approval by administration, your daycare center workspace will be activated. Use your administrator credentials to check the application status.
                 </p>
                 <div
                   style={{
@@ -438,7 +445,7 @@ export default function LandingPage() {
                     margin: "0 0 24px",
                   }}
                 >
-                  Apply with your selected package. Review starts after submission; the trial starts after approval.
+                  Complete registration to request your daycare center workspace.
                 </p>
 
                 {error && (
@@ -498,9 +505,7 @@ export default function LandingPage() {
                       />
                     </div>
 
-                    <div className="saas-form-group full journey">
-                      <div className="j-panel"><strong>Selected package: {chosen?.name}</strong><p>{form.billingCycle==='annual'?'Annual':'Monthly'} billing · Up to {chosen?.max_children} active children · {chosen?.trial_days}-day trial after approval</p><p>{priceLabel(chosen?.[form.billingCycle==='annual'?'annual_price':'monthly_price'],form.billingCycle)}</p><small>No automatic charges. Manual renewal after the trial. Core care and safety features are included.</small><p><button type="button" onClick={()=>{setModalOpen(false);void loadPackages();document.getElementById('packages')?.scrollIntoView();}}>Change package</button></p></div>
-                    </div>
+                    
 
                     <div className="saas-form-group">
                       <label

@@ -34,6 +34,7 @@ import { X } from "phosphor-react-native/src/icons/X";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { colors, fonts, radii, shadows } from "../../theme/tokens";
 import { useAuth } from "../../context/AuthContext";
+import { apiClient } from "../../api/client";
 
 export const Text = ({
   style,
@@ -214,6 +215,26 @@ export function IconButton({
 }
 export function Header() {
   const navigation = useNavigation<any>();
+  const [badgeCount, setBadgeCount] = React.useState(0);
+
+  React.useEffect(() => {
+    let active = true;
+    const fetchBadges = () => {
+      apiClient
+        .get("/notifications")
+        .then(({ data }) => {
+          if (active) setBadgeCount(data.total_badges || 0);
+        })
+        .catch(() => {});
+    };
+    fetchBadges();
+    const unsubscribe = navigation.addListener?.("focus", fetchBadges);
+    return () => {
+      active = false;
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [navigation]);
+
   return (
     <View style={s.header}>
       <MotionPressable
@@ -228,11 +249,42 @@ export function Header() {
         </Text>
       </MotionPressable>
       <View style={s.row}>
-        <IconButton
-          icon={BellSimple}
-          label="Notifications"
-          onPress={() => navigation.navigate("Notifications")}
-        />
+        <View style={{ position: "relative" }}>
+          <IconButton
+            icon={BellSimple}
+            label="Notifications"
+            onPress={() => navigation.navigate("Notifications")}
+          />
+          {badgeCount > 0 && (
+            <View
+              style={{
+                position: "absolute",
+                top: 4,
+                right: 4,
+                minWidth: 16,
+                height: 16,
+                borderRadius: 8,
+                backgroundColor: "#DC2626",
+                borderWidth: 1.5,
+                borderColor: "#fff",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 3,
+              }}
+            >
+              <NativeText
+                style={{
+                  fontSize: 9,
+                  fontWeight: "bold",
+                  color: "#fff",
+                  fontFamily: fonts.bold,
+                }}
+              >
+                {badgeCount > 9 ? "9+" : badgeCount}
+              </NativeText>
+            </View>
+          )}
+        </View>
         <MotionPressable
           accessibilityRole="button"
           accessibilityLabel="Your profile"

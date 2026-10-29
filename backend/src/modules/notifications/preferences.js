@@ -12,6 +12,7 @@ const schema = Joi.object({
     enabled: Joi.boolean().required(),
   }),
   read_alert_id: Joi.number().integer().positive(),
+  read_announcement_id: Joi.number().integer().positive(),
   food: Joi.object({
     cuisine: Joi.string().max(300).allow(""),
     diet: Joi.string().max(1000).allow(""),
@@ -83,6 +84,20 @@ async function save(user, input) {
         });
       prefs.read_alert_ids = [
         ...new Set([...(prefs.read_alert_ids || []), value.read_alert_id]),
+      ].slice(-500);
+    }
+    if (value.read_announcement_id) {
+      const { data } =
+        await require("../communication/communication.service").listAnnouncements(
+          {},
+          user,
+        );
+      if (!data.some((a) => a.id === value.read_announcement_id))
+        throw Object.assign(new Error("Announcement unavailable"), {
+          statusCode: 404,
+        });
+      prefs.read_announcement_ids = [
+        ...new Set([...(prefs.read_announcement_ids || []), value.read_announcement_id]),
       ].slice(-500);
     }
     await client.query(

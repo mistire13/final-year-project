@@ -30,6 +30,7 @@ interface ChatThreadSummary {
   recipientId: number;
   name: string;
   role: string;
+  roleCategory: "admin" | "caregiver" | "staff";
   message: string;
   time: string;
   unread: number;
@@ -93,6 +94,7 @@ export function MessagesScreen({ navigation, route }: any) {
 
       const latest = contactMsgs[0];
       const isCaregiver = contact.role === "caregiver";
+      const isAdmin = contact.role === "admin" || contact.role === "super_admin";
 
       threads.push({
         id: idx + 1,
@@ -100,15 +102,16 @@ export function MessagesScreen({ navigation, route }: any) {
         name: contact.name,
         role:
           contact.title ||
-          (isCaregiver ? "Assigned Child Caregiver" : "Daycare Administration & Front Desk"),
+          (isCaregiver ? "Classroom Educator" : "Center Administration & Director"),
+        roleCategory: isAdmin ? "admin" : isCaregiver ? "caregiver" : "staff",
         message: latest
           ? latest.body
           : isCaregiver
-          ? (contact.child_names?.length ? "Direct messages with your child's assigned caregiver" : "Direct messages with daycare care staff")
+          ? (contact.child_names?.length ? `Assigned caregiver for ${contact.child_names.join(", ")}` : "Direct messages with classroom caregiver")
           : "Questions about enrollment, schedules, or payments",
-        time: latest ? formatTime(latest.created_at) : "Available",
+        time: latest ? formatTime(latest.created_at) : "Active",
         unread: contactMsgs.filter((m) => !m.read_at && m.sender_id === contact.id).length,
-        photo: undefined,
+        photo: isCaregiver ? artwork.caregiver : undefined,
       });
     });
   }
@@ -170,6 +173,8 @@ export function MessagesScreen({ navigation, route }: any) {
           >
             <Text size={13} color={tab === t ? "white" : "#6C7380"} weight={tab === t ? "semibold" : "regular"}>
               {t}
+              {t === "Announcements" && announcements.length > 0 ? ` (${announcements.length})` : ""}
+              {t === "Meal Plans" && announcements.filter(a => a.announcement_type === "meal_plan").length > 0 ? ` (${announcements.filter(a => a.announcement_type === "meal_plan").length})` : ""}
             </Text>
           </Pressable>
         ))}
@@ -198,24 +203,42 @@ export function MessagesScreen({ navigation, route }: any) {
               style={{ marginBottom: 14, padding: 18 }}
             >
               <View style={[s.row, { alignItems: "flex-start" }]}>
-                <Avatar source={t.photo} initials={t.name.slice(0, 2).toUpperCase()} size={52} />
-                <View style={{ flex: 1 }}>
-                  <View style={[s.between, { flexWrap: "wrap", gap: 4 }]}>
-                    <Text size={17} weight="semibold">
-                      {t.name}
-                    </Text>
+                <Avatar source={t.photo} initials={t.name.slice(0, 2).toUpperCase()} size={50} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <View style={[s.between, { flexWrap: "wrap", gap: 6, alignItems: "center" }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <Text size={16.5} weight="semibold">
+                        {t.name}
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: t.roleCategory === "admin" ? "#DBEAFE" : "#DCFCE7",
+                          paddingHorizontal: 7,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text
+                          size={10.5}
+                          weight="bold"
+                          color={t.roleCategory === "admin" ? "#1E40AF" : "#166534"}
+                        >
+                          {t.roleCategory === "admin" ? "Administration" : "Educator"}
+                        </Text>
+                      </View>
+                    </View>
                     <Text size={11} color="#9397A0">
                       {t.time}
                     </Text>
                   </View>
-                  <Text size={11} color="#878B95" style={{ marginBottom: 4 }}>
+                  <Text size={12} color="#64748B" style={{ marginTop: 2, marginBottom: 4 }}>
                     {t.role}
                   </Text>
                   <Text
                     size={13}
                     color="#4D5663"
                     numberOfLines={2}
-                    style={{ marginTop: 4 }}
+                    style={{ marginTop: 2 }}
                   >
                     {t.message}
                   </Text>

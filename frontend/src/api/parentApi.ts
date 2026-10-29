@@ -166,7 +166,11 @@ export interface DirectMessage {
   read_at?: string;
   created_at: string;
   sender_name?: string;
+  sender_role?: string;
+  sender_title?: string;
   recipient_name?: string;
+  recipient_role?: string;
+  recipient_title?: string;
 }
 
 export const getDirectMessages = async (withUserId?: number): Promise<DirectMessage[]> => {

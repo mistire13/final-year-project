@@ -47,8 +47,10 @@ export function ShoppingCartScreen({ navigation }: any) {
               <View style={[s.row, { alignItems: "flex-start" }]}>
                 <Image
                   source={
-                    catalog.find((p) => p.id === item.product.id)?.cartImage ||
-                    catalog[0].image
+                    item.product.image_url
+                      ? { uri: item.product.image_url }
+                      : catalog.find((p) => p.id === item.product.id)?.cartImage ||
+                        catalog[0].image
                   }
                   style={{ width: 74, height: 80, borderRadius: 15 }}
                 />

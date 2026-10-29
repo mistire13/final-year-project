@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { PageContext } from "./pages.web";
-import { Card, Button, Empty } from "./ui.web";
+import { Card, Button, Empty, Badge } from "./ui.web";
 import { portalClient, apiError } from "./api";
 import { PageTransition } from "./WebMotion.web";
 export function CaregiverPage({
@@ -332,13 +332,23 @@ export function CaregiverPage({
               <p>No conversations yet.</p>
             )}
           </Card>
-          <Card title="Announcements">
-            {ctx.data.announcements.map((a) => (
-              <article className="care-history" key={a.id}>
-                <h3>{a.title}</h3>
-                <p>{a.body}</p>
-              </article>
-            ))}
+          <Card title="Daycare Announcements & Directives">
+            {ctx.data.announcements.length ? (
+              ctx.data.announcements.map((a) => (
+                <article className="care-history" key={a.id} style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <h3 style={{ margin: 0, fontSize: 16, color: "#10263D" }}>{a.title}</h3>
+                    <Badge value={a.announcement_type === "meal_plan" ? "Meal Plan" : a.announcement_type === "alert" ? "Important" : "General"} tone={a.announcement_type === "alert" ? "red" : "gold"} />
+                  </div>
+                  <p style={{ margin: "6px 0 8px", color: "#475569", lineHeight: 1.5 }}>{a.body}</p>
+                  <small style={{ color: "#828995" }}>
+                    Posted by {a.author_name || "Administration"} · {new Date(a.created_at).toLocaleDateString()}
+                  </small>
+                </article>
+              ))
+            ) : (
+              <p>No center announcements posted yet.</p>
+            )}
           </Card>
         </>
       ) : (

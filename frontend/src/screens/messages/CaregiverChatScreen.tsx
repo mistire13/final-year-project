@@ -118,8 +118,8 @@ export function CaregiverChatScreen({ navigation, route }: any) {
             onPress={() => navigation.goBack()}
           />
           <Avatar
-            source={undefined}
-            initials={recipientName.slice(0, 2).toUpperCase()}
+            source={recipientRole === 'caregiver' ? artwork.caregiver : undefined}
+            initials={recipientRole === 'caregiver' ? undefined : recipientName.slice(0, 2).toUpperCase()}
             size={42}
           />
           <View style={{ flex: 1, marginLeft: 10 }}>
@@ -127,7 +127,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
               {recipientName}
             </Text>
             <Text size={12} color="#7D838C">
-              {isOffice ? "Administration & Front Desk" : recipientRole==='caregiver' ? "Caregiver" : recipientRole==='parent' ? "Parent / guardian" : "Daycare contact"}
+              {isOffice ? "Center Administration & Front Desk" : recipientRole==='caregiver' ? "Classroom Educator" : recipientRole==='parent' ? "Parent / Guardian" : "Daycare Staff"}
             </Text>
           </View>
         </View>

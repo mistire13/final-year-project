@@ -3,8 +3,9 @@ import "./portal.css";
 import { PageTransition } from "./WebMotion.web";
 import "./saas.css";
 import { operatorApi as portalApi, apiError } from "./api";
-import {OperatorSubscriptions} from "./SubscriptionViews.web";
+
 import { Badge, Button, Card, Icon } from "./ui.web";
+import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
 
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
 
@@ -93,7 +94,6 @@ interface SystemHealthInfo {
 }
 
 type SuperAdminPage =
-  | "subscriptions"
   | "overview"
   | "daycares"
   | "applications"
@@ -342,7 +342,7 @@ export default function SuperAdmin() {
     setActionBusyId(dId);
     try {
       await portalApi.approveDaycare(dId);
-      showToast(`Daycare "${approveModal.daycare.name}" approved. Its selected package trial is active.`);
+      showToast(`Daycare "${approveModal.daycare.name}" approved successfully.`);
       setApproveModal({ open: false, daycare: null, plan: "standard", trialDays: 30 });
       await loadAllPlatformData();
     } catch (err: any) {
@@ -461,11 +461,15 @@ export default function SuperAdmin() {
   const filteredAuditLogs = auditLogs.filter((l) => {
     if (auditSearch.trim()) {
       const q = auditSearch.toLowerCase();
+      const details = formatAuditDetails(l.action, l.metadata, l.target_table, l.target_id).toLowerCase();
+      const entity = formatTargetEntity(l.target_table, l.target_id).toLowerCase();
       return (
         l.action?.toLowerCase().includes(q) ||
         l.actor_name?.toLowerCase().includes(q) ||
         l.actor_email?.toLowerCase().includes(q) ||
-        l.daycare_name?.toLowerCase().includes(q)
+        l.daycare_name?.toLowerCase().includes(q) ||
+        details.includes(q) ||
+        entity.includes(q)
       );
     }
     return true;
@@ -755,7 +759,7 @@ export default function SuperAdmin() {
         <div style={{ marginBottom: 18 }}>
           <div className="p-nav-group">PLATFORM GOVERNANCE</div>
           <nav aria-label="Platform Governance">
-            <a href="#subscriptions" className={"p-nav-link "+(activePage==="subscriptions"?"active":"")} onClick={e=>{e.preventDefault();setActivePage("subscriptions");setMobileMenuOpen(false);}}><Icon name="store" size={18}/>Subscriptions & packages</a>
+            
             <a
               href="#overview"
               className={"p-nav-link " + (activePage === "overview" ? "active" : "")}
@@ -986,7 +990,7 @@ export default function SuperAdmin() {
           <div className="p-breadcrumb">
             Ankelba Cloud <span>/</span> Platform Administration <span>/</span>{" "}
             <strong>
-              {activePage === "subscriptions" && "Subscriptions & packages"}
+              
               {activePage === "overview" && "Executive Overview"}
               {activePage === "daycares" && "Daycare Directory"}
               {activePage === "applications" && "Applications Review Queue"}
@@ -1033,7 +1037,7 @@ export default function SuperAdmin() {
         {/* Content Container */}
         <div style={{ padding: "30px 36px", maxWidth: 1400, margin: "0 auto" }}>
         <PageTransition page={activePage} className="">
-          {activePage === "subscriptions" && <OperatorSubscriptions daycares={daycares} initialId={subscriptionId} onChanged={loadAllPlatformData}/>}
+          
           {/* Active Global Broadcast Banner */}
           {broadcast.active && broadcast.message && (
             <div
@@ -1127,7 +1131,7 @@ export default function SuperAdmin() {
                         Action Required: {pendingDaycares.length} Daycare Application{pendingDaycares.length > 1 ? "s" : ""} Awaiting Review
                       </strong>
                       <span style={{ fontSize: 13, color: "#6e4510" }}>
-                        Prospective centers self-registered and require Super Admin approval to activate 30-day trial subscriptions.
+                        Prospective daycare centers submitted for administrative verification and workspace activation.
                       </span>
                     </div>
                   </div>
@@ -1217,13 +1221,13 @@ export default function SuperAdmin() {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: "#f4a261", lineHeight: 1 }}>
-                      {stats?.active_trials ?? daycares.filter((d) => d.subscription_status === "trialing" && d.status === "active").length}
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#166534", lineHeight: 1 }}>
+                      {daycares.filter((d) => d.status === "active").length}
                     </div>
-                    <span style={{ color: "#f4a261" }}><Icon name="clock" size={22} /></span>
+                    <span style={{ color: "#166534" }}><Icon name="building" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active trials</div>
-                  <div style={{ fontSize: 11, color: "#f4a261", marginTop: 4 }}>Trial countdown active</div>
+                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active Centers</div>
+                  <div style={{ fontSize: 11, color: "#166534", marginTop: 4 }}>Licensed and operational</div>
                 </div>
 
                 <div
@@ -1270,46 +1274,46 @@ export default function SuperAdmin() {
               {/* Middle Section: Platform Breakdowns */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 24, marginBottom: 28 }}>
                 {/* Subscription Plans Card */}
-                <Card title="Packages and trial activity">
+                <Card title="Center Licensing & Accreditation Status">
                   <div style={{ padding: "10px 0" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
-                      <span>Standard Plan</span>
-                      <span>{daycares.filter((d) => d.subscription_plan === "standard").length} daycares</span>
+                      <span>Verified Regulatory Licenses</span>
+                      <span>{daycares.filter((d) => d.license_number).length} Centers</span>
                     </div>
                     <div style={{ height: 8, background: "#eeece6", borderRadius: 999, overflow: "hidden", marginBottom: 16 }}>
                       <div
                         style={{
                           height: "100%",
                           background: "#417B61",
-                          width: `${(daycares.filter((d) => d.subscription_plan === "standard").length / (daycares.length || 1)) * 100}%`,
+                          width: `${(daycares.filter((d) => d.license_number).length / (daycares.length || 1)) * 100}%`,
                         }}
                       />
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
-                      <span>Premium Plan</span>
-                      <span>{daycares.filter((d) => d.subscription_plan === "premium").length} daycares</span>
+                      <span>Fully Operational Centers</span>
+                      <span>{daycares.filter((d) => d.status === "active").length} Centers</span>
                     </div>
                     <div style={{ height: 8, background: "#eeece6", borderRadius: 999, overflow: "hidden", marginBottom: 16 }}>
                       <div
                         style={{
                           height: "100%",
-                          background: "#8b5cf6",
-                          width: `${(daycares.filter((d) => d.subscription_plan === "premium").length / (daycares.length || 1)) * 100}%`,
+                          background: "#3b82f6",
+                          width: `${(daycares.filter((d) => d.status === "active").length / (daycares.length || 1)) * 100}%`,
                         }}
                       />
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
-                      <span>Currently trialing across packages</span>
-                      <span>{daycares.filter((d) => d.subscription_status === "trialing").length} daycares</span>
+                      <span>Applications Under Review</span>
+                      <span>{daycares.filter((d) => d.status === "pending").length} Centers</span>
                     </div>
                     <div style={{ height: 8, background: "#eeece6", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
                       <div
                         style={{
                           height: "100%",
                           background: "#f4a261",
-                          width: `${(daycares.filter((d) => d.subscription_status === "trialing").length / (daycares.length || 1)) * 100}%`,
+                          width: `${(daycares.filter((d) => d.status === "pending").length / (daycares.length || 1)) * 100}%`,
                         }}
                       />
                     </div>
@@ -1482,14 +1486,13 @@ export default function SuperAdmin() {
                         <th>Administrator</th>
                         <th>License & Contact</th>
                         <th>Status</th>
-                        <th>Plan & Trial</th>
-                        <th>Enrolled / Quota</th>
+                        <th>Accreditation</th>
+                        <th>Enrolled Children</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredDaycares.map((d) => {
-                        const daysLeft = calculateDaysLeft(d.trial_ends_at);
                         const isSuspended = d.status === "suspended";
                         const isPending = d.status === "pending";
 
@@ -1514,18 +1517,20 @@ export default function SuperAdmin() {
                               <Badge value={d.status} />
                             </td>
                             <td>
-                              <div style={{ fontWeight: 700, textTransform: "capitalize" }}>{d.subscription_plan}</div>
-                              {daysLeft !== null && (
-                                <div style={{ fontSize: 11, color: daysLeft <= 5 ? "#c0392b" : "#417B61", fontWeight: 600, marginTop: 2 }}>
-                                  ⏳ {daysLeft > 0 ? `${daysLeft} days remaining` : "Trial expired"}
-                                </div>
-                              )}
+                              <div style={{ fontWeight: 700, color: d.license_number ? "#166534" : "#64748B" }}>
+                                {d.license_number ? "Verified License" : "Standard Permit"}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#76818B", marginTop: 2 }}>
+                                {d.license_number || "Awaiting submission"}
+                              </div>
                             </td>
                             <td>
-                              <div style={{ fontWeight: 700 }}>
-                                {d.active_children_count} / {d.max_children || 50} active children
+                              <div style={{ fontWeight: 700, fontSize: 13.5, color: "#10263B" }}>
+                                {d.active_children_count || 0} active students
                               </div>
-                              <div style={{ fontSize: 11, color: "#76818B" }}>{d.children_count} total child profiles · {d.staff_count} staff accounts</div>
+                              <div style={{ fontSize: 11, color: "#76818B", marginTop: 2 }}>
+                                {d.children_count || 0} enrolled profiles · {d.staff_count || 0} staff accounts
+                              </div>
                             </td>
                             <td>
                               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1536,12 +1541,7 @@ export default function SuperAdmin() {
                                   Inspect
                                 </Button>
 
-                                <Button
-                                  variant="subtle small"
-                                  onClick={() => {setSubscriptionId(d.id);setActivePage("subscriptions");}}
-                                >
-                                  Subscription
-                                </Button>
+                                
 
                                 {(d.status === 'active' || isSuspended) && (
                                   <Button
@@ -1599,7 +1599,7 @@ export default function SuperAdmin() {
                 </h2>
                 <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
                   Review prospective daycare applications submitted via the Ankelba website.
-                  Approving an application activates a 30-day trial and enables the director's account.
+                  Approving an application activates the daycare center workspace and enables the administrator's account.
                 </p>
               </div>
 
@@ -1698,7 +1698,7 @@ export default function SuperAdmin() {
                           }
                           disabled={actionBusyId === d.id}
                         >
-                          Approve & Activate 30-Day Trial →
+                          Approve Daycare Center Application →
                         </Button>
                       </div>
                     </Card>
@@ -1936,18 +1936,12 @@ export default function SuperAdmin() {
                             )}
                           </td>
                           <td>
-                            <code style={{ background: "#f2f0e9", padding: "2px 6px", borderRadius: 4, fontSize: 12 }}>
-                              {log.target_table} #{log.target_id}
-                            </code>
+                            <span style={{ fontWeight: 500, color: "#2B3642" }}>
+                              {formatTargetEntity(log.target_table, log.target_id)}
+                            </span>
                           </td>
-                          <td style={{ fontSize: 12, color: "#76818B" }}>
-                            {log.metadata ? (
-                              <span title={JSON.stringify(log.metadata)}>
-                                {typeof log.metadata === "string" ? log.metadata : JSON.stringify(log.metadata).slice(0, 48) + "..."}
-                              </span>
-                            ) : (
-                              "—"
-                            )}
+                          <td style={{ fontSize: 13, color: "#3B4651", lineHeight: 1.4 }}>
+                            {formatAuditDetails(log.action, log.metadata, log.target_table, log.target_id)}
                           </td>
                         </tr>
                       ))}
@@ -2341,7 +2335,7 @@ export default function SuperAdmin() {
       </main>
 
       {/* ========================================================================= */}
-      {/* MODAL 1: APPROVE DAYCARE & ACTIVATE 30-DAY TRIAL */}
+      {/* MODAL 1: APPROVE DAYCARE APPLICATION */}
       {/* ========================================================================= */}
       {approveModal.open && approveModal.daycare && (
         <div
@@ -2382,7 +2376,11 @@ export default function SuperAdmin() {
                 ✕
               </button>
             </div>
-            <div className="journey j-panel"><p>Approve <strong>{approveModal.daycare.name}</strong> for <strong>{approveModal.daycare.admin_email}</strong>.</p><p>Selected package: <strong>{approveModal.daycare.subscription_terms?.name || approveModal.daycare.requested_plan || 'Standard'}</strong> · {approveModal.daycare.billing_cycle || 'monthly'}</p><p>{approveModal.daycare.subscription_terms?.trial_days || 30} days free from approval · Up to {approveModal.daycare.max_children} active children.</p><p>Approval retains the applicant’s accepted package terms. Future changes are managed in Subscriptions.</p></div>
+            <div className="journey j-panel" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+              <p style={{ margin: "0 0 8px" }}>Approve <strong>{approveModal.daycare.name}</strong> for administrator <strong>{approveModal.daycare.admin_email}</strong>.</p>
+              <p style={{ margin: "0 0 8px", color: "#64748B", fontSize: 13 }}>License Number: <strong>{approveModal.daycare.license_number || "Standard Registration"}</strong> · Location: <strong>{approveModal.daycare.address || "Addis Ababa"}</strong></p>
+              <p style={{ margin: 0, color: "#166534", fontSize: 13, fontWeight: 600 }}>Approval activates the daycare center workspace and administrator account immediately.</p>
+            </div>
             {actionError && <p role="alert" style={{color:'#9d3028'}}>{actionError}</p>}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
@@ -2398,7 +2396,7 @@ export default function SuperAdmin() {
                 onClick={handleApproveConfirm}
                 disabled={actionBusyId !== null}
               >
-                {actionBusyId === approveModal.daycare.id ? "Activating..." : "Approve & Activate Trial →"}
+                {actionBusyId === approveModal.daycare.id ? "Approving..." : "Approve Daycare Application →"}
               </Button>
             </div>
           </div>
@@ -2562,31 +2560,28 @@ export default function SuperAdmin() {
               </div>
 
               <div>
-                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Subscription Tier</div>
-                <div style={{ fontSize: 14, fontWeight: 700, textTransform: "capitalize", color: "#417B61" }}>
-                  {inspectModal.daycare.subscription_plan}
+                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Operational Status</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#417B61" }}>
+                  Active Licensed Daycare
                 </div>
                 <div style={{ fontSize: 12, color: "#76818B" }}>
-                  {inspectModal.daycare.trial_ends_at
-                    ? `Trial ends: ${new Date(inspectModal.daycare.trial_ends_at).toLocaleDateString()}`
-                    : "Standard Active"}
+                  Official center registration active
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Capacity & Headcount</div>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>
-                  {inspectModal.daycare.active_children_count} / {inspectModal.daycare.max_children || 50} Active children ({Math.min(100, Math.round(((inspectModal.daycare.active_children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%)
+                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Student Enrollment & Staff</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#10263B" }}>
+                  {inspectModal.daycare.active_children_count || 0} Active Children Enrolled
                 </div>
-                <div style={{ background: "#eeece6", borderRadius: 999, height: 6, width: "100%", marginTop: 4, overflow: "hidden" }}>
-                  <div style={{ background: "#417B61", height: "100%", width: `${Math.min(100, Math.round(((inspectModal.daycare.active_children_count || 0) / (inspectModal.daycare.max_children || 50)) * 100))}%` }} />
+                <div style={{ fontSize: 12, color: "#76818B", marginTop: 4 }}>
+                  {inspectModal.daycare.children_count || 0} total child profiles · {inspectModal.daycare.staff_count || 0} staff members
                 </div>
-                <div style={{ fontSize: 12, color: "#76818B", marginTop: 4 }}>{inspectModal.daycare.children_count} total child profiles · {inspectModal.daycare.staff_count} Staff Members</div>
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-              <button className="saas-btn saas-btn-primary" onClick={()=>{setSubscriptionId(inspectModal.daycare!.id);setInspectModal({open:false,daycare:null});setActivePage('subscriptions');}}>Manage subscription</button>
+              
               <div style={{ display: "flex", gap: 10 }}>
 
                 <Button variant="primary" onClick={() => setInspectModal({ open: false, daycare: null })}>

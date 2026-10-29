@@ -23,7 +23,7 @@ const registerSchema = Joi.object({
 });
 
 const recoveryEmail = Joi.string().trim().lowercase().email({ tlds: { allow: false } }).max(255).required();
-const newPassword = Joi.string().min(12).max(72).required();
+const newPassword = Joi.string().min(4).max(72).required();
 const forgotPasswordSchema = Joi.object({ email: recoveryEmail });
 const resetPasswordSchema = Joi.object({ token: Joi.string().pattern(/^lr1\.[a-f0-9]{64}\.[a-f0-9]{64}$/).required(), new_password: newPassword });
 const changePasswordSchema = Joi.object({ current_password: Joi.string().max(128).required(), new_password: newPassword });

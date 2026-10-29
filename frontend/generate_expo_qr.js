@@ -3,7 +3,7 @@ const path = require('path');
 const zlib = require('zlib');
 const toqr = require('toqr');
 
-const EXPO_URL = 'exp://192.168.8.114:8081';
+const EXPO_URL = 'exp://192.168.100.201:8081';
 
 function createPng(matrix, size, margin = 4, scale = 14) {
   const width = (size + margin * 2) * scale;
@@ -112,7 +112,7 @@ if (!fs.existsSync(screenshotsDir)) {
 const screenshotPath = path.join(screenshotsDir, 'expo_qr.png');
 fs.writeFileSync(screenshotPath, pngBuf);
 
-const artifactDir = 'C:\\Users\\Mistire\\.gemini\\antigravity-ide\\brain\\45ab757b-420c-4909-924b-46993b6d65a1';
+const artifactDir = 'C:\\Users\\Mistire\\.gemini\\antigravity-ide\\brain\\f9a247cd-4fce-47bb-9702-014d58e4b77c';
 if (fs.existsSync(artifactDir)) {
   fs.writeFileSync(path.join(artifactDir, 'expo_qr.png'), pngBuf);
 }

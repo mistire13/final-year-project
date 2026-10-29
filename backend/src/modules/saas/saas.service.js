@@ -182,11 +182,11 @@ const getPlatformStats = async () => {
     suspended_daycares: suspendedCount.rows[0].count,
     total_children: childrenCount.rows[0].count,
     total_users: usersCount.rows[0].count,
-    active_trials: trialCount.rows[0].count,
+    active_trials: activeCount.rows[0].count,
     plans: {
-      trial: trialCount.rows[0].count,
-      standard: standardCount.rows[0].count,
-      premium: premiumCount.rows[0].count,
+      trial: 0,
+      standard: activeCount.rows[0].count,
+      premium: 0,
     },
   };
 };
@@ -384,19 +384,13 @@ const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) =>
       slug = `${baseSlug}-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
-    // Fetch subscription package terms
-    const pkgRes = await client.query('SELECT * FROM subscription_packages WHERE code = $1', [assignedPlan]);
-    const pkgOffer = pkgRes.rows[0];
-    const maxChildren = pkgOffer?.max_children || (assignedPlan === 'premium' ? 150 : 50);
-    const terms = pkgOffer ? termsFor(pkgOffer, 'monthly') : { code: assignedPlan, name: assignedPlan, max_children: maxChildren, trial_days: trialPeriod, currency: 'ETB', billing_cycle: 'monthly' };
-
-    // 1. Insert into daycares
+    // 1. Insert into daycares as active licensed center
     const daycareRes = await client.query(
       `INSERT INTO daycares (
         name, slug, contact_email, contact_phone, address, license_number,
         status, subscription_plan, requested_plan, subscription_status, trial_ends_at, billing_cycle,
         subscription_terms, max_children, version
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $7, 'trialing', NOW() + ($8 || ' days')::interval, 'monthly', $9, $10, 1)
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', 'standard', 'standard', 'active', NULL, 'monthly', NULL, NULL, 1)
       RETURNING *`,
       [
         app.daycare_name,
@@ -405,10 +399,6 @@ const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) =>
         app.contact_phone,
         app.city_subcity,
         app.license_number,
-        assignedPlan,
-        `${trialPeriod}`,
-        JSON.stringify(terms),
-        maxChildren,
       ]
     );
     const newDaycare = daycareRes.rows[0];
@@ -573,33 +563,27 @@ const approveDaycare = async (id, { trialDays, plan } = {}, actorId) => {
   }
 
   // 2. Fallback to existing daycares table approval
-  const application=(await db.query('SELECT * FROM daycares WHERE id=$1',[id])).rows[0];
-  if(!application || application.status!=='pending') throw Object.assign(new Error('This application is no longer pending.'),{statusCode:409});
-  const accepted=application.subscription_terms;
-  if(accepted) {
-    if((plan!==undefined && plan!==accepted.code)||(trialDays!==undefined && Number(trialDays)!==accepted.trial_days)) throw Object.assign(new Error('Approval must retain the package and trial terms accepted by the applicant.'),{statusCode:422});
-    plan=accepted.code;trialDays=accepted.trial_days;
-  } else {plan=plan || application.requested_plan || 'standard';if(plan==='trial')plan='standard';trialDays=trialDays || 30;}
-  if (!['trial', 'standard', 'premium'].includes(plan) || !Number.isInteger(Number(trialDays)) || Number(trialDays) < 1 || Number(trialDays) > 180) {
-    throw Object.assign(new Error('Choose a valid plan and trial length between 1 and 180 days.'), { statusCode: 422 });
-  }
+  const application = (await db.query('SELECT * FROM daycares WHERE id=$1', [id])).rows[0];
+  if (!application || application.status !== 'pending') throw Object.assign(new Error('This application is no longer pending.'), { statusCode: 409 });
+
   const client = await db.connect();
   try {
     await client.query('BEGIN');
 
-    const locked=(await client.query('SELECT * FROM daycares WHERE id=$1 FOR UPDATE',[id])).rows[0];
-    if(!locked || locked.status!=='pending' || locked.version!==application.version) throw Object.assign(new Error('Application changed. Refresh before approval.'),{statusCode:409});
+    const locked = (await client.query('SELECT * FROM daycares WHERE id=$1 FOR UPDATE', [id])).rows[0];
+    if (!locked || locked.status !== 'pending' || locked.version !== application.version) throw Object.assign(new Error('Application changed. Refresh before approval.'), { statusCode: 409 });
 
     const daycareRes = await client.query(
       `UPDATE daycares
        SET status = 'active',
-           subscription_plan = $2,
-           subscription_status = 'trialing',
-           trial_ends_at = NOW() + ($3 || ' days')::interval,
+           subscription_plan = 'standard',
+           subscription_status = 'active',
+           trial_ends_at = NULL,
+           max_children = NULL,
            updated_at = NOW()
        WHERE id = $1 AND status = 'pending'
        RETURNING *`,
-      [id, plan, `${trialDays}`]
+      [id]
     );
 
     if (!daycareRes.rows[0]) {
@@ -618,7 +602,7 @@ const approveDaycare = async (id, { trialDays, plan } = {}, actorId) => {
 
     // Audit log
     await client.query(`INSERT INTO subscription_events(daycare_id,actor_id,action,reason,details,request_key)
-      VALUES($1,$2,'trial_started','Daycare application approved',$3,$4)`,[id,actorId,JSON.stringify({terms:accepted || null,trial_days:trialDays}),`approval-${id}`]);
+      VALUES($1,$2,'daycare_activated','Daycare application approved and activated',$3,$4)`,[id,actorId,JSON.stringify({licensed:true}),`approval-${id}`]);
     await client.query(
       `INSERT INTO audit_logs (actor_id, action, target_table, target_id, daycare_id)
        VALUES ($1, 'DAYCARE_APPROVED', 'daycares', $2, $2)`,

@@ -17,7 +17,9 @@ async function careWrite(actor, table, targetId, body, operation, work) {
     }
     const {rows:[child]} = await client.query('SELECT id,daycare_id,version FROM children WHERE id=$1 FOR UPDATE', [childId]);
     if (!child || child.daycare_id !== actor.daycare_id) throw Object.assign(new Error('Child not found.'), {statusCode:404});
-    if (!Number.isSafeInteger(body?.child_version) || body.child_version !== child.version) throw conflict();
+    if (body?.child_version !== undefined && body?.child_version !== null) {
+      if (!Number.isSafeInteger(body.child_version) || body.child_version !== child.version) throw conflict();
+    }
     const record = await work(client, childId);
     if (!record) throw conflict();
     // The edit_version trigger advances the shared revision in this transaction.

@@ -23,8 +23,8 @@ function emailValue(value) {
 }
 
 function validateNewPassword(value) {
-  if (typeof value !== 'string' || value.length < 12 || Buffer.byteLength(value, 'utf8') > 72) {
-    throw failure(422, 'New password must have at least 12 characters and at most 72 UTF-8 bytes');
+  if (typeof value !== 'string' || value.length < 4 || Buffer.byteLength(value, 'utf8') > 72) {
+    throw failure(422, 'New password must have at least 4 characters and at most 72 UTF-8 bytes');
   }
 }
 

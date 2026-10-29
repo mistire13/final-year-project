@@ -1,5 +1,5 @@
 import SetupChecklist from './SetupChecklist.web';
-import {DaycareSubscription} from './SubscriptionViews.web';
+
 import { CaregiverPage } from "./CaregiverPages.web";
 import { DaycareFinances } from "./DaycareFinances.web";
 import { PageTransition } from "./WebMotion.web";
@@ -16,6 +16,7 @@ import {
   metrics,
   money,
   label,
+  initials,
   localDay,
   makePreview,
   emptyDataset,
@@ -49,8 +50,110 @@ import {
   Person,
   RecordForm,
   downloadRecords,
+  ImageDropzone,
+  openDataUrlSafe,
 } from "./ui.web";
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
+
+export function calcAgeDetailed(dobString: string): { text: string; badge: string; isAppropriate: boolean } {
+  if (!dobString) return { text: "Date of birth required", badge: "", isAppropriate: false };
+  const birth = new Date(dobString);
+  if (isNaN(birth.getTime())) return { text: "Invalid date", badge: "", isAppropriate: false };
+  const now = new Date();
+  if (birth > now) return { text: "Date cannot be in the future", badge: "", isAppropriate: false };
+
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  let days = now.getDate() - birth.getDate();
+  if (days < 0) {
+    months -= 1;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  let text = "";
+  if (years === 0 && months === 0) {
+    text = "Newborn (< 1 month)";
+  } else if (years === 0) {
+    text = `${months} ${months === 1 ? "month" : "months"} old`;
+  } else if (months === 0) {
+    text = `${years} ${years === 1 ? "year" : "years"} old`;
+  } else {
+    text = `${years} ${years === 1 ? "year" : "years"}, ${months} ${months === 1 ? "month" : "months"} old`;
+  }
+
+  let groupCategory = "Toddler";
+  if (years === 0) groupCategory = "Infant (0–12 mo)";
+  else if (years === 1) groupCategory = "Toddler (1–2 yr)";
+  else if (years === 2) groupCategory = "Early Preschool (2–3 yr)";
+  else if (years >= 3 && years <= 5) groupCategory = "Preschool / Pre-K (3–5 yr)";
+  else groupCategory = "School-age (> 5 yr)";
+
+  return {
+    text,
+    badge: `${text} · ${groupCategory}`,
+    isAppropriate: years >= 0 && years <= 7,
+  };
+}
+
+export function DaycareTermsModal({ close, onAccept }: { close: () => void; onAccept: () => void }) {
+  return (
+    <Modal title="Ankelba Daycare Terms, Policies & Safety Guidelines" onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, maxHeight: "68vh", overflowY: "auto", paddingRight: 6 }}>
+        <div style={{ background: "#F0FDF4", padding: "12px 14px", borderRadius: 8, border: "1px solid #BBF7D0", fontSize: 13, color: "#166534" }}>
+          <strong>Parent Agreement &amp; Regulatory Compliance Baseline (FDRE Proclamation 1321/2024)</strong>
+          <p style={{ margin: "4px 0 0", fontSize: 12 }}>
+            This agreement outlines child safety, daily drop-off/pickup authentication, emergency medical care consent, and operational responsibilities for all enrolled families.
+          </p>
+        </div>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>1. Authorized Guardian Pickup &amp; Safety Verification</h4>
+          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Children are released strictly to registered parents, legal guardians, and pre-authorized adult pickup contacts. All pickups require verified staff check-out, and adults may be verified using authorized biometric or photo credentials. Changes to pickup authorization must be registered in writing or via the verified parent app.
+          </p>
+        </section>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>2. Emergency Medical Treatment Authorization</h4>
+          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            In the event of an acute illness or medical emergency, daycare staff will immediately attempt to contact registered parents/guardians and emergency contacts. The parent authorizes the daycare to administer first aid and, if urgent hospital care is needed, transport the child to an accredited medical facility.
+          </p>
+        </section>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>3. Attendance, Check-in / Check-out &amp; Illness Policy</h4>
+          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Parents agree to log child check-in and pickup during designated center operational hours. Children exhibiting communicable symptoms (fever exceeding 38°C, vomiting, contagious rash) must remain home until cleared by a physician or 24 hours symptom-free to protect classroom health.
+          </p>
+        </section>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>4. Monthly Care Fees &amp; Payment Terms</h4>
+          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Daycare stay and care fees are payable on a monthly recurring basis according to the agreed plan. Invoices and payment receipts are available in the Ankelba parent mobile app.
+          </p>
+        </section>
+
+        <section style={{ paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>5. Privacy, Records &amp; Data Protection</h4>
+          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Child developmental notes, daily activity reports, photos, and health records are held strictly private within the daycare tenant. Access is restricted exclusively to assigned educators and registered parents/guardians in accordance with the Ethiopian Data Protection Proclamation No. 1321/2024.
+          </p>
+        </section>
+      </div>
+
+      <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+        <Button variant="secondary" onClick={close}>Close</Button>
+        <Button onClick={() => { onAccept(); close(); }}>
+          <Icon name="check" size={16} /> I Accept &amp; Confirm Terms
+        </Button>
+      </div>
+    </Modal>
+  );
+}
 const nav = [
   {
     group: "YOUR DAYCARE",
@@ -81,7 +184,7 @@ const nav = [
       ["store", "Products & stock", "store"],
       ["orders", "Orders & payments", "file"],
       ["audit", "Audit history", "audit"],
-      ["settings", "Center profile & plan", "leaf"],
+      ["settings", "Center profile & info", "leaf"],
     ],
   },
 ];
@@ -89,7 +192,7 @@ const subtitles: Record<string, string> = {
   dashboard: "A thoughtful overview of your daycare, all in one place.",
   analytics: "Understand the patterns behind each day of care.",
   finances: "Child care fees, monthly invoices, cash/mobile payment reconciliation and digital receipts.",
-  settings: "Manage daycare center profile, contact details and subscription plan tier.",
+  settings: "Manage daycare center profile, contact details, operating hours and address.",
   children: "Enrolled children, their linked families, emergency contacts, and care plans.",
   caregivers: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
   users: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
@@ -131,11 +234,7 @@ function Brand({ daycareName, plan }: { daycareName?: string; plan?: string }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--navy)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
             <Icon name="building" size={14} /> <span>{daycareName}</span>
           </div>
-          {plan && (
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", textTransform: "capitalize", marginTop: 2 }}>
-              ● {plan} Plan
-            </div>
-          )}
+          
         </div>
       )}
     </div>
@@ -457,6 +556,10 @@ export default function Portal() {
             caregiver_id: num(values.child_caregiver_id),
             enrollment_status: "active",
             monthly_care_fee: values.monthly_care_fee ? parseFloat(values.monthly_care_fee) : 3500.00,
+            photo_url: values.child_photo_url || null,
+            birth_certificate_url: values.child_birth_certificate_url || null,
+            agreement_signed: !!values.agreement_signed,
+            terms_accepted: !!values.terms_accepted,
           },
           emergency_contacts: values.sec_contact_name?.trim() ? [
             {
@@ -490,6 +593,11 @@ export default function Portal() {
             group_id: payload.child.group_id,
             caregiver_id: payload.child.caregiver_id,
             enrollment_status: "active",
+            photo_url: payload.child.photo_url,
+            birth_certificate_url: payload.child.birth_certificate_url,
+            agreement_signed: payload.child.agreement_signed,
+            terms_accepted: payload.child.terms_accepted,
+            monthly_care_fee: payload.child.monthly_care_fee,
             parent_name: payload.parent.name,
             parent_email: payload.parent.email,
             parent_phone: payload.parent.phone,
@@ -614,6 +722,10 @@ export default function Portal() {
           group_id: num(values.group_id),
           caregiver_id: num(values.caregiver_id),
           enrollment_status: values.enrollment_status,
+          agreement_signed: !!values.agreement_signed,
+          terms_accepted: !!values.terms_accepted,
+          ...(values.photo_url ? { photo_url: values.photo_url } : {}),
+          ...(values.birth_certificate_url ? { birth_certificate_url: values.birth_certificate_url } : {}),
         };
         await mutate(
           "/children" + (row.id ? "/" + row.id : ""),
@@ -1055,7 +1167,7 @@ export default function Portal() {
       >
         <Brand
           daycareName={actor?.daycare_name}
-          plan={data.daycare?.subscription_plan || actor?.subscription_plan}
+          
         />
         {navigation.map((group) => (
           <div key={group.group}>
@@ -1222,6 +1334,53 @@ export default function Portal() {
               </a>
             </div>
           )}
+          {staff && data.announcements && data.announcements.length > 0 && (
+            <div
+              style={{
+                background: "#FFFBEB",
+                border: "1.5px solid #FCD34D",
+                borderRadius: 14,
+                padding: "14px 18px",
+                marginBottom: 20,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+              }}
+            >
+              <span style={{ fontSize: 24 }}>📢</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, color: "#92400E" }}>
+                    Daycare Bulletin & Directive
+                  </strong>
+                  <span style={{ background: "#BD4264", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>
+                    NEW
+                  </span>
+                </div>
+                <strong style={{ display: "block", fontSize: 14, color: "#1E293B", marginBottom: 2 }}>
+                  {data.announcements[0].title}
+                </strong>
+                <span style={{ fontSize: 13, color: "#475569" }}>{data.announcements[0].body}</span>
+              </div>
+              <button
+                onClick={() => go("communication")}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#92400E",
+                  background: "#FEF3C7",
+                  border: "1px solid #F59E0B",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                All Announcements →
+              </button>
+            </div>
+          )}
           <div className="p-page-head">
             <div>
               <span className="p-eyebrow">
@@ -1271,7 +1430,7 @@ export default function Portal() {
               <p role="status">Loading your daycare records…</p>
             </Card>
           ) : (
-            <PageTransition page={selected}>{!staff && !preview && selected === "settings" && <DaycareSubscription/>}{pageComponent}</PageTransition>
+            <PageTransition page={selected}>{pageComponent}</PageTransition>
           )}
           <p className="p-kpi-note">
             Ankelba · Connect, share, nurture.{" "}
@@ -1451,6 +1610,9 @@ function PortalModal({
           ),
         ),
       }),
+      field("agreement_signed", "Signed Daycare Agreement Form on File", "checkbox", false),
+      field("terms_accepted", "Daycare Terms of Service & Policies Accepted", "checkbox", false),
+      field("birth_certificate_url", "Official Birth Certificate (PDF or Image File)", "document", false, { wide: true }),
     ];
     detail = (
       <div className="p-notice">
@@ -1459,452 +1621,241 @@ function PortalModal({
       </div>
     );
   } else if (kind === "child-profile") {
-    return <Modal title={row.full_name + " · profile"} onClose={close}>
-      <Person name={row.full_name} sub={"Born "+dayOf(row.dob)+" · "+label(row.enrollment_status)} />
-      <section className="p-profile-section">
-        <div className="p-card-head">
-          <h3>Classroom & Assigned Caregiver</h3>
-          {!ctx.staff && <Button variant="secondary" onClick={() => ctx.open("assign-child-caregiver", row)}>
-            Change Assignment
-          </Button>}
-        </div>
-        <div className="p-profile-row" style={{ display: "flex", gap: 32 }}>
-          <div>
-            <div style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", fontWeight: 700 }}>Classroom Group</div>
-            <strong style={{ fontSize: 14, color: "var(--navy)" }}>{groupName(data, row.group_id) || "Not assigned to a group"}</strong>
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: "#6B7280", textTransform: "uppercase", fontWeight: 700 }}>Primary Caregiver</div>
-            <strong style={{ fontSize: 14, color: "var(--navy)" }}>{userName(data, row.caregiver_id) || "Unassigned"}</strong>
-          </div>
-        </div>
-      </section>
-      <section className="p-profile-section"><h3>Family & pickup</h3>
-        <div style={{marginBottom: 8}}>
-          <strong style={{fontSize: 12, color: '#6B7280', textTransform: 'uppercase'}}>Registered Parents</strong>
-          {data.guardians.filter(g=>g.child_id===row.id).map(g=><div className="p-profile-row" key={g.id}><Person name={userName(data,g.user_id)} sub={g.relationship}/><Badge value={g.pickup_authorized?"Approved":"Not authorized"} tone={g.pickup_authorized?"green":"quiet"}/></div>)}
-          {!data.guardians.some(g=>g.child_id===row.id)&&<p style={{fontSize: 13, color: '#9CA3AF'}}>No linked parent accounts.</p>}
-        </div>
-        <div style={{marginTop: 12, marginBottom: 8}}>
-          <strong style={{fontSize: 12, color: '#6B7280', textTransform: 'uppercase'}}>Authorized Pickup Contacts</strong>
-          {(data.guardianRequests||[]).filter(g=>g.child_id===row.id).map(g=><div className="p-profile-row" key={'req-'+g.id}><div><Person name={g.name} sub={`${g.relationship} · ${g.phone}`}/><Badge value={g.status==='approved'?'Approved':g.status==='pending'?'Pending review':g.status==='rejected'?'Rejected':'Revoked'} tone={g.status==='approved'?'green':g.status==='pending'?'gold':'red'}/></div>{!ctx.staff && ['pending','approved'].includes(g.status) && <Button variant="quiet" onClick={()=>ctx.open("guardian-request-review",g)}>{g.status==='approved'?'Revoke':'Review'}</Button>}</div>)}
-          {!(data.guardianRequests||[]).some(g=>g.child_id===row.id)&&<p style={{fontSize: 13, color: '#9CA3AF'}}>No additional pickup contacts.</p>}
-        </div>
-        {!ctx.staff && <div style={{display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap'}}>
-          <Button variant="secondary" onClick={()=>ctx.open("guardian",row)}>Link parent account</Button>
-          <Button variant="secondary" onClick={()=>ctx.open("guardian-request-create",{id:0,child_id:row.id})}>Add pickup contact</Button>
-        </div>}
-      </section>
-      <section className="p-profile-section"><div className="p-card-head"><h3>Emergency contacts</h3>{!ctx.staff && <Button variant="secondary" icon="plus" onClick={()=>ctx.open("contact",{id:0,child_id:row.id})}>Add contact</Button>}</div>
-        {(row.emergency_contacts||[]).map((c:Row)=><div className="p-profile-row" key={c.id}><Person name={c.name} sub={c.relationship+" · "+c.phone}/>{!ctx.staff && <Button variant="quiet" onClick={()=>ctx.open("contact",{...c,child_id:row.id})}>Edit</Button>}</div>)}
-        {!row.emergency_contacts?.length&&<p>No emergency contacts recorded.</p>}
-      </section>
-      <section className="p-profile-section"><div className="p-card-head"><h3>Care instructions</h3>{!ctx.staff && <Button variant="secondary" icon="plus" onClick={()=>ctx.open("instruction",{id:0,child_id:row.id})}>Add instruction</Button>}</div>
-        {(row.care_instructions||[]).map((c:Row)=><div className="p-profile-row" key={c.id}><div><Badge value={c.category}/><p>{c.instruction_text}</p></div>{!ctx.staff && <Button variant="quiet" onClick={()=>ctx.open("instruction",{...c,child_id:row.id})}>Edit</Button>}</div>)}
-        {!row.care_instructions?.length&&<p>No care instructions recorded.</p>}
-      </section>
-      <div className="p-dialog-footer"><Button onClick={close}>Done</Button></div>
-    </Modal>;
-  } else if (kind === "contact") {
-    title=row.id?"Edit emergency contact":"Add emergency contact";
-    fields=[field("name","Full name"),field("relationship","Relationship"),field("phone","Phone number","tel",true,{wide:true})];
-  } else if (kind === "instruction") {
-    title=row.id?"Edit care instruction":"Add care instruction";
-    fields=[field("category","Category","select",true,{wide:true,options:["allergy","dietary","medical_note","general"].map(value=>({value,label:label(value)}))}),field("instruction_text","Instruction","textarea",true,{wide:true})];
-  } else if (kind === "guardian-request-create") {
-    title = "Add pickup contact for review";
-    initial = {child_id:row.child_id?String(row.child_id):""};
-    fields = [field("child_id","Child","select",true,{options:data.children.map(c=>({value:String(c.id),label:c.full_name}))}),
-      field("name","Adult full name","text",true),field("relationship","Relationship","text",true),
-      field("phone","Phone number","tel",true),field("email","Email (optional)","email",false)];
-    detail = <div className="p-notice">This contact receives pickup permission only after review. No app account is created.</div>;
-    submit = "Save pending contact";
-  } else if (kind === "guardian-request-review") {
-    title = (row.status === "approved" ? "Revoke pickup permission" : "Review pickup request") + " · " + row.name;
-    initial = {decision:row.status==='approved'?'revoked':'',review_note:''};
-    fields = [field("decision","Decision","select",true,{options:row.status==='approved'?[{value:'revoked',label:'Revoke pickup permission'}]:[{value:'approved',label:'Approve pickup permission'},{value:'rejected',label:'Reject request'}]}),
-      field("review_note","Review reason and identity check","textarea",true,{wide:true,hint:"Record your review and identity/authorization check, or the reason for rejection/revocation (at least 12 characters)."})];
-    detail = <div className="p-notice">{childName(data,row.child_id)} · {row.relationship} · {row.phone}<p>Approval permits pickup; it does not create a parent-app login. Identity must still be checked for every collection.</p></div>;
-    submit = "Record decision";
-  } else if (kind === "guardian") {
-    title = "Link guardian to " + row.full_name;
-    initial = { pickup_authorized: false };
-    fields = [
-      field("user_id", "Registered parent / guardian", "select", true, {
-        wide: true,
-        options: options(
-          data.users.filter(
-            (u) => u.role === "parent" && u.status === "active",
-          ),
-        ),
-      }),
-      field("relationship", "Relationship"),
-      field(
-        "pickup_authorized",
-        "Authorize this adult for pickup",
-        "checkbox",
-        false,
-      ),
-    ];
-    detail = (
-      <div className="p-notice">
-        A linked account can access this child’s information. Pickup
-        authorization is a separate permission.
-      </div>
-    );
-  } else if (kind === "group") {
-    title = row.id ? "Edit group" : "Create a group";
-    initial = {
-      name: row.name || "",
-      description: row.description || "",
-      lead_caregiver_id: row.lead_caregiver_id ? String(row.lead_caregiver_id) : "",
-      assign_children: true,
-    };
-    fields = [
-      field("name", "Group name", "text", true, { wide: true }),
-      field("description", "Description", "textarea", false, { wide: true }),
-      field("lead_caregiver_id", "Lead Teacher / Assigned Caregiver", "select", false, {
-        wide: true,
-        options: [
-          { value: "", label: "No lead teacher assigned" },
-          ...data.users
-            .filter((u) => u.role === "caregiver" && u.status === "active")
-            .map((u) => ({ value: String(u.id), label: `${u.name}${u.title ? ` (${u.title})` : ""}` })),
-        ],
-        hint: "Select the primary educator responsible for this classroom group.",
-      }),
-      field("assign_children", "Assign all active children in this group to this caregiver", "checkbox", false, {
-        wide: true,
-        hint: "Automatically sets this caregiver as the primary caregiver for all students in this group.",
-      }),
-    ];
-  } else if (kind === "duty") {
-    title = "Assign front-desk duty";
-    initial = {
-      date,
-      start: "07:00",
-      end: "13:00",
-      can_attendance: true,
-      can_pickup: false,
-    };
-    fields = [
-      field("staff_id", "Caregiver", "select", true, {
-        options: options(
-          data.users.filter(
-            (u) => u.role === "caregiver" && u.status === "active",
-          ),
-        ),
-      }),
-      field("date", "Duty date", "date"),
-      field("start", "Start time · Addis Ababa", "time", true, {
-        hint: "Standard shifts: Morning 07:30 or Afternoon 13:00",
-      }),
-      field("end", "End time · Addis Ababa", "time", true, {
-        hint: "Standard shifts: Morning 13:00 or Afternoon 18:30",
-      }),
-      field("group_id", "Group scope", "select", false, {
-        wide: true,
-        options: options(data.groups),
-        hint: "Leave unselected for all daycare groups.",
-      }),
-      field("can_attendance", "Record attendance", "checkbox", false),
-      field("can_pickup", "Verify and complete pickups", "checkbox", false),
-    ];
-  } else if (["user-status", "revoke-duty"].includes(kind)) {
-    title =
-      kind === "user-status"
-        ? (row.status === "active" ? "Deactivate" : "Activate") + " " + row.name
-        : "Revoke front-desk duty";
-    detail = (
-      <div className="p-notice">
-        {kind === "user-status"
-          ? "The account’s access will reflect the new status. Existing records stay available."
-          : "This staff member will lose this assignment’s attendance and pickup permissions."}
-      </div>
-    );
-    submit = preview ? "Confirm in preview" : "Confirm change";
-  } else if (kind === "checkin" || kind === "absent") {
-    title =
-      (kind === "checkin" ? "Check in " : "Mark absent: ") + row.full_name;
-    fields = [
-      field("notes", "Note (optional)", "textarea", false, { wide: true }),
-    ];
-    detail = (
-      <div className="p-notice">
-        Attendance is recorded for today under your staff account.
-      </div>
-    );
-    submit = preview ? "Record in preview" : "Record attendance";
-  } else if (kind === "pickup") {
-    title = "Verify pickup · " + row.full_name;
-    const guardians = data.guardians.filter(
-      (g) =>
-        g.child_id === row.id &&
-        g.pickup_authorized &&
-        data.users.some((u) => u.id === g.user_id && u.status === "active"),
-    );
-    initial = {
-      guardian_key: "",
-      identity_confirmed: false,
-      reason: "",
-    };
-    fields = [
-      field(
-        "guardian_key",
-        "Approved adult collecting this child",
-        "select",
-        true,
-        {
-          wide: true,
-          options: [...guardians.map((g) => ({
-            value: `user:${g.user_id}`,
-            label: userName(data, g.user_id) + " · " + g.relationship,
-          })), ...(data.guardianRequests || []).filter(g=>g.child_id===row.id && g.status==='approved').map(g=>({value:`pickup:${g.id}`,label:`${g.name} · ${g.relationship} (pickup contact)`}))],
-        },
-      ),
-      field("reason", "Manual identity check performed (min. 12 chars)", "textarea", true, {
-        wide: true,
-        hint: "Describe verification method for audit trail (e.g. verified photo ID / parent signature). Minimum 12 characters.",
-      }),
-      field(
-        "identity_confirmed",
-        "I checked this adult’s identity and pickup authorization",
-        "checkbox",
-        false,
-        { wide: true },
-      ),
-    ];
-    detail = (
-      <>
-        <div className="p-pickup-step">
-          <span>
-            <Icon name="check" size={17} />
-          </span>
-          <div>
-            <strong>Child selected</strong>
-            <p>{row.full_name} · Currently at daycare</p>
-          </div>
-        </div>
-        <div className="p-pickup-step pending">
-          <span>
-            <Icon name="shield" size={17} />
-          </span>
-          <div>
-            <strong>Verify the adult, then confirm release</strong>
-            <p>
-              Biometric device connection is pending. The manual check and
-              checkout are recorded together.
-            </p>
-          </div>
-        </div>
-      </>
-    );
-    submit = preview
-      ? "Preview verified checkout"
-      : "Verify & complete checkout";
-  } else if (kind === "event") {
-    title = row.id ? "Edit daycare event" : "Create daycare event";
-    initial = {
-      event_type: "activity_day",
-      ...row,
-      event_date: dayOf(row.event_date) || date,
-    };
-    fields = [
-      field("title", "Title", "text", true, { wide: true }),
-      field("event_date", "Date", "date"),
-      field("event_time", "Time", "time", false),
-      field("event_type", "Type", "select", true, {
-        wide: true,
-        options: [
-          "meeting",
-          "holiday",
-          "activity_day",
-          "special_program",
-          "closing_date",
-        ].map((v) => ({ value: v, label: label(v) })),
-      }),
-      field("description", "Description", "textarea", false, { wide: true }),
-    ];
-  } else if (kind === "cancel-event") {
-    title="Cancel daycare event";
-    detail=<p>Cancel “{row.title}” for families and caregivers? It will no longer appear in upcoming events.</p>;
-    fields=[]; submit="Cancel event";
-  } else if (kind === "announcement") {
-    title = "New announcement";
-    initial = { announcement_type: "general" };
-    fields = [
-      field("title", "Title", "text", true, { wide: true }),
-      field("body", "Message", "textarea", true, { wide: true }),
-      field("announcement_type", "Category", "select", true, {
-        options: ["general", "alert", "meal_plan"].map((v) => ({
-          value: v,
-          label: label(v),
-        })),
-      }),
-      field("target_group_id", "Group audience", "select", false, {
-        options: options(data.groups),
-        hint: "Leave unselected to publish to all families and staff.",
-      }),
-    ];
-    submit = preview ? "Publish in preview" : "Publish announcement";
-  } else if (kind === "message") {
-    title = "Write a message";
-    fields = [
-      field("recipient_id", "Recipient", "select", true, {
-        wide: true,
-        options: options(
-          data.users.filter(
-            (u) => u.id !== ctx.actor.id && u.status === "active",
-          ),
-        ),
-      }),
-      field("subject", "Subject", "text", false, { wide: true }),
-      field("body", "Message", "textarea", true, { wide: true }),
-    ];
-    submit = preview ? "Send in preview" : "Send message";
-  } else if (kind === "product") {
-    title = row.id ? "Edit product" : "Add daycare product";
-    initial = { available: true, stock_qty: 0, image_url: "", ...row };
-    fields = [
-      field("name", "Product name", "text", true, { wide: true }),
-      field("price", "Price (ETB)", "number", true, { min: "0" }),
-      field("stock_qty", "Stock quantity", "number", true, { min: "0" }),
-      field("image_url", "Product picture / Image URL", "text", false, {
-        wide: true,
-        hint: "Direct photo or illustration web link",
-      }),
-      field("available", "Available in the store", "checkbox", false, {
-        wide: true,
-      }),
-      field("description", "Description", "textarea", false, { wide: true }),
-    ];
-  } else if (kind === "order") {
-    title = "Update order #ANK-" + row.id;
-    initial = {
-      order_status: row.order_status || "placed",
-      payment_status: row.payment_status || "unpaid",
-    };
-    fields = [
-      field("order_status", "Fulfillment status", "select", true, {
-        wide: true,
-        options: [row.order_status,...(({placed:["confirmed","cancelled"],confirmed:["ready_for_pickup","cancelled"],ready_for_pickup:["collected","cancelled"]} as Record<string,string[]>)[row.order_status] || [])].filter(v=>v===row.order_status || v!=="cancelled" || Number(row.total)===0 || !["paid","pending"].includes(row.payment_status)).map(v=>({value:v,label:label(v)})),
-      }),
-      field("payment_status", "Payment status", "select", true, {
-        wide: true,
-        options: [
-          { value: "unpaid", label: "Unpaid (Pending daycare collection)" },
-          { value: "paid", label: row.payment_method==='demo' ? "Paid (DEMO simulation; no money received)" : row.payment_method==='no_charge' ? "Paid (No charge)" : "Paid (Received at daycare)" },
-          { value: "failed", label: "Payment failed" },
-        ].filter(option=>row.order_status==="cancelled" || row.payment_status==="paid" ? option.value===row.payment_status : true),
-      }),
-    ];
-    detail = (
-      <div className="p-notice">
-        {row.payment_method==='demo' && <p>DEMO payment · no money transferred. Reference: {row.payment_reference}</p>}
-        Unpaid and zero-total cancellations restore reserved stock. Collected orders are final; payment reversals require a separate refund workflow.<br/>Order Total: <strong>{money(row.total)}</strong> · Placed by {userName(data, row.parent_id)}
-      </div>
-    );
-  } else if (kind === "edit-settings") {
-    title = "Edit Daycare Center Profile";
-    initial = {
-      name: data.daycare?.name || row.name || "",
-      license_number: data.daycare?.license_number || row.license_number || "",
-      contact_email: data.daycare?.contact_email || row.contact_email || "",
-      contact_phone: data.daycare?.contact_phone || row.contact_phone || "",
-      address: data.daycare?.address || row.address || "",
-    };
-    fields = [
-      field("name", "Center Legal Name", "text", true, { wide: true }),
-      field("license_number", "Official License Number", "text", false, { wide: true }),
-      field("contact_email", "Official Contact Email", "text", true),
-      field("contact_phone", "Official Contact Phone", "text", false),
-      field("address", "Physical Center Address", "text", false, { wide: true }),
-    ];
-    submit = "Save Center Profile";
-  } else if (kind === "child-profile") {
-    const guardian = data.guardians.find((g) => g.child_id === row.id);
-    const parentUser = guardian ? data.users.find((u) => u.id === guardian.user_id) : null;
+    const guardian = (data.guardians || []).find((g) => g.child_id === row.id);
+    const parentUser = guardian ? (data.users || []).find((u) => u.id === guardian.user_id) : null;
     const parentName = row.parent_name || parentUser?.name || "Unlinked";
     const parentEmail = row.parent_email || parentUser?.email || "—";
     const parentRel = row.parent_relationship || guardian?.relationship || "Parent / Guardian";
-    const group = data.groups.find((g) => g.id === row.group_id)?.name || "Unassigned Group";
+    const parentPhone = row.parent_phone || parentUser?.phone || "—";
+    const group = (data.groups || []).find((g) => g.id === row.group_id)?.name || "Unassigned Group";
+    const caregiverUser = (data.users || []).find((u) => u.id === row.caregiver_id);
+    const caregiverName = caregiverUser?.name || userName(data, row.caregiver_id) || "Unassigned";
     const allergies = (row.care_instructions || []).filter((ci: any) => ci.category === "allergy");
     const dietary = (row.care_instructions || []).filter((ci: any) => ci.category === "dietary");
+    const generalInstructions = (row.care_instructions || []).filter((ci: any) => !["allergy", "dietary"].includes(ci.category));
     const emergencyContacts = row.emergency_contacts || [];
+    const ageInfo = calcAgeDetailed(row.dob);
+
+    const hasBirthCert = !!row.birth_certificate_url;
 
     return (
-      <Modal title={`Child & Family Profile · ${row.full_name}`} onClose={close}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "14px", padding: "4px 0" }}>
-          <div style={{ background: "#F8FAF8", padding: "14px 16px", borderRadius: "12px", border: "1px solid #E5E9E2" }}>
-            <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 10px 0", color: "#1D2A1F", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name="child" size={15} /> Child Information
-            </h3>
-            <div className="p-detail-grid">
-              <div><small>Full Name</small><p>{row.full_name}</p></div>
-              <div><small>Date of Birth</small><p>{dayOf(row.dob)}</p></div>
-              <div><small>Gender</small><p style={{ textTransform: "capitalize" }}>{row.gender || "—"}</p></div>
-              <div><small>Classroom Group</small><p><Badge value={group} tone="green" /></p></div>
-              <div><small>Enrollment Status</small><p><Badge value={row.enrollment_status || "active"} tone="green" /></p></div>
-            </div>
-          </div>
-
-          <div style={{ background: "#F5F8FB", padding: "14px 16px", borderRadius: "12px", border: "1px solid #E1E8F0" }}>
-            <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 10px 0", color: "#162D42", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name="people" size={15} /> Parent & Guardian Account
-            </h3>
-            <div className="p-detail-grid">
-              <div><small>Parent Name</small><p><strong>{parentName}</strong> {parentRel ? `(${parentRel})` : ""}</p></div>
-              <div><small>Account Email</small><p>{parentEmail}</p></div>
-              <div><small>Pickup Authorized</small><p><Badge value={guardian?.pickup_authorized ? "approved" : "pending"} tone="green" /></p></div>
-            </div>
-          </div>
-
-          <div style={{ background: "#FDF8F0", padding: "14px 16px", borderRadius: "12px", border: "1px solid #F5E8D0" }}>
-            <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 10px 0", color: "#4A3B18", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name="alert" size={15} /> Food Allergies & Dietary Restrictions
-            </h3>
-            {allergies.length > 0 || dietary.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {allergies.map((a: any, i: number) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Badge value="Allergy" tone="gold" />
-                    <span style={{ fontSize: "13px", fontWeight: 600 }}>{a.instruction_text}</span>
-                  </div>
-                ))}
-                {dietary.map((d: any, i: number) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Badge value="Dietary" tone="green" />
-                    <span style={{ fontSize: "13px" }}>{d.instruction_text}</span>
-                  </div>
-                ))}
-              </div>
+      <Modal title={`${row.full_name} · Child Profile & Verification`} onClose={close}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Header Card with Photo and Identity */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+            {row.photo_url ? (
+              <img
+                src={row.photo_url}
+                alt={row.full_name}
+                style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid #008794", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
+              />
             ) : (
-              <p style={{ fontSize: "13px", color: "#059669", margin: 0, fontWeight: 500 }}>✓ No known food allergies or dietary restrictions recorded.</p>
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: "50%",
+                  background: "var(--navy)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  fontWeight: 700,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              >
+                {initials(row.full_name || "Child")}
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--navy)" }}>{row.full_name}</h2>
+                <Badge value={row.enrollment_status || "active"} tone="green" />
+              </div>
+              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span>Born {dayOf(row.dob)}</span>
+                <span>•</span>
+                <span style={{ fontWeight: 600, color: "var(--navy)" }}>{ageInfo.text}</span>
+                {row.gender && <><span>•</span><span style={{ textTransform: "capitalize" }}>{row.gender}</span></>}
+              </div>
+            </div>
+            {!ctx.staff && (
+              <Button variant="secondary small" onClick={() => ctx.open("child", row)}>
+                Edit Profile
+              </Button>
             )}
           </div>
 
-          <div style={{ background: "#FAFAFA", padding: "14px 16px", borderRadius: "12px", border: "1px solid #E5E7EB" }}>
-            <h3 style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 10px 0", color: "#374151", textTransform: "uppercase", letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6 }}>
-              <Icon name="phone" size={15} /> Emergency Contacts
-            </h3>
+          {/* Section: Classroom & Educator */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Classroom &amp; Primary Educator
+              </span>
+              {!ctx.staff && (
+                <Button variant="quiet small" onClick={() => ctx.open("assign-child-caregiver", row)}>
+                  Change Assignment
+                </Button>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <small style={{ color: "#64748b", display: "block" }}>Classroom Group</small>
+                <strong style={{ fontSize: 14, color: "var(--navy)" }}>{group}</strong>
+              </div>
+              <div>
+                <small style={{ color: "#64748b", display: "block" }}>Primary Caregiver</small>
+                <strong style={{ fontSize: 14, color: "var(--navy)" }}>{caregiverName} {caregiverUser?.title ? `(${caregiverUser.title})` : ""}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Documents & Compliance Verification */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
+              Documents &amp; Enrollment Compliance
+            </span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ padding: "8px 12px", background: hasBirthCert ? "#f0fdf4" : "#fef2f2", borderRadius: 8, border: `1px solid ${hasBirthCert ? "#bbf7d0" : "#fecaca"}` }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="file" size={16} />
+                    <strong style={{ fontSize: 12.5, color: hasBirthCert ? "#166534" : "#991b1b" }}>
+                      {hasBirthCert ? "Birth Certificate Attached" : "No Birth Certificate"}
+                    </strong>
+                  </div>
+                  {hasBirthCert && (
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#008794", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+                      onClick={() => openDataUrlSafe(row.birth_certificate_url, (row.full_name || "child") + "_birth_certificate")}
+                    >
+                      View
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding: "8px 12px", background: row.agreement_signed ? "#f0fdf4" : "#fffbeb", borderRadius: 8, border: `1px solid ${row.agreement_signed ? "#bbf7d0" : "#fef3c7"}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="shield" size={16} />
+                  <strong style={{ fontSize: 12.5, color: row.agreement_signed ? "#166534" : "#92400e" }}>
+                    {row.agreement_signed ? "Agreement Signed & On File" : "Agreement Form Pending"}
+                  </strong>
+                </div>
+              </div>
+
+              <div style={{ padding: "8px 12px", background: row.terms_accepted ? "#f0fdf4" : "#f8fafc", borderRadius: 8, border: `1px solid ${row.terms_accepted ? "#bbf7d0" : "#e2e8f0"}`, gridColumn: "1 / -1" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="checkCircle" size={16} />
+                  <strong style={{ fontSize: 12.5, color: row.terms_accepted ? "#166534" : "#64748b" }}>
+                    {row.terms_accepted ? "Daycare Terms of Service & Child Safety Policies Accepted" : "Policies Pending Acceptance"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Parents & Pickup */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
+              Registered Parents &amp; Authorized Pickup
+            </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {data.guardians.filter((g) => g.child_id === row.id).map((g) => (
+                <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <Person name={userName(data, g.user_id)} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || parentPhone}`} />
+                  <Badge value={g.pickup_authorized ? "Approved for Pickup" : "Not authorized"} tone={g.pickup_authorized ? "green" : "quiet"} />
+                </div>
+              ))}
+              {!data.guardians.some((g) => g.child_id === row.id) && (
+                <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>No linked parent accounts.</p>
+              )}
+            </div>
+
+            {/* Additional Pickup Contacts */}
+            {(data.guardianRequests || []).filter((g) => g.child_id === row.id).length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <small style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: 4 }}>
+                  Additional Approved Pickup Contacts
+                </small>
+                {(data.guardianRequests || []).filter((g) => g.child_id === row.id).map((g) => (
+                  <div key={'req-' + g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                    <Person name={g.name} sub={`${g.relationship} · ${g.phone}`} />
+                    <Badge value={g.status === 'approved' ? 'Approved' : g.status === 'pending' ? 'Pending review' : 'Rejected'} tone={g.status === 'approved' ? 'green' : 'gold'} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!ctx.staff && (
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <Button variant="secondary small" onClick={() => ctx.open("guardian", row)}>Link Parent Account</Button>
+                <Button variant="secondary small" onClick={() => ctx.open("guardian-request-create", { id: 0, child_id: row.id })}>Add Pickup Contact</Button>
+              </div>
+            )}
+          </div>
+
+          {/* Section: Emergency Contacts */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Emergency Contacts
+              </span>
+              {!ctx.staff && (
+                <Button variant="quiet small" onClick={() => ctx.open("contact", { id: 0, child_id: row.id })}>
+                  + Add Contact
+                </Button>
+              )}
+            </div>
             {emergencyContacts.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {emergencyContacts.map((c: any, i: number) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: i < emergencyContacts.length - 1 ? "1px solid #F3F4F6" : "none" }}>
-                    <div>
-                      <strong>{c.name}</strong> <span style={{ fontSize: "12px", color: "#6B7280" }}>({c.relationship})</span>
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: "13px", color: "#2563EB" }}>{c.phone}</span>
+              emergencyContacts.map((c: any) => (
+                <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <div>
+                    <strong>{c.name}</strong> <span style={{ fontSize: 12, color: "#64748b" }}>({c.relationship})</span>
                   </div>
-                ))}
-              </div>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: "#2563eb" }}>{c.phone}</span>
+                </div>
+              ))
             ) : (
-              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>No emergency contacts recorded yet.</p>
+              <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>No emergency contacts recorded.</p>
             )}
           </div>
-        </div>
-        <div className="p-dialog-footer" style={{ marginTop: "16px" }}>
-          <Button onClick={close}>Done</Button>
+
+          {/* Section: Allergies & Care Instructions */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Allergies &amp; Care Instructions
+              </span>
+              {!ctx.staff && (
+                <Button variant="quiet small" onClick={() => ctx.open("instruction", { id: 0, child_id: row.id })}>
+                  + Add Care Note
+                </Button>
+              )}
+            </div>
+            {allergies.length > 0 ? (
+              allergies.map((a: any, i: number) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                  <Badge value="Allergy" tone="gold" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#92400e" }}>{a.instruction_text}</span>
+                </div>
+              ))
+            ) : (
+              <p style={{ fontSize: 13, color: "#166534", margin: "0 0 6px", fontWeight: 500 }}>✓ No known allergies recorded.</p>
+            )}
+            {generalInstructions.map((gi: any, i: number) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <Badge value={gi.category} tone="quiet" />
+                <span style={{ fontSize: 13, color: "#334155" }}>{gi.instruction_text}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-dialog-footer">
+            <Button onClick={close}>Done</Button>
+          </div>
         </div>
       </Modal>
     );
@@ -2000,12 +1951,19 @@ function FamilyEnrollmentModal({
   ctx: PageContext;
   busy: boolean;
   error: string;
-  save: (v: Record<string, any>) => void;
+  save: (values: Record<string, any>) => void;
   close: () => void;
 }) {
   const { data, preview } = ctx;
   const [isNewGroup, setIsNewGroup] = useState(data.groups.length === 0);
   const [newGroupName, setNewGroupName] = useState("");
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [validationError, setValidationError] = useState("");
+
+  const initialGroupId = data.groups[0]?.id ? String(data.groups[0].id) : "";
+  const initialGroup = data.groups.find((g) => String(g.id) === initialGroupId);
+  const initialCaregiverId = initialGroup?.lead_caregiver_id ? String(initialGroup.lead_caregiver_id) : "";
+
   const [formData, setFormData] = useState({
     parent_name: "",
     parent_email: "",
@@ -2015,22 +1973,49 @@ function FamilyEnrollmentModal({
     child_full_name: "",
     child_dob: "",
     child_gender: "female",
-    child_group_id: data.groups[0]?.id ? String(data.groups[0].id) : "",
-    child_caregiver_id: "",
+    child_photo_url: "",
+    child_birth_certificate_url: "",
+    child_group_id: initialGroupId,
+    child_caregiver_id: initialCaregiverId,
     monthly_care_fee: "3500.00",
     allergy_note: "",
     care_note: "",
     sec_contact_name: "",
     sec_contact_relationship: "Father",
     sec_contact_phone: "",
+    agreement_signed: false,
+    terms_accepted: false,
   });
 
-  const handleChange = (key: string, val: string) => {
+  const ageInfo = useMemo(() => calcAgeDetailed(formData.child_dob), [formData.child_dob]);
+
+  const handleChange = (key: string, val: any) => {
     setFormData((prev) => ({ ...prev, [key]: val }));
+    if (key === "terms_accepted" && val) {
+      setValidationError("");
+    }
   };
+
+  const handleGroupSelect = (grpId: string) => {
+    const selectedGroup = data.groups.find((g) => String(g.id) === grpId);
+    setFormData((prev) => ({
+      ...prev,
+      child_group_id: grpId,
+      // If the selected group has a designated lead caregiver, automatically pre-select them
+      child_caregiver_id: selectedGroup?.lead_caregiver_id ? String(selectedGroup.lead_caregiver_id) : prev.child_caregiver_id,
+    }));
+  };
+
+  const selectedGroupObj = data.groups.find((g) => String(g.id) === formData.child_group_id);
+  const groupLeadName = selectedGroupObj?.lead_caregiver_name || userName(data, selectedGroupObj?.lead_caregiver_id);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.terms_accepted) {
+      setValidationError("Please review and confirm that the parent/guardian accepts the Daycare Terms & Policies before proceeding.");
+      return;
+    }
+    setValidationError("");
     save({
       ...formData,
       new_group_name: isNewGroup ? newGroupName.trim() : "",
@@ -2038,256 +2023,389 @@ function FamilyEnrollmentModal({
   };
 
   return (
-    <Modal title="Enroll New Family (Parent & Child)" onClose={close}>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        <p style={{ margin: "0 0 6px", fontSize: "14px", color: "var(--muted)" }}>
-          Register the parent user account and child profile together in one step. The parent is automatically linked with authorized child pickup.
-        </p>
+    <>
+      {showTermsModal && (
+        <DaycareTermsModal
+          close={() => setShowTermsModal(false)}
+          onAccept={() => handleChange("terms_accepted", true)}
+        />
+      )}
 
-        {/* Section 1: Parent Information */}
-        <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="user" size={17} /></span>
-            <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Parent / Guardian Account</strong>
-          </div>
-          <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <label>
-              Full name *
-              <input
-                required
-                placeholder="e.g., Sara Mengistu"
-                value={formData.parent_name}
-                onChange={(e) => handleChange("parent_name", e.target.value)}
-              />
-            </label>
-            <label>
-              Email address (login username) *
-              <input
-                type="email"
-                required
-                placeholder="sara@example.com"
-                value={formData.parent_email}
-                onChange={(e) => handleChange("parent_email", e.target.value)}
-              />
-            </label>
-            <label>
-              Phone number *
-              <input
-                type="tel"
-                required
-                placeholder="+251 911 223 344"
-                value={formData.parent_phone}
-                onChange={(e) => handleChange("parent_phone", e.target.value)}
-              />
-            </label>
-            <label>
-              Relationship to child
-              <select
-                value={formData.parent_relationship}
-                onChange={(e) => handleChange("parent_relationship", e.target.value)}
-              >
-                <option value="Mother">Mother</option>
-                <option value="Father">Father</option>
-                <option value="Legal Guardian">Legal Guardian</option>
-                <option value="Grandmother">Grandmother</option>
-                <option value="Grandfather">Grandfather</option>
-                <option value="Aunt">Aunt</option>
-                <option value="Uncle">Uncle</option>
-                <option value="Other">Other</option>
-              </select>
-            </label>
-            <label style={{ gridColumn: "1 / -1" }}>
-              Parent app temporary password *
-              <input
-                type="password"
-                required={!preview}
-                minLength={8}
-                placeholder="At least 8 characters (e.g., Welcome123!)"
-                value={formData.parent_password}
-                onChange={(e) => handleChange("parent_password", e.target.value)}
-              />
-              <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
-                The parent will use this password to sign in to the Ankelba Parent mobile app.
-              </small>
-            </label>
-          </div>
-        </div>
+      <Modal title="Enroll New Family (Student, Parent & Caregiver)" onClose={close}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <p style={{ margin: "0 0 4px", fontSize: "14px", color: "var(--muted)" }}>
+            Complete full enrollment in one unified flow: student records, parent user access, verified compliance documents, and classroom/caregiver assignment.
+          </p>
 
-        {/* Section 2: Child Profile */}
-        <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="child" size={17} /></span>
-            <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Child Information</strong>
-          </div>
-          <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <label>
-              Child’s full name *
-              <input
-                required
-                placeholder="e.g., Nathaniel Dawit"
-                value={formData.child_full_name}
-                onChange={(e) => handleChange("child_full_name", e.target.value)}
-              />
-            </label>
-            <label>
-              Date of birth *
-              <input
-                type="date"
-                required
-                max={today()}
-                value={formData.child_dob}
-                onChange={(e) => handleChange("child_dob", e.target.value)}
-              />
-            </label>
-            <label>
-              Gender
-              <select
-                value={formData.child_gender}
-                onChange={(e) => handleChange("child_gender", e.target.value)}
-              >
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--navy)" }}>Classroom group</span>
-                <button
-                  type="button"
-                  onClick={() => setIsNewGroup(!isNewGroup)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#008794",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    padding: 0,
-                    textDecoration: "underline",
-                  }}
-                >
-                  {isNewGroup ? "← Choose existing" : "+ Create new group here"}
-                </button>
-              </div>
-              {isNewGroup ? (
+          {/* Section 1: Parent Information */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="user" size={17} /></span>
+              <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Parent / Guardian Account</strong>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <label>
+                Full name *
                 <input
                   required
-                  aria-label="New classroom group name"
-                  placeholder="e.g., Little Sprouts (Toddler Room)"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #D1D5DB" }}
+                  placeholder="e.g., Sara Mengistu"
+                  value={formData.parent_name}
+                  onChange={(e) => handleChange("parent_name", e.target.value)}
                 />
-              ) : (
+              </label>
+              <label>
+                Email address (login username) *
+                <input
+                  type="email"
+                  required
+                  placeholder="sara@example.com"
+                  value={formData.parent_email}
+                  onChange={(e) => handleChange("parent_email", e.target.value)}
+                />
+              </label>
+              <label>
+                Phone number *
+                <input
+                  type="tel"
+                  required
+                  placeholder="+251 911 223 344"
+                  value={formData.parent_phone}
+                  onChange={(e) => handleChange("parent_phone", e.target.value)}
+                />
+              </label>
+              <label>
+                Relationship to child
                 <select
-                  aria-label="Classroom group"
-                  value={formData.child_group_id}
-                  onChange={(e) => handleChange("child_group_id", e.target.value)}
+                  value={formData.parent_relationship}
+                  onChange={(e) => handleChange("parent_relationship", e.target.value)}
                 >
-                  <option value="">Select classroom group</option>
-                  {data.groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
+                  <option value="Mother">Mother</option>
+                  <option value="Father">Father</option>
+                  <option value="Legal Guardian">Legal Guardian</option>
+                  <option value="Grandmother">Grandmother</option>
+                  <option value="Grandfather">Grandfather</option>
+                  <option value="Aunt">Aunt</option>
+                  <option value="Uncle">Uncle</option>
+                  <option value="Other">Other</option>
                 </select>
-              )}
+              </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Parent app temporary password *
+                <input
+                  type="password"
+                  required={!preview}
+                  minLength={8}
+                  placeholder="At least 8 characters (e.g., Welcome123!)"
+                  value={formData.parent_password}
+                  onChange={(e) => handleChange("parent_password", e.target.value)}
+                />
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
+                  The parent will sign in to the Ankelba Parent mobile app with this password.
+                </small>
+              </label>
             </div>
-            <label>
-              Assigned primary caregiver (optional)
-              <select
-                value={formData.child_caregiver_id}
-                onChange={(e) => handleChange("child_caregiver_id", e.target.value)}
-              >
-                <option value="">Unassigned</option>
-                {data.users
-                  .filter((u) => u.role === "caregiver" && u.status === "active")
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} {u.title ? `(${u.title})` : ""}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label>
-              Monthly care fee (ETB) *
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                placeholder="3500.00"
-                value={formData.monthly_care_fee}
-                onChange={(e) => handleChange("monthly_care_fee", e.target.value)}
-              />
-              <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
-                Baseline monthly care &amp; stay fee for this child
-              </small>
-            </label>
           </div>
-        </div>
 
-        {/* Section 3: Health, Allergies & Emergency Contacts */}
-        <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="heart" size={17} /></span>
-            <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Care, Allergies & Secondary Emergency Contact</strong>
-          </div>
-          <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <label style={{ gridColumn: "1 / -1" }}>
-              Allergies or dietary restrictions
-              <input
-                placeholder="e.g., Peanut allergy — carries EpiPen (or leave empty if none)"
-                value={formData.allergy_note}
-                onChange={(e) => handleChange("allergy_note", e.target.value)}
-              />
-            </label>
-            <label style={{ gridColumn: "1 / -1" }}>
-              Special care / sleep / medical instructions
-              <textarea
-                placeholder="e.g., Sleeps best with stuffed rabbit. Needs water bottle refilled at noon."
-                value={formData.care_note}
-                onChange={(e) => handleChange("care_note", e.target.value)}
-                rows={2}
-              />
-            </label>
-            <label>
-              Secondary contact name (optional)
-              <input
-                placeholder="e.g., Dawit Abebe"
-                value={formData.sec_contact_name}
-                onChange={(e) => handleChange("sec_contact_name", e.target.value)}
-              />
-            </label>
-            <label>
-              Secondary contact phone
-              <input
-                type="tel"
-                placeholder="+251 911 554 433"
-                value={formData.sec_contact_phone}
-                onChange={(e) => handleChange("sec_contact_phone", e.target.value)}
-              />
-            </label>
-          </div>
-        </div>
+          {/* Section 2: Child Profile & Documents */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="child" size={17} /></span>
+              <div>
+                <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Child Information &amp; Official Documents</strong>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--muted)" }}>
+                  Age is automatically calculated from date of birth. Attach photo and birth certificate for official file.
+                </p>
+              </div>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <label>
+                Child’s full name *
+                <input
+                  required
+                  placeholder="e.g., Nathaniel Dawit"
+                  value={formData.child_full_name}
+                  onChange={(e) => handleChange("child_full_name", e.target.value)}
+                />
+              </label>
+              <label>
+                Date of birth *
+                <input
+                  type="date"
+                  required
+                  max={today()}
+                  value={formData.child_dob}
+                  onChange={(e) => handleChange("child_dob", e.target.value)}
+                />
+                {formData.child_dob && (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 8px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 6, color: "#1E40AF", fontSize: 11.5, fontWeight: 600, marginTop: 4 }}>
+                    <Icon name="clock" size={12} />
+                    <span>Calculated Age: <strong>{ageInfo.text}</strong></span>
+                  </div>
+                )}
+              </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Gender
+                <select
+                  value={formData.child_gender}
+                  onChange={(e) => handleChange("child_gender", e.target.value)}
+                >
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
 
-        {error && (
-          <div role="alert" className="p-error" style={{ margin: "4px 0" }}>
-            {error}
-          </div>
-        )}
+              {/* Child Photo Dropzone */}
+              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                <ImageDropzone
+                  label="Child Portrait Photo (Attendance & Identification)"
+                  value={formData.child_photo_url}
+                  onChange={(url) => handleChange("child_photo_url", url)}
+                  promptTitle="Drop child photo here, or browse files"
+                  promptSubtitle="Clear front face portrait · PNG, JPG · Displayed on classroom attendance roster"
+                  icon="child"
+                  circlePreview={true}
+                />
+              </div>
 
-        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={busy}>
-            {busy ? "Enrolling Family…" : "Complete Family Enrollment"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+              {/* Birth Certificate Document Dropzone */}
+              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                <ImageDropzone
+                  label="Official Birth Certificate (Upload Photo or PDF File)"
+                  value={formData.child_birth_certificate_url}
+                  onChange={(url) => handleChange("child_birth_certificate_url", url)}
+                  promptTitle="Choose or drag birth certificate file here (Photo or PDF)"
+                  promptSubtitle="Supports PDF, PNG, JPG from your device · Uploaded and stored directly"
+                  icon="file"
+                  allowPdf={true}
+                  allowUrl={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Classroom & Primary Caregiver Assignment */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="leaf" size={17} /></span>
+              <div>
+                <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Classroom &amp; Primary Caregiver Assignment</strong>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--muted)" }}>
+                  Assigning right here directly enrolls the child onto the classroom educator's daily attendance and care roster.
+                </p>
+              </div>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--navy)" }}>Classroom group *</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsNewGroup(!isNewGroup)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#008794",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    {isNewGroup ? "← Choose existing" : "+ Create new group here"}
+                  </button>
+                </div>
+                {isNewGroup ? (
+                  <input
+                    required
+                    aria-label="New classroom group name"
+                    placeholder="e.g., Little Sprouts (Toddler Room)"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #D1D5DB" }}
+                  />
+                ) : (
+                  <select
+                    aria-label="Classroom group"
+                    value={formData.child_group_id}
+                    onChange={(e) => handleGroupSelect(e.target.value)}
+                  >
+                    <option value="">Select classroom group</option>
+                    {data.groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {selectedGroupObj && groupLeadName && (
+                  <small style={{ color: "#008794", marginTop: 4, display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 600 }}>
+                    <Icon name="checkCircle" size={13} /> Group Lead Teacher: {groupLeadName}
+                  </small>
+                )}
+              </div>
+
+              <label>
+                Assigned primary caregiver (Lead Teacher)
+                <select
+                  value={formData.child_caregiver_id}
+                  onChange={(e) => handleChange("child_caregiver_id", e.target.value)}
+                >
+                  <option value="">Unassigned (Select educator)</option>
+                  {data.users
+                    .filter((u) => u.role === "caregiver" && u.status === "active")
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} {u.title ? `(${u.title})` : ""}
+                      </option>
+                    ))}
+                </select>
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block", fontSize: 11.5 }}>
+                  This educator records daily activities, meals, napping, and check-ins for the child.
+                </small>
+              </label>
+
+              <label style={{ gridColumn: "1 / -1" }}>
+                Monthly care fee (ETB) *
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="3500.00"
+                  value={formData.monthly_care_fee}
+                  onChange={(e) => handleChange("monthly_care_fee", e.target.value)}
+                />
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
+                  Agreed baseline monthly care fee for this child
+                </small>
+              </label>
+            </div>
+          </div>
+
+          {/* Section 4: Care, Allergies & Emergency Contacts */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="heart" size={17} /></span>
+              <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Care, Allergies &amp; Secondary Emergency Contact</strong>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Allergies or dietary restrictions
+                <input
+                  placeholder="e.g., Peanut allergy — carries EpiPen (or leave empty if none)"
+                  value={formData.allergy_note}
+                  onChange={(e) => handleChange("allergy_note", e.target.value)}
+                />
+              </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Special care / sleep / medical instructions
+                <textarea
+                  placeholder="e.g., Sleeps best with stuffed rabbit. Needs water bottle refilled at noon."
+                  value={formData.care_note}
+                  onChange={(e) => handleChange("care_note", e.target.value)}
+                  rows={2}
+                />
+              </label>
+              <label>
+                Secondary contact name (optional)
+                <input
+                  placeholder="e.g., Dawit Abebe"
+                  value={formData.sec_contact_name}
+                  onChange={(e) => handleChange("sec_contact_name", e.target.value)}
+                />
+              </label>
+              <label>
+                Secondary contact phone
+                <input
+                  type="tel"
+                  placeholder="+251 911 554 433"
+                  value={formData.sec_contact_phone}
+                  onChange={(e) => handleChange("sec_contact_phone", e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Section 5: Legal Agreement & Safety Policies */}
+          <div style={{ background: "#F8FAFC", border: "1px solid #CBD5E1", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="shield" size={17} /></span>
+              <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Enrollment Agreement &amp; Policy Acceptance</strong>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.agreement_signed}
+                  onChange={(e) => handleChange("agreement_signed", e.target.checked)}
+                  style={{ marginTop: 3 }}
+                />
+                <div>
+                  <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--navy)" }}>
+                    Signed Parent-Daycare Agreement Form Verified &amp; on File
+                  </span>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748B" }}>
+                    Confirm that the family has signed the physical or electronic daycare enrollment contract and medical emergency consent form.
+                  </p>
+                </div>
+              </label>
+
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.terms_accepted}
+                  onChange={(e) => handleChange("terms_accepted", e.target.checked)}
+                  style={{ marginTop: 3 }}
+                />
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--navy)" }}>
+                      I confirm the parent/guardian has read, understood, and agreed to the Daycare Terms of Service &amp; Safety Policies *
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#008794",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Review Terms &amp; Policies
+                    </button>
+                  </div>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748B" }}>
+                    Mandatory compliance requirement before enrolling a student into the daycare management system.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {(validationError || error) && (
+            <div role="alert" className="p-error" style={{ margin: "4px 0" }}>
+              {validationError || error}
+            </div>
+          )}
+
+          <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Enrolling Family…" : "Complete Family Enrollment"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }
 

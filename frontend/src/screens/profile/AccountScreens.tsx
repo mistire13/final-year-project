@@ -296,6 +296,7 @@ export function OrdersScreen({ navigation }: any) {
 export function NotificationsScreen({ navigation }: any) {
   const [inbox, setInbox] = useState<any>(null);
   const [read, setRead] = useState<number[]>([]);
+  const [readAnnouncements, setReadAnnouncements] = useState<number[]>([]);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
     setError("");
@@ -306,6 +307,7 @@ export function NotificationsScreen({ navigation }: any) {
       ]);
       setInbox(data.data);
       setRead(prefs.data.read_alert_ids || []);
+      setReadAnnouncements(prefs.data.read_announcement_ids || []);
     } catch {
       setError("Could not load notifications. Please retry.");
     }
@@ -327,6 +329,53 @@ export function NotificationsScreen({ navigation }: any) {
       ) : (
         <>
           <Text size={18} weight="bold">
+            Daycare announcements
+          </Text>
+          {inbox.announcements?.recent && inbox.announcements.recent.length ? (
+            inbox.announcements.recent
+              .filter((item: any) => !readAnnouncements.includes(item.id))
+              .map((item: any) => (
+                <Card
+                  key={item.id}
+                  style={{ marginTop: 12, borderColor: "#F6E4AC", borderWidth: 1 }}
+                  onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: item.id })}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <Text weight="bold" size={15} style={{ flex: 1, color: "#10263D" }}>{item.title}</Text>
+                    <View style={{ backgroundColor: "#BD4264", paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 8, marginLeft: 6 }}>
+                      <Text size={9} color="#fff" weight="bold">NEW</Text>
+                    </View>
+                  </View>
+                  <Text size={13} color="#4B5563" numberOfLines={2} style={{ marginVertical: 6 }}>
+                    {item.body}
+                  </Text>
+                  <Text size={11} color="#6B7280">
+                    Posted by {item.author_name || "Center Administration"} · {new Date(item.created_at).toLocaleDateString()}
+                  </Text>
+                  <Button
+                    title="Mark as read"
+                    variant="outline"
+                    style={{ marginTop: 10 }}
+                    onPress={async () => {
+                      try {
+                        const response = await apiClient.patch(
+                          "/notifications/preferences",
+                          { read_announcement_id: item.id },
+                        );
+                        setReadAnnouncements(response.data.read_announcement_ids || []);
+                        void load();
+                      } catch {
+                        setError("Could not mark this announcement as read. Please retry.");
+                      }
+                    }}
+                  />
+                </Card>
+              ))
+          ) : (
+            <Notice>You’re up to date with center announcements.</Notice>
+          )}
+
+          <Text size={18} weight="bold" style={{ marginTop: 24 }}>
             Unread messages
           </Text>
           {inbox.unread_messages.recent.length ? (

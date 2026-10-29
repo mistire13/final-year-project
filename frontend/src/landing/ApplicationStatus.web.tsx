@@ -161,7 +161,7 @@ export default function ApplicationStatus() {
                 <p style={{ margin: 0, fontSize: "0.95rem", color: "#374151", lineHeight: 1.6 }}>
                   {isApproved && (
                     <>
-                      <strong>Congratulations!</strong> Your daycare application has been approved by the platform administration. Your 30-day trial is now active, and you can sign in directly to set up classrooms, invite staff, and manage child records.
+                      <strong>Congratulations!</strong> Your daycare application has been approved by the platform administration. Your daycare center workspace is now active, and you can sign in directly to set up classrooms, invite staff, and manage child records.
                     </>
                   )}
                   {isPending && (
@@ -182,11 +182,7 @@ export default function ApplicationStatus() {
                   )}
                 </p>
 
-                {isApproved && result.trial_ends_at && (
-                  <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #E2DEC4", fontSize: "0.85rem", color: "#4B5563" }}>
-                    Trial Period Ends: <strong>{dateLabel(result.trial_ends_at)}</strong> · Package: <strong>{result.subscription_terms?.name || result.requested_plan || "Standard"}</strong>
-                  </div>
-                )}
+                
               </div>
 
               {/* Actions */}

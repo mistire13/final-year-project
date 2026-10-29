@@ -17,6 +17,7 @@ import { Warning } from "phosphor-react-native/src/icons/Warning";
 import { Clock } from "phosphor-react-native/src/icons/Clock";
 import { Heart } from "phosphor-react-native/src/icons/Heart";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
+import { X } from "phosphor-react-native/src/icons/X";
 import {
   Page,
   Text,
@@ -30,6 +31,7 @@ import {
   Notice,
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
+import { apiClient } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useChild } from "../../context/ChildContext";
 import {
@@ -74,6 +76,8 @@ export function HomeScreen({ navigation }: any) {
   const [upcomingEvent, setUpcomingEvent] = useState<CalendarEvent | null>(null);
   const [latestMessage, setLatestMessage] = useState<DirectMessage | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<DaycareAnnouncement | null>(null);
+  const [allAnnouncements, setAllAnnouncements] = useState<DaycareAnnouncement[]>([]);
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
 
   const formatEventTime = (isoString?: string) => {
     if (!isoString) return "";
@@ -85,27 +89,45 @@ export function HomeScreen({ navigation }: any) {
   const loadDashboardData = useCallback(async () => {
     const revision = ++requestRevision.current;
     setLoadError("");
-    if (!childId) {
-      setLatestAttendance(null); setTodayReport(null); setUpcomingEvent(null); setLatestMessage(null); setLatestAnnouncement(null);
-      setLoading(false); setRefreshing(false); return;
-    }
     try {
-      const [attendance, reports, events, messages, announcements] = await Promise.all([
-        getChildAttendance(childId),getChildReports(childId),getDaycareEvents(false),getDirectMessages(),getAnnouncements()
-      ]);
+      const promises: [
+        Promise<AttendanceRecord[]>,
+        Promise<DailyReportSummary[]>,
+        Promise<CalendarEvent[]>,
+        Promise<DirectMessage[]>,
+        Promise<DaycareAnnouncement[]>
+      ] = [
+        childId ? getChildAttendance(childId) : Promise.resolve([]),
+        childId ? getChildReports(childId) : Promise.resolve([]),
+        getDaycareEvents(false).catch(() => []),
+        getDirectMessages().catch(() => []),
+        getAnnouncements().catch(() => [])
+      ];
+      const [attendance, reports, events, messages, announcements] = await Promise.all(promises);
       const localDay = (value: string | Date) => new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
       const todayKey = localDay(new Date());
       const currentReport = reports.find(report => localDay(report.report_date) === todayKey);
-      const detailed = currentReport ? await getDailyReport(currentReport.id) : null;
+      const detailed = currentReport ? await getDailyReport(currentReport.id).catch(() => null) : null;
       if (revision !== requestRevision.current) return;
-      setLatestAttendance(attendance.find(record => localDay(record.event_time) === todayKey) || null); setTodayReport(detailed); setUpcomingEvent(events[0] || null);
-      setLatestMessage(messages[0] || null); setLatestAnnouncement(announcements[0] || null);
+      setLatestAttendance(attendance.find(record => localDay(record.event_time) === todayKey) || null);
+      setTodayReport(detailed);
+      setUpcomingEvent(events[0] || null);
+      const incomingStaffMessage = messages.find((m) => m.sender_id !== user?.id) || null;
+      setLatestMessage(incomingStaffMessage);
+      setAllAnnouncements(announcements);
+      const activeAnn = announcements.find(a => !dismissedAnnouncements.includes(a.id)) || announcements[0] || null;
+      setLatestAnnouncement(activeAnn);
     } catch {
       if (revision === requestRevision.current) setLoadError("Updates could not be loaded. Refresh to retry.");
     } finally {
       if (revision === requestRevision.current) { setLoading(false); setRefreshing(false); }
     }
-  }, [childId]);
+  }, [childId, user?.id, dismissedAnnouncements]);
+
+  const dismissAnnouncement = useCallback((id: number) => {
+    setDismissedAnnouncements(prev => [...prev, id]);
+    apiClient.patch('/notifications/preferences', { read_announcement_id: id }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -260,10 +282,67 @@ export function HomeScreen({ navigation }: any) {
       <Text
         color="#6F727A"
         size={16}
-        style={{ marginTop: 7, marginBottom: 24 }}
+        style={{ marginTop: 7, marginBottom: 20 }}
       >
         Here’s how {childFirstName}’s day is going.
       </Text>
+
+      {/* Latest Center Announcement Notification Card */}
+      {latestAnnouncement && !dismissedAnnouncements.includes(latestAnnouncement.id) && (
+        <Card
+          tint="#FFFBEA"
+          style={{
+            borderColor: "#F6E4AC",
+            borderWidth: 1.5,
+            marginBottom: 20,
+            padding: 16,
+            borderRadius: 20,
+            shadowColor: "#9C6B10",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 10,
+          }}
+          onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: latestAnnouncement.id })}
+        >
+          <View style={[s.between, { marginBottom: 6 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <SpeakerHigh size={18} color="#9C6B10" weight="fill" />
+              <Text size={11} color="#855B09" weight="bold" style={{ letterSpacing: 0.8, marginLeft: 6 }}>
+                DAYCARE ANNOUNCEMENT
+              </Text>
+              <View style={{ backgroundColor: "#BD4264", paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 10, marginLeft: 8 }}>
+                <Text size={9} color="#fff" weight="bold">NEW</Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss announcement"
+              hitSlop={12}
+              onPress={(e: any) => {
+                e?.stopPropagation?.();
+                dismissAnnouncement(latestAnnouncement.id);
+              }}
+              style={{ padding: 4 }}
+            >
+              <X size={16} color="#855B09" />
+            </Pressable>
+          </View>
+          <Text size={16} weight="bold" color="#10263D">
+            {latestAnnouncement.title}
+          </Text>
+          <Text size={13} color="#454D57" numberOfLines={2} style={{ marginTop: 4, lineHeight: 18 }}>
+            {latestAnnouncement.body}
+          </Text>
+          <View style={[s.between, { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderColor: "#EFE0BF" }]}>
+            <Text size={11} color="#855B09">
+              Posted by {latestAnnouncement.author_name || "Center Administration"}
+            </Text>
+            <Text size={11} color="#855B09" weight="bold">
+              Read announcement →
+            </Text>
+          </View>
+        </Card>
+      )}
 
       {/* Multi-Child Switcher for families with multiple enrolled children */}
       {childrenList && childrenList.length > 1 && (
@@ -335,41 +414,6 @@ export function HomeScreen({ navigation }: any) {
 
       {!childId && <Notice>No child is linked to this account yet. Contact your daycare administrator to complete enrollment.</Notice>}
       {!!loadError && <Notice>{loadError}</Notice>}
-      {/* Latest Center Announcement Banner */}
-      {latestAnnouncement && (
-        <Card
-          tint="#FFFBEA"
-          style={{
-            borderColor: "#F6E4AC",
-            borderWidth: 1.5,
-            marginTop: 18,
-            padding: 16,
-            borderRadius: 20,
-          }}
-          onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: latestAnnouncement.id })}
-        >
-          <View style={[s.row, { marginBottom: 6 }]}>
-            <SpeakerHigh size={18} color="#9C6B10" weight="fill" />
-            <Text size={11} color="#855B09" weight="bold" style={{ letterSpacing: 0.8, marginLeft: 6 }}>
-              DAYCARE ANNOUNCEMENT
-            </Text>
-          </View>
-          <Text size={16} weight="bold" color="#10263D">
-            {latestAnnouncement.title}
-          </Text>
-          <Text size={13} color="#454D57" numberOfLines={2} style={{ marginTop: 4, lineHeight: 18 }}>
-            {latestAnnouncement.body}
-          </Text>
-          <View style={[s.between, { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderColor: "#EFE0BF" }]}>
-            <Text size={11} color="#855B09">
-              Posted by {latestAnnouncement.author_name || "Center Administration"}
-            </Text>
-            <Text size={11} color="#855B09" weight="bold">
-              Read announcement →
-            </Text>
-          </View>
-        </Card>
-      )}
 
       {/* Quick Actions */}
       <View
@@ -527,33 +571,77 @@ export function HomeScreen({ navigation }: any) {
         </Card>
       )}
 
-      {/* Caregiver Observation / Message */}
-      {(todayReport?.general_observations || latestMessage) && (
-        <Card tint="#F4F5ED" style={{ marginTop: 24, overflow: "hidden" }}>
-          <CardGlow color="#C9DEEF" />
-          <View style={s.row}>
-            <Avatar source={artwork.caregiver} size={42} />
-            <View>
-              <Text weight="medium">
-                {todayReport?.caregiver_name || latestMessage?.sender_name || "Daycare Staff"}
-              </Text>
-              <Text size={11} color="#858990">
-                Caregiver Note
-              </Text>
+      {/* Caregiver Daily Observation or Daycare Staff Message */}
+      {(todayReport?.general_observations || (latestMessage && latestMessage.sender_id !== user?.id)) && (() => {
+        const hasCaregiverReport = !!todayReport?.general_observations;
+        const isAdminMessage = !hasCaregiverReport && (latestMessage?.sender_role === "admin" || latestMessage?.sender_role === "super_admin");
+        const authorName = hasCaregiverReport
+          ? (todayReport?.caregiver_name || "Classroom Caregiver")
+          : (latestMessage?.sender_name || (isAdminMessage ? "Daycare Administration" : "Classroom Educator"));
+        const roleLabel = hasCaregiverReport
+          ? "Classroom Caregiver Note"
+          : isAdminMessage
+            ? "Center Administration Notice"
+            : "Caregiver Note";
+        const noteText = hasCaregiverReport ? todayReport?.general_observations : latestMessage?.body;
+        const buttonTitle = hasCaregiverReport
+          ? "Message Caregiver"
+          : isAdminMessage
+            ? "Reply to Administration"
+            : "Reply to Caregiver";
+
+        return (
+          <Card tint={isAdminMessage ? "#F0F4F8" : "#F4F5ED"} style={{ marginTop: 24, overflow: "hidden" }}>
+            <CardGlow color={isAdminMessage ? "#D1E2F3" : "#C9DEEF"} />
+            <View style={s.row}>
+              <Avatar
+                source={isAdminMessage ? undefined : artwork.caregiver}
+                initials={isAdminMessage ? (authorName.slice(0, 2).toUpperCase()) : undefined}
+                size={42}
+              />
+              <View style={{ flex: 1, marginLeft: isAdminMessage ? 10 : 0 }}>
+                <Text weight="medium">
+                  {authorName}
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                  <View
+                    style={{
+                      backgroundColor: isAdminMessage ? "#DBEAFE" : "#E2E8F0",
+                      paddingHorizontal: 6,
+                      paddingVertical: 1,
+                      borderRadius: 4,
+                    }}
+                  >
+                    <Text size={10} weight="semibold" color={isAdminMessage ? "#1E40AF" : "#475569"}>
+                      {roleLabel}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
-          </View>
-          <Text color="#606B74" style={{ marginTop: 16, marginBottom: 20 }}>
-            “{todayReport?.general_observations || latestMessage?.body}”
-          </Text>
-          <Button
-            title="Message Caregiver"
-            icon={ArrowBendUpLeft}
-            variant="outline"
-            style={{ backgroundColor: "#fff" }}
-            onPress={() => navigation.navigate("MainTabs", { screen: "Messages" })}
-          />
-        </Card>
-      )}
+            <Text color="#606B74" style={{ marginTop: 16, marginBottom: 20 }}>
+              “{noteText}”
+            </Text>
+            <Button
+              title={buttonTitle}
+              icon={ArrowBendUpLeft}
+              variant="outline"
+              style={{ backgroundColor: "#fff" }}
+              onPress={() => {
+                if (latestMessage && !hasCaregiverReport) {
+                  navigation.navigate("CaregiverChat", {
+                    recipientId: latestMessage.sender_id,
+                    recipientName: latestMessage.sender_name,
+                    recipientRole: latestMessage.sender_role,
+                  });
+                } else {
+                  navigation.navigate("MainTabs", { screen: "Messages" });
+                }
+              }}
+            />
+          </Card>
+        );
+      })()}
 
       {/* Upcoming Event Card from Database */}
       {upcomingEvent && (

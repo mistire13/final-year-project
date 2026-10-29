@@ -82,7 +82,7 @@ const listChildren = async (query = {}, user) => {
   // Data query with group and caregiver details
   params.push(limit, offset);
   const { rows } = await db.query(
-    `SELECT c.id, c.full_name, c.dob, c.gender, c.enrollment_status, c.photo_url, c.daycare_id, c.created_at, c.version,
+    `SELECT c.id, c.full_name, c.dob, c.gender, c.enrollment_status, c.photo_url, c.birth_certificate_url, c.agreement_signed, c.terms_accepted, c.group_id, c.caregiver_id, c.monthly_care_fee, c.daycare_id, c.created_at, c.version,
             g.name AS group_name, u.name AS caregiver_name
      FROM children c
      LEFT JOIN groups g ON g.id = c.group_id
@@ -118,8 +118,8 @@ const createChild = async (body, actor) => {
     await validateAssignment(client, body, daycareId);
 
     const insertChildText = `
-      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, monthly_care_fee)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, monthly_care_fee, photo_url, birth_certificate_url, agreement_signed, terms_accepted)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
     const childVals = [
@@ -131,6 +131,10 @@ const createChild = async (body, actor) => {
       body.enrollment_status || 'active',
       daycareId,
       body.monthly_care_fee ? parseFloat(body.monthly_care_fee) : 3500.00,
+      body.photo_url || null,
+      body.birth_certificate_url || null,
+      body.agreement_signed ?? false,
+      body.terms_accepted ?? false,
     ];
     const childRes = await client.query(insertChildText, childVals);
     const child = childRes.rows[0];
@@ -270,7 +274,7 @@ const updateChild = async (id, body, actor) => {
     const values = [];
     let idx = 1;
 
-    const allowedKeys = ['full_name', 'dob', 'gender', 'group_id', 'caregiver_id', 'monthly_care_fee', 'enrollment_status', 'photo_url'];
+    const allowedKeys = ['full_name', 'dob', 'gender', 'group_id', 'caregiver_id', 'monthly_care_fee', 'enrollment_status', 'photo_url', 'birth_certificate_url', 'agreement_signed', 'terms_accepted'];
 
     for (const key of allowedKeys) {
       if (Object.prototype.hasOwnProperty.call(body, key)) {
@@ -518,8 +522,8 @@ const enrollFamily = async (body, actor) => {
 
     // 3. Insert child profile
     const insertChildSql = `
-      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, photo_url, monthly_care_fee)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO children (full_name, dob, gender, group_id, caregiver_id, enrollment_status, daycare_id, photo_url, monthly_care_fee, birth_certificate_url, agreement_signed, terms_accepted)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `;
     const childVals = [
@@ -532,6 +536,9 @@ const enrollFamily = async (body, actor) => {
       daycareId,
       body.child.photo_url || null,
       body.child.monthly_care_fee ? parseFloat(body.child.monthly_care_fee) : 3500.00,
+      body.child.birth_certificate_url || null,
+      body.child.agreement_signed ?? false,
+      body.child.terms_accepted ?? false,
     ];
     const { rows: childRows } = await client.query(insertChildSql, childVals);
     const child = childRows[0];

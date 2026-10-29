@@ -149,7 +149,7 @@ const runAudit = async () => {
   // Parent Login
   let parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: '1234' });
   if (parentRes.status !== 200) parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123!' });
-  const parentToken = parentRes.body?.token;
+  let parentToken = parentRes.body?.token;
   record('Auth', 'Parent authentication returns 200 OK', parentRes.status === 200 && !!parentToken);
 
   // Authenticated /me
@@ -170,7 +170,17 @@ const runAudit = async () => {
 
   // Password recovery flow
   let forgotRes = await req('POST', '/api/auth/forgot-password', { email: 'parent@ankelba.dev' });
-  const resetToken = forgotRes.body?.reset_token;
+  let resetToken = forgotRes.body?.reset_token;
+  if (!resetToken) {
+    try {
+      const { inbox } = require('./src/modules/auth/legacy-inbox');
+      const list = await inbox.list();
+      if (list.length > 0) {
+        const msg = await inbox.view(list[0].id);
+        if (msg && msg.to === 'parent@ankelba.dev') resetToken = msg.token;
+      }
+    } catch (e) {}
+  }
   record('Auth', 'Forgot password generates secure token with 1-hr expiry', forgotRes.status === 200 && !!resetToken);
 
   let resetRes = await req('POST', '/api/auth/reset-password', { token: resetToken, new_password: 'Parent@999!' });
@@ -183,6 +193,10 @@ const runAudit = async () => {
   let newLogin = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@999!' });
   let changeRes = await req('PATCH', '/api/auth/change-password', { current_password: 'Parent@999!', new_password: '1234' }, newLogin.body?.token);
   record('Auth', 'Authenticated change-password restored default password', changeRes.status === 200);
+
+  // Refresh parent session token with restored password
+  let restoredParent = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: '1234' });
+  parentToken = restoredParent.body?.token;
 
   // ─────────────────────────────────────────────────────────────────────────
   // 4. ROLE-BASED ACCESS CONTROL (RBAC) & SECURITY

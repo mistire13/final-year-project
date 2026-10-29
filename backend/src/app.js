@@ -93,8 +93,8 @@ const authLimiter = rateLimit({
 // ──────────────────────────────────────────────
 // 4. Body parsing
 // ──────────────────────────────────────────────
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: false }));
 
 // ──────────────────────────────────────────────
 // 5. HTTP request logging (NFR-MNT-03)
