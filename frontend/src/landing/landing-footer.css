@@ -1,0 +1,58 @@
+.ankelba-site-footer { background: var(--ankelba-cream); color: var(--ankelba-navy); }
+.footer-wordmark { display: flex; align-items: center; justify-content: center; gap: clamp(16px,3vw,48px); max-width: 1280px; margin: 0 auto; padding: 48px 24px 0; overflow: hidden; }
+.footer-wordmark > span { display: block; font-size: clamp(76px,18vw,260px); font-weight: 700; line-height: .84; letter-spacing: -.075em; transform: translateY(.09em); }
+.footer-wordmark img { display: block; width: clamp(42px,7vw,100px); height: clamp(64px,10vw,145px); object-fit: contain; }
+.footer-surface { position: relative; isolation: isolate; background: var(--ankelba-navy); color: var(--ankelba-cream); border-radius: 32px 32px 0 0; }
+.footer-surface::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; background: radial-gradient(ellipse at 100% 0%,var(--ankelba-navy-card),transparent 55%); }
+.footer-main { display: grid; grid-template-columns: 1.15fr .8fr .85fr 1.5fr; gap: 44px; max-width: 1280px; margin: auto; padding: 64px 40px 56px; }
+.footer-brand-line { display: block; width: 80px; height: 5px; border-radius: 99px; background: var(--ankelba-gold); margin-bottom: 26px; }
+.footer-intro h2 { font-size: 28px; line-height: 1.3; letter-spacing: -.035em; color: var(--ankelba-cream); font-weight: 700; margin: 0 0 18px; }
+.footer-intro p, .footer-registration p { color: var(--ankelba-cream); opacity: .75; font-size: 12px; line-height: 1.9; margin: 0; }
+.footer-intro p { max-width: 230px; }
+.footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding-top: 6px; }
+.footer-links h3 { font-size: 13px; font-weight: 700; color: var(--ankelba-cream); margin: 0 0 18px; }
+.footer-links a { display: inline-flex; align-items: center; color: var(--ankelba-cream); text-decoration: none; opacity: .75; min-height: 40px; padding: 6px 0; font-size: 12px; line-height: 1.5; transition: opacity .2s ease, color .2s ease; }
+.footer-links a:hover, .footer-bottom a:hover { opacity: 1; color: var(--pastel-yellow); text-decoration: underline; text-underline-offset: 5px; }
+.footer-color-dots { display: flex; gap: 9px; margin-bottom: 24px; }
+.footer-color-dots span { width: 16px; height: 16px; border-radius: 50%; background: var(--pastel-pink); }
+.footer-color-dots span:nth-child(2) { background: var(--ankelba-gold); }
+.footer-color-dots span:nth-child(3) { background: var(--pastel-cyan); }
+.footer-registration h3 { font-size: 23px; line-height: 1.3; color: var(--ankelba-cream); letter-spacing: -.03em; font-weight: 700; margin: 0 0 12px; }
+.footer-registration form { margin-top: 20px; }
+.footer-registration label { display: block; font-size: 11px; margin-bottom: 8px; font-weight: 600; }
+.footer-form-field { display: flex; flex-direction: column; gap: 10px; }
+.footer-form-field input { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--ankelba-border); border-radius: 14px; padding: 12px 16px; font: inherit; font-size: 12px; color: var(--ankelba-navy); background: var(--ankelba-cream); }
+.footer-form-field input::placeholder { color: var(--ankelba-muted); }
+.footer-form-field button { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 0; border-radius: 999px; min-height: 46px; padding: 12px 18px; font: inherit; font-size: 12px; font-weight: 700; background: var(--pastel-green); color: var(--ankelba-navy); cursor: pointer; transition: background .2s ease; }
+.footer-form-field button:hover { background: var(--ankelba-card); }
+.footer-bottom { max-width: 1200px; margin: auto; padding: 24px 0; border-top: 1px solid var(--ankelba-navy-light); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.footer-bottom p { color: var(--ankelba-cream); opacity: .65; font-size: 11px; margin: 0; }
+.footer-bottom > div { display: flex; align-items: center; gap: 32px; }
+.footer-bottom a, .footer-bottom button { display: inline-flex; align-items: center; gap: 10px; font: inherit; font-size: 11px; color: var(--ankelba-cream); text-decoration: none; min-height: 44px; background: transparent; border: 0; cursor: pointer; }
+.footer-bottom a { opacity: .7; }
+.footer-bottom button > span { display: grid; transform: rotate(-90deg); }
+.ankelba-site-footer :is(a,button,input):focus-visible { outline: 3px solid var(--ankelba-gold); outline-offset: 5px; }
+@media (max-width: 1280px) { .footer-bottom { margin-inline: 40px; } .footer-main { gap: 28px; } }
+@media (max-width: 1000px) { .footer-main { grid-template-columns: 1.2fr 1fr 1fr; gap: 36px; } .footer-registration { grid-column: 1/-1; border-top: 1px solid var(--ankelba-navy-light); padding-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; } .footer-color-dots { grid-column: 1; } .footer-registration h3,.footer-registration p { grid-column: 1; } .footer-registration form { grid-column: 2; grid-row: 1/4; align-self: center; margin: 0; } }
+@media (max-width: 600px) {
+  .footer-wordmark { padding-top: 32px; gap: 16px; }
+  .footer-wordmark > span { font-size: clamp(68px,18vw,100px); }
+  .footer-wordmark img { width: 36px; height: 54px; }
+  .footer-surface { border-radius: 24px 24px 0 0; }
+  .footer-main { grid-template-columns: 1fr 1fr; padding: 40px 24px 32px; gap: 32px 24px; }
+  .footer-intro { grid-column: 1/-1; }
+  .footer-intro h2 { font-size: 28px; }
+  .footer-intro h2 br { display: none; }
+  .footer-intro p { max-width: 320px; }
+  .footer-brand-line { width: 60px; margin-bottom: 18px; }
+  .footer-links { padding-top: 0; }
+  .footer-links h3 { margin-bottom: 12px; }
+  .footer-links a { min-height: 44px; }
+  .footer-registration { display: block; padding-top: 28px; }
+  .footer-registration form { margin-top: 20px; }
+  .footer-registration h3 { max-width: 300px; }
+  .footer-color-dots { margin-bottom: 20px; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; gap: 14px; margin-inline: 24px; padding: 24px 0; }
+  .footer-bottom > div { justify-content: space-between; gap: 20px; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .ankelba-site-footer * { transition: none !important; } }

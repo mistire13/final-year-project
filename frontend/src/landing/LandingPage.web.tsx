@@ -1,11 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./landing.css";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { portalApi, apiError } from "../portal/api";
 import { Icon } from "../portal/ui.web";
+import HeroAtmosphere from "./HeroAtmosphere.web";
+import AppShowcase from "./AppShowcase.web";
+import LandingExperience from "./LandingExperience.web";
+import LandingFooter from "./LandingFooter.web";
 
-const paintingPhoto = require("../../assets/design/03-home-dashboard-1.jpg");
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
+
+function NurseryBackdrop() {
+  return (
+    <div className="nursery-backdrop" aria-hidden="true">
+      <svg className="nursery-shape nursery-sun" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="23" fill="currentColor" opacity=".3" /><circle cx="50" cy="50" r="15" fill="currentColor" opacity=".55" /><path d="M50 8v10m0 64v10M8 50h10m64 0h10M20 20l7 7m46 46 7 7M20 80l7-7m46-46 7-7" stroke="currentColor" strokeWidth="4" strokeLinecap="round" /></svg>
+      <svg className="nursery-shape nursery-cloud" viewBox="0 0 140 80" fill="none"><path d="M30 64C4 64 4 30 28 28 30 3 70 0 79 25c23-10 43 7 39 24 23 10 7 25-10 21H31" fill="var(--ankelba-card)" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
+      <svg className="nursery-shape nursery-rainbow" viewBox="0 0 120 85" fill="none"><path d="M12 73a48 48 0 0 1 96 0" stroke="var(--pastel-peach)" strokeWidth="10" strokeLinecap="round" /><path d="M27 73a33 33 0 0 1 66 0" stroke="var(--pastel-yellow-text)" strokeOpacity=".22" strokeWidth="9" strokeLinecap="round" /><path d="M42 73a18 18 0 0 1 36 0" stroke="var(--pastel-green-text)" strokeOpacity=".2" strokeWidth="8" strokeLinecap="round" /></svg>
+      <svg className="nursery-shape nursery-blocks" viewBox="0 0 100 110" fill="none"><rect x="12" y="52" width="42" height="42" rx="10" fill="var(--pastel-cyan)" stroke="currentColor" strokeWidth="2" /><rect x="50" y="55" width="38" height="38" rx="10" fill="var(--pastel-yellow)" stroke="var(--pastel-yellow-text)" strokeOpacity=".3" strokeWidth="2" /><path d="m32 45 19-31a5 5 0 0 1 8 0l19 31Z" fill="var(--pastel-pink)" stroke="var(--pastel-pink-text)" strokeOpacity=".2" strokeWidth="2" /></svg>
+      <svg className="nursery-shape nursery-star" viewBox="0 0 80 80" fill="none"><path d="m40 8 9 20 22 3-16 16 4 23-19-11-20 11 4-23L8 31l23-3Z" fill="var(--pastel-purple)" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
+    </div>
+  );
+}
 
 interface RegisterFormState {
   daycareName: string;
@@ -35,11 +50,41 @@ const initialForm: RegisterFormState = {
 
 export default function LandingPage() {
   const reduce = useReducedMotion();
+  const scrollRoot = useRef<HTMLDivElement>(null);
+  const hero = useRef<HTMLElement>(null);
+  const navigation = useRef<HTMLElement>(null);
+  const [overHero, setOverHero] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<RegisterFormState>(initialForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
+
+  useEffect(() => {
+    const root = scrollRoot.current;
+    const heroNode = hero.current;
+    const navNode = navigation.current;
+    if (!root || !heroNode || !navNode) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      setOverHero(heroNode.getBoundingClientRect().bottom > navNode.getBoundingClientRect().bottom + 12);
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    root.addEventListener("scroll", schedule, { passive: true });
+    const observer = new ResizeObserver(schedule);
+    observer.observe(root);
+    observer.observe(heroNode);
+    observer.observe(navNode);
+    update();
+    return () => {
+      root.removeEventListener("scroll", schedule);
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -99,20 +144,10 @@ export default function LandingPage() {
     transition: { duration: 0.45, ease: "easeOut" as const },
   };
 
-  const staggerContainer = {
-    initial: {},
-    whileInView: {
-      transition: {
-        staggerChildren: 0.08,
-      },
-    },
-    viewport: { once: true, amount: 0.15 },
-  };
 
   return (
-    <div className="ankelba-home-container">
-      {/* ─── Navigation Header ─── */}
-      <header className="ankelba-home-nav">
+    <div ref={scrollRoot} className="ankelba-home-container centered-home-experiment">
+      <header ref={navigation} className="ankelba-home-nav" data-over-hero={overHero}>
         <a className="ankelba-home-brand" href="/" aria-label="Ankelba Home">
           <img src={logo} alt="Ankelba Emblem" className="ankelba-home-brand-logo" />
           <div className="ankelba-home-brand-text">
@@ -125,7 +160,7 @@ export default function LandingPage() {
           <a href="#why-ankelba">Why Ankelba</a>
           <a href="#features">Features</a>
           <a href="#a-day-together">How it works</a>
-          <a href="#for-everyone">For your team</a>
+
           <a href="/application-status">Check Status</a>
         </nav>
 
@@ -159,25 +194,20 @@ export default function LandingPage() {
           </motion.button>
         </div>
       </header>
-
-      {/* Parent app preview and daily activity photography */}
-      <section className="ankelba-home-hero" aria-label="Connected childcare with Ankelba">
+      <section ref={hero} className="ankelba-home-hero" aria-label="Connected childcare with Ankelba">
+        <HeroAtmosphere />
         <motion.div
           className="hero-content"
           initial={reduce ? { opacity: 1, x: 0 } : { opacity: 0, x: -24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" as const }}
         >
-          <div className="ankelba-home-eyebrow">
-            <Icon name="sparkles" size={15} />
-            <span>Nurture. Connect. Safeguard.</span>
-          </div>
           <h1 className="hero-title">
             Big peace of mind.<br />
             <span className="highlight">For their little world.</span>
           </h1>
           <p className="hero-subtitle">
-            From the first hello to the last pickup, stay connected to the moments that make their day. One caring connection between families and daycare.
+            Follow meals, naps and activities, message your daycare, and keep pickup details in one place.
           </p>
 
           <div className="hero-cta-group">
@@ -189,7 +219,7 @@ export default function LandingPage() {
               onClick={() => openRegisterModal()}
               style={{ padding: "0.85rem 1.75rem", fontSize: "1rem" }}
             >
-              Bring Ankelba to your daycare <Icon name="arrow" size={18} />
+              Register your daycare <Icon name="arrow" size={18} />
             </motion.button>
             <motion.button
               whileHover={reduce ? undefined : { y: -1 }}
@@ -205,216 +235,41 @@ export default function LandingPage() {
             </motion.button>
           </div>
 
-          <div className="hero-benefits"><span><Icon name="heart" size={16} /> Daily moments</span><span><Icon name="message" size={16} /> Closer conversations</span><span><Icon name="shield" size={16} /> Safer handovers</span></div>
-          <div className="hero-reassurance"><Icon name="shield" size={18} /><span>Thoughtful care. Shared moments. Safer pickups.</span></div>
         </motion.div>
 
-        <motion.div className="day-preview" initial={reduce ? false : { opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <div className="preview-heading"><span className="preview-brand"><img src={logo} alt="" /> Ankelba</span><span className="preview-label">A glimpse of the parent app</span></div>
-          <div className="preview-greeting"><span>A little closer, every day</span><h2>Here’s how Liya’s day is going.</h2></div>
-          <div className="preview-child"><div className="child-initial">L</div><div><strong>Liya</strong><small>Sunflower Group · Checked in at 8:04 AM</small></div><span className="present-badge">At daycare</span></div>
-          <div className="preview-section-title"><strong>Today’s little highlights</strong><span>Sample day</span></div>
-          <div className="preview-highlights">
-            {[
-              { icon: "leaf", category: "Meals", detail: "Breakfast enjoyed", tone: "yellow" },
-              { icon: "clock", category: "Sleep", detail: "A restful little nap", tone: "purple" },
-              { icon: "sparkles", category: "Learning", detail: "Colors & shapes", tone: "cyan" },
-              { icon: "heart", category: "Mood", detail: "Happy & curious", tone: "pink" },
-            ].map(item => <div className={`preview-highlight tone-${item.tone}`} key={item.category}><Icon name={item.icon} size={22} /><small>{item.category}</small><strong>{item.detail}</strong></div>)}
-          </div>
-          <div className="preview-memory"><img src={paintingPhoto} alt="A child exploring colors through finger painting" /><div><span>SMALL HANDS. BIG DISCOVERIES.</span><strong>A little creativity, shared with you.</strong></div></div>
-          <div className="preview-note"><span><Icon name="message" size={18} /> A note from Sara, caregiver</span><p>“Liya loved painting today. So many little discoveries to share with you!”</p></div>
-          <div className="preview-bottom"><Icon name="shield" size={16} /><span>Connected through every part of their day.</span></div>
-        </motion.div>
+        <AppShowcase />
       </section>
 
-      <div className="care-ribbon" aria-label="Connected care"><span>Little moments, beautifully connected.</span><span><Icon name="heart" size={18} /> For families</span><span><Icon name="child" size={18} /> For caregivers</span><span><Icon name="home" size={18} /> For daycares</span></div>
-      {/* ─── Why Ankelba Section (Comparison) ─── */}
-      <section id="why-ankelba" className="ankelba-home-why">
+
+      <LandingExperience />
+
+      <section id="everyday-clarity" className="ankelba-home-why">
+        <NurseryBackdrop />
         <motion.div className="section-head" {...fadeIn}>
-          <div className="section-subtitle">The Ankelba Advantage</div>
-          <h2 className="section-title">Why Daycares Are Leaving Paper Behind</h2>
+
+          <h2 className="section-title">Keep records in one place</h2>
           <p className="section-desc">
-            Manual paper logs and phone calls cause lost attendance records, delayed incident reporting, and anxious parents. Ankelba brings clarity, safety, and operational excellence to your center.
+            Compare paper-based routines with attendance, guardian, payment and reporting records in Ankelba.
           </p>
         </motion.div>
 
-        <div className="comparison-grid">
-          {/* Traditional Card */}
-          <motion.div className="comparison-card traditional" {...fadeIn}>
-            <span className="comparison-badge">Traditional Daycare</span>
-            <h3>Manual Paper & Memory</h3>
-            <ul className="comparison-list">
-              <li>
-                <span className="icon-cross"><Icon name="close" size={16} /></span>
-                <span>Paper sign-in binders that get lost, damaged, or filled out illegibly.</span>
-              </li>
-              <li>
-                <span className="icon-cross"><Icon name="close" size={16} /></span>
-                <span>Unverified pickups with no photo confirmation of authorized adult guardians.</span>
-              </li>
-              <li>
-                <span className="icon-cross"><Icon name="close" size={16} /></span>
-                <span>Awkward care fee collection with crumpled paper receipts and lost records.</span>
-              </li>
-              <li>
-                <span className="icon-cross"><Icon name="close" size={16} /></span>
-                <span>Parents constantly calling or worrying about meals, naps, and health during the day.</span>
-              </li>
-            </ul>
-          </motion.div>
-
-          {/* Ankelba Card */}
-          <motion.div
-            className="comparison-card ankelba"
-            {...fadeIn}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <span className="comparison-badge">Ankelba Platform</span>
-            <h3>Organized, Secure & Real-Time</h3>
-            <ul className="comparison-list">
-              <li>
-                <span className="icon-check"><Icon name="check" size={16} /></span>
-                <span>Fast front-desk check-in and checkout with automatic time logs and timestamps.</span>
-              </li>
-              <li>
-                <span className="icon-check"><Icon name="check" size={16} /></span>
-                <span>Strict pickup verification matching guardian photos and identification cards.</span>
-              </li>
-              <li>
-                <span className="icon-check"><Icon name="check" size={16} /></span>
-                <span>Clear child care fee tracking, instant digital payment reconciliation, and receipts.</span>
-              </li>
-              <li>
-                <span className="icon-check"><Icon name="check" size={16} /></span>
-                <span>Parents receive structured daily reports (meals, rest, activities) right on their mobile app.</span>
-              </li>
-            </ul>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── Core Features Showcase ─── */}
-      <section id="features" className="ankelba-home-features">
-        <motion.div className="section-head" {...fadeIn}>
-          <div className="section-subtitle">The everyday essentials</div>
-          <h2 className="section-title">Less chasing details. More connected care.</h2>
-          <p className="section-desc">
-            From classroom updates to the front desk, keep the details that matter within reach.
-          </p>
+        <motion.div className="care-comparison" {...fadeIn}>
+          <table>
+            <caption className="comparison-sr-only">How Ankelba supports everyday daycare routines compared with paper records</caption>
+            <thead><tr><th scope="col">Everyday care</th><th scope="col"><strong>Paper & phone calls</strong></th><th scope="col" className="comparison-better"><strong>With Ankelba</strong></th></tr></thead>
+            <tbody>{[
+              { icon: "clock", label: "Attendance", before: "Sign-in sheets to fill out, file and find again.", after: "Check-in and checkout times, together in one clear record." },
+              { icon: "shield", label: "Pickup", before: "Guardian details scattered across forms and phone calls.", after: "Authorized guardian photos and details ready for staff to verify." },
+              { icon: "file", label: "Care fees", before: "Paper receipts and separate payment records to reconcile.", after: "Organized fee tracking and payment records for the daycare office." },
+              { icon: "heart", label: "Daily moments", before: "Families waiting until pickup to hear about meals, naps and play.", after: "Daily reports that bring families closer to their child’s day." },
+            ].map(item => <tr key={item.label}><th scope="row"><span className="comparison-topic"><Icon name={item.icon} size={19} />{item.label}</span></th><td><span className="comparison-mobile-label">Paper & phone calls</span><span className="comparison-cell"><span className="comparison-marker"><Icon name="close" size={14} /></span>{item.before}</span></td><td className="comparison-better"><span className="comparison-mobile-label">With Ankelba</span><span className="comparison-cell"><span className="comparison-marker"><Icon name="check" size={14} /></span>{item.after}</span></td></tr>)}</tbody>
+          </table>
         </motion.div>
-
-        <motion.div className="features-grid" variants={staggerContainer} initial="initial" whileInView="whileInView">
-          <motion.div className="feature-card" {...fadeIn}>
-            <div className="feature-icon-wrapper" style={{ background: "var(--pastel-green)", color: "var(--pastel-green-text)" }}>
-              <Icon name="shield" size={26} />
-            </div>
-            <h4>Verified Child Pickup Safety</h4>
-            <p>
-              Only authorized adults can collect a child. Staff verify guardian photo identification before releasing the child, backed by full audit logging.
-            </p>
-          </motion.div>
-
-          <motion.div className="feature-card" {...fadeIn}>
-            <div className="feature-icon-wrapper" style={{ background: "var(--pastel-yellow)", color: "var(--pastel-yellow-text)" }}>
-              <Icon name="clipboard" size={26} />
-            </div>
-            <h4>Daily Activity Reporting</h4>
-            <p>
-              Caregivers effortlessly log meals eaten, rest times, learning milestones, mood, and outdoor play for parents to view instantly.
-            </p>
-          </motion.div>
-
-          <motion.div className="feature-card" {...fadeIn}>
-            <div className="feature-icon-wrapper" style={{ background: "var(--pastel-cyan)", color: "var(--pastel-cyan-text)" }}>
-              <Icon name="chart" size={26} />
-            </div>
-            <h4>Child Care Fee Management</h4>
-            <p>
-              Track monthly care fees, registration fees, and daycare supplies. Reconcile cash or digital gateway payments with transparent receipts.
-            </p>
-          </motion.div>
-
-          <motion.div className="feature-card" {...fadeIn}>
-            <div className="feature-icon-wrapper" style={{ background: "var(--pastel-purple)", color: "var(--pastel-purple-text)" }}>
-              <Icon name="desk" size={26} />
-            </div>
-            <h4>Front-Desk Duty Terminal</h4>
-            <p>
-              Assigned staff use a streamlined, touch-friendly terminal for fast child check-in, absence recording, and authorized release.
-            </p>
-          </motion.div>
-
-          <motion.div className="feature-card" {...fadeIn}>
-            <div className="feature-icon-wrapper" style={{ background: "var(--pastel-pink)", color: "var(--pastel-pink-text)" }}>
-              <Icon name="heart" size={26} />
-            </div>
-            <h4>Health & Incident Observation</h4>
-            <p>
-              Record health notes and incidents factually, alerting parents immediately without diagnosing, keeping families and directors aligned.
-            </p>
-          </motion.div>
-
-          <motion.div className="feature-card" {...fadeIn}>
-            <div className="feature-icon-wrapper" style={{ background: "var(--ankelba-cream)", color: "var(--ankelba-navy)", border: "1px solid var(--ankelba-border)" }}>
-              <Icon name="message" size={26} />
-            </div>
-            <h4>Direct Office Messaging</h4>
-            <p>
-              Bridge the communication gap between parents and daycare staff through structured, private, and archived messages.
-            </p>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      <section id="a-day-together" className="ankelba-home-journey">
-        <motion.div className="section-head" {...fadeIn}>
-          <div className="section-subtitle">From hello to home time</div>
-          <h2 className="section-title">A whole day of care.<br />A connection that stays with you.</h2>
-          <p className="section-desc">The everyday rhythm of daycare, brought together in one shared story.</p>
-        </motion.div>
-        <div className="journey-grid">
-          {[
-            { time: "01 / ARRIVE", icon: "home", title: "Start with a reassuring hello", text: "Staff record check-in, so families can see that their child has arrived and settled into the day.", tone: "yellow" },
-            { time: "02 / DISCOVER", icon: "sparkles", title: "Let the little moments reach home", text: "Meals, naps, play and learning become a daily report parents can follow around their own busy day.", tone: "cyan" },
-            { time: "03 / RECONNECT", icon: "shield", title: "End the day with a careful handover", text: "Staff check authorized guardian details before pickup and record the checkout for a clear handover history.", tone: "purple" },
-          ].map(item => <motion.article className="journey-step" key={item.time} {...fadeIn}><span className="journey-time">{item.time}</span><div className={`journey-icon tone-${item.tone}`}><Icon name={item.icon} size={28} /></div><h3>{item.title}</h3><p>{item.text}</p></motion.article>)}
-        </div>
-      </section>
-
-      <section className="ankelba-home-connection" aria-labelledby="connection-title">
-        <motion.div className="connection-story" {...fadeIn}>
-          <span className="section-subtitle">More than an update</span>
-          <h2 id="connection-title" className="section-title">“How was their day?”<br />Now there’s a little more to tell.</h2>
-          <p className="section-desc">A meal enjoyed. A new discovery. A much-needed nap. These details help families feel involved and give caregivers a simple way to share the care behind every day.</p>
-          <ul className="connection-points"><li><Icon name="checkCircle" size={20} /> Understand routines through daily reports</li><li><Icon name="checkCircle" size={20} /> Keep questions and conversations in one place</li><li><Icon name="checkCircle" size={20} /> Carry the conversation from daycare to home</li></ul>
-          <a href="/app" className="btn-pill btn-pill-primary">Explore the parent app <Icon name="arrow" size={18} /></a>
-        </motion.div>
-        <motion.div className="connection-photo" {...fadeIn}><img src={paintingPhoto} alt="Finger painting during a creative daycare activity" loading="lazy" /><div className="memory-caption"><span><Icon name="sparkles" size={20} /> A moment worth sharing</span><h3>Today’s colors.<br />Tonight’s conversation.</h3><p>Small discoveries make wonderful stories.</p></div></motion.div>
-      </section>
-
-      <section id="for-everyone" className="ankelba-home-audiences">
-        <motion.div className="section-head" {...fadeIn}><div className="section-subtitle">One circle of care</div><h2 className="section-title">Made for everyone<br />who makes their day.</h2><p className="section-desc">Different responsibilities. The same shared purpose: thoughtful care for every child.</p></motion.div>
-        <div className="audience-grid">
-          {[
-            { icon: "heart", label: "For families", title: "Feel closer, wherever you are.", text: "Follow daily routines, reach your daycare and keep authorized pickup details organized.", items: ["Daily reports and activity updates", "Messages and daycare announcements", "Guardian and child information"], tone: "pink" },
-            { icon: "child", label: "For caregivers", title: "Give your care a shared voice.", text: "Keep families informed with a clear record of the moments and observations that matter.", items: ["Meals, rest, learning and mood", "Health and incident observations", "Conversations with families"], tone: "yellow" },
-            { icon: "building", label: "For daycare teams", title: "Bring the busy day together.", text: "Keep the front desk, classrooms and office working from organized daycare records.", items: ["Attendance and pickup records", "Child, guardian and staff details", "Care fees and payment records"], tone: "cyan" },
-          ].map(item => <motion.article className={`audience-card tone-${item.tone}`} key={item.label} {...fadeIn}><Icon name={item.icon} size={30} /><span className="audience-label">{item.label}</span><h3>{item.title}</h3><p>{item.text}</p><ul>{item.items.map(point => <li key={point}><Icon name="check" size={16} />{point}</li>)}</ul></motion.article>)}
-        </div>
-      </section>
-
-      <section className="ankelba-home-safety" aria-labelledby="safety-title">
-        <motion.div {...fadeIn}><span className="safety-emblem"><Icon name="shield" size={36} /></span><div className="section-subtitle">Care continues at the door</div><h2 id="safety-title" className="section-title">Every handover<br />deserves a little extra care.</h2><p>Pickup is a responsibility shared by families and staff. Ankelba brings guardian information, verification and checkout records into that important moment.</p></motion.div>
-        <div className="safety-steps">{[
-          { title: "Know who is authorized", text: "Keep guardian details and photos available for staff to review." },
-          { title: "Verify before they leave", text: "Give staff a clear pickup process centered on the authorized adult." },
-          { title: "Keep a record of the handover", text: "Record checkout details so the daycare can refer back to the pickup history." },
-        ].map((item, index) => <div className="safety-step" key={item.title}><span>0{index + 1}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></div>)}</div>
       </section>
 
       <section className="ankelba-home-faq" id="questions">
-        <motion.div {...fadeIn}><div className="section-subtitle">A few things you might wonder</div><h2 className="section-title">A little clarity,<br />before you begin.</h2><p className="section-desc">Getting connected starts with your daycare.</p></motion.div>
+        <NurseryBackdrop />
+        <motion.div {...fadeIn}><h2 className="section-title">Common questions</h2><p className="section-desc">Getting connected starts with your daycare.</p></motion.div>
         <div className="faq-list">{[
           { question: "Who is Ankelba for?", answer: "Ankelba connects parents and guardians with caregivers and daycare administrators. Families use the parent app, while staff manage their responsibilities through the daycare portal." },
           { question: "How do parents get connected?", answer: "Your daycare needs to be registered with Ankelba. Ask the daycare team about getting your parent account connected to your child’s profile, then sign in through the parent app." },
@@ -422,47 +277,13 @@ export default function LandingPage() {
           { question: "How does a daycare get started?", answer: "Select Register Daycare to submit your center’s details and a director account. You can check the application’s progress using the application status page." },
         ].map(item => <details key={item.question}><summary>{item.question}<span aria-hidden="true">+</span></summary><p>{item.answer}</p></details>)}</div>
       </section>
-
-      {/* ─── CTA Banner ─── */}
-      <section className="ankelba-home-cta-banner">
-        <motion.div {...fadeIn}>
-          <h2>Make room for more connected care.</h2>
-          <p>
-            Bring families and your daycare team closer to the little moments that matter. Start your Ankelba daycare application today.
-          </p>
-          <motion.button
-            whileHover={reduce ? undefined : { y: -2 }}
-            whileTap={reduce ? undefined : { scale: 0.98 }}
-            type="button"
-            className="btn-pill btn-pill-primary"
-            onClick={() => openRegisterModal()}
-            style={{ padding: "0.95rem 2rem", fontSize: "1.05rem" }}
-          >
-            Register Your Daycare Now <Icon name="arrow" size={18} />
-          </motion.button>
-        </motion.div>
-      </section>
-
-      {/* ─── Footer ─── */}
-      <footer className="ankelba-home-footer">
-        <p style={{ margin: "0 0 0.5rem 0", fontWeight: 700, color: "var(--ankelba-navy)" }}>
-          Ankelba — Parent Communication and Child Activity Reporting Platform
-        </p>
-        <p style={{ margin: "0 0 0.85rem 0" }}>
-          HiLCoE School of Computer Science and Technology · Senior Project Baseline
-        </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: "1.75rem", margin: "1.25rem 0", flexWrap: "wrap" }}>
-          <a href="/app" style={{ color: "var(--ankelba-green)", fontWeight: 700, textDecoration: "none" }}>Parent Mobile App</a>
-          <a href="/admin/login" style={{ color: "var(--ankelba-navy)", fontWeight: 600, textDecoration: "none" }}>Staff Sign In</a>
-          <a href="/application-status" style={{ color: "var(--ankelba-navy)", fontWeight: 600, textDecoration: "none" }}>Check Application Status</a>
-          <a href="/super-admin" style={{ color: "var(--ankelba-subtle)", fontWeight: 500, textDecoration: "none" }}>Platform Console</a>
-        </div>
-        <p style={{ margin: 0 }}>
-          © 2026 Ankelba Team. All rights reserved.
-        </p>
-      </footer>
-
-      {/* ─── Daycare Registration Modal (Solid Backdrop, Zero Glassmorphism) ─── */}
+      <LandingFooter
+        onRegister={daycareName => {
+          openRegisterModal();
+          setForm(previous => ({ ...previous, daycareName }));
+        }}
+        onBackToTop={() => scrollRoot.current?.scrollTo({ top: 0, behavior: reduce ? "instant" : "smooth" })}
+      />
       <AnimatePresence>
         {modalOpen && (
           <motion.div

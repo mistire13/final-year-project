@@ -1,0 +1,173 @@
+.landing-experience { --experience-tint: var(--pastel-purple); --experience-ink: var(--pastel-purple-text); }
+.experience-purple { --experience-tint: var(--pastel-purple); --experience-ink: var(--pastel-purple-text); }
+.experience-yellow { --experience-tint: var(--pastel-yellow); --experience-ink: var(--pastel-yellow-text); }
+.experience-cyan { --experience-tint: var(--pastel-cyan); --experience-ink: var(--pastel-cyan-text); }
+.experience-pink { --experience-tint: var(--pastel-pink); --experience-ink: var(--pastel-pink-text); }
+.landing-experience :is(button,a):focus-visible { outline: 3px solid var(--ankelba-green); outline-offset: 5px; }
+.landing-experience :is(button,a) { -webkit-tap-highlight-color: transparent; }
+.landing-experience button { font-family: inherit; cursor: pointer; }
+.landing-experience section[id], .explorer-stage[id] { scroll-margin-top: 112px; }
+.experience-explorer { padding: 88px 40px; background: var(--ankelba-cream); }
+.experience-heading { max-width: 1120px; margin: 0 auto 40px; display: flex; align-items: end; justify-content: space-between; gap: 48px; }
+.experience-heading h2, .audience-carousel-heading h2, .photo-story-copy h2 { font-size: clamp(30px, 3.3vw, 46px); font-weight: 700; line-height: 1.22; letter-spacing: -.045em; color: var(--ankelba-navy); margin: 0; }
+.experience-heading p { max-width: 350px; font-size: 14px; line-height: 1.85; color: var(--ankelba-muted); margin: 0 0 4px; }
+.explorer-stage { max-width: 1200px; margin-inline: auto; display: grid; grid-template-columns: 225px minmax(0,1fr); background: var(--experience-tint); border: 1px solid var(--ankelba-border); border-radius: 36px; box-shadow: 0 30px 70px -32px rgba(6,18,36,.2), 0 8px 26px -16px rgba(183,121,31,.14); transition: background-color .3s ease; overflow: clip; }
+.explorer-navigation { padding: 32px 18px; background: var(--ankelba-card); border-radius: 35px 0 0 35px; border-right: 1px solid var(--ankelba-border-light); display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.explorer-navigation button { display: flex; align-items: center; gap: 9px; border: 0; padding: 16px 10px; min-height: 60px; text-align: left; font-size: 12px; font-weight: 600; background: transparent; color: var(--ankelba-muted); border-radius: 16px; transition: background .2s ease, color .2s ease; }
+.explorer-navigation button[aria-selected="true"] { background: var(--experience-tint); color: var(--ankelba-navy); }
+.explorer-navigation button:hover { color: var(--ankelba-navy); }
+.explorer-navigation button > svg { flex-shrink: 0; color: var(--experience-ink); }
+.explorer-tab-number { font-size: 9px; color: var(--ankelba-subtle); }
+.explorer-tab-arrow { display: grid; margin-left: auto; opacity: 0; }
+[aria-selected="true"] .explorer-tab-arrow { opacity: 1; }
+.explorer-panel { min-width: 0; border-radius: 0 35px 35px 0; }
+.explorer-panel:focus-visible { outline: 3px solid var(--ankelba-green); outline-offset: -5px; }
+.explorer-content { min-height: 610px; padding: 40px; display: grid; grid-template-columns: minmax(0,1fr) 215px; align-items: center; gap: 36px; }
+.experience-symbol { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 22px; color: var(--experience-ink); background: var(--ankelba-card); box-shadow: var(--shadow-md); margin-bottom: 24px; }
+.explorer-copy h3 { margin: 0 0 18px; font-size: clamp(27px, 2.8vw, 36px); line-height: 1.2; letter-spacing: -.04em; }
+.explorer-copy p { margin: 0; color: var(--ankelba-muted); font-size: 14px; line-height: 1.9; }
+.explorer-copy ul, .audience-slide-copy ul { list-style: none; padding: 0; margin: 24px 0 30px; display: grid; gap: 13px; }
+.explorer-copy li, .audience-slide-copy li { display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 1.6; }
+.explorer-copy li svg { color: var(--experience-ink); flex-shrink: 0; }
+.experience-text-link { display: inline-flex; align-items: center; gap: 12px; padding: 10px 0; min-height: 44px; color: var(--ankelba-navy); font-weight: 700; font-size: 13px; text-decoration: none; border-bottom: 1px solid var(--ankelba-navy); }
+.experience-text-link svg { transition: transform .2s ease; }
+.experience-text-link:hover svg { transform: translateX(4px); }
+.explorer-visual { position: relative; isolation: isolate; display: grid; place-items: center; min-width: 0; }
+.explorer-visual::before { content: ""; position: absolute; width: 110%; height: 70%; background: var(--ankelba-card); opacity: .65; filter: blur(40px); border-radius: 50%; z-index: -1; }
+.explorer-visual img { display: block; width: 100%; height: auto; border-radius: 24px; border: 6px solid var(--ankelba-card); transform: rotate(3deg); box-shadow: 0 25px 48px -22px rgba(6,18,36,.3); }
+.explorer-orbit { position: absolute; inset: 13% -15%; border: 1px solid var(--experience-ink); opacity: .16; border-radius: 50%; transform: rotate(-20deg); z-index: -1; }
+
+.experience-roadmap { position: relative; isolation: isolate; padding: 80px 40px; background: var(--pastel-purple); }
+.experience-roadmap::before { content: ""; position: absolute; width: 65%; height: 240px; left: 15%; bottom: 30px; border-radius: 50%; background: var(--pastel-pink); filter: blur(60px); z-index: -1; }
+.roadmap-route { position: relative; max-width: 1100px; margin: 0 auto 28px; }
+.roadmap-line { position: absolute; top: 0; width: 100%; height: 140px; color: var(--pastel-purple-text); opacity: .4; pointer-events: none; }
+.roadmap-line path { animation: experience-route-flow 32s linear infinite; }
+@keyframes experience-route-flow { to { stroke-dashoffset: -140; } }
+.roadmap-stops { position: relative; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); }
+.roadmap-stops button { min-width: 0; display: flex; flex-direction: column; align-items: center; border: 0; background: transparent; padding: 36px 8px 24px; color: var(--ankelba-muted); }
+.roadmap-node { position: relative; width: 68px; height: 68px; background: var(--ankelba-card); border: 1px solid var(--ankelba-border); border-radius: 50%; display: grid; place-items: center; box-shadow: 0 10px 24px -12px rgba(6,18,36,.2); transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+.roadmap-node > span { position: absolute; bottom: -4px; right: -4px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: var(--ankelba-muted); background: var(--ankelba-cream); border: 1px solid var(--ankelba-border); font-size: 9px; }
+.roadmap-stops .is-selected .roadmap-node { background: var(--ankelba-navy); color: var(--ankelba-card); box-shadow: 0 0 0 8px var(--pastel-purple), 0 0 0 9px var(--pastel-purple-text), 0 16px 36px -14px rgba(6,18,36,.25); transform: translateY(-3px); }
+.roadmap-stop-copy { display: grid; gap: 5px; margin-top: 22px; text-align: center; }
+.roadmap-stop-copy strong { font-size: 15px; color: var(--ankelba-navy); font-weight: 700; }
+.roadmap-stop-copy small { font-size: 11px; }
+.roadmap-detail { max-width: 1100px; margin: auto; background: var(--ankelba-card); border: 1px solid var(--ankelba-border); border-radius: 32px; box-shadow: 0 24px 55px -30px rgba(6,18,36,.22); }
+.roadmap-detail-inner { min-height: 220px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; padding: 36px; align-items: center; }
+.roadmap-detail-heading { display: flex; align-items: center; gap: 24px; }
+.roadmap-detail-icon { display: grid; place-items: center; flex-shrink: 0; width: 100px; height: 120px; border-radius: 50% 50% 28% 28%; background: var(--experience-tint); color: var(--experience-ink); }
+.roadmap-detail h3 { font-size: 24px; line-height: 1.25; letter-spacing: -.03em; margin: 0 0 12px; }
+.roadmap-detail p { margin: 0; font-size: 13px; color: var(--ankelba-muted); line-height: 1.85; }
+.roadmap-detail ol { list-style: none; padding: 0 0 0 30px; margin: 0; border-left: 1px solid var(--ankelba-border); display: grid; gap: 18px; }
+.roadmap-detail li { display: flex; align-items: center; gap: 12px; font-size: 12px; }
+.roadmap-detail li > span { color: var(--experience-ink); font-size: 10px; font-weight: 700; }
+
+.experience-photo-story { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: 80px; padding: 96px 40px; }
+.photo-story-image { position: relative; }
+.photo-story-image::before { content: ""; position: absolute; inset: 14% -6% -7%; background: var(--pastel-yellow); border-radius: 50%; filter: blur(40px); z-index: -1; }
+.photo-story-image img { display: block; width: 100%; height: 400px; object-fit: cover; border-radius: 44% 44% 18px 18px; box-shadow: 0 30px 60px -24px rgba(183,121,31,.25); }
+.photo-story-copy { position: relative; }
+.photo-story-stroke { display: block; width: 60px; height: 5px; border-radius: 99px; background: var(--ankelba-gold); margin-bottom: 24px; transform: rotate(-4deg); }
+.photo-story-copy p { font-size: 15px; line-height: 1.9; color: var(--ankelba-muted); margin: 24px 0; }
+
+.experience-audiences { max-width: 1200px; margin: 0 auto 80px; padding: 48px 56px 32px; border: 1px solid var(--ankelba-border); background: var(--experience-tint); border-radius: 40px; box-shadow: 0 30px 70px -32px rgba(6,18,36,.2); transition: background-color .25s ease; }
+.audience-carousel-heading { display: flex; justify-content: space-between; align-items: end; gap: 32px; margin-bottom: 40px; }
+.audience-carousel-heading h2 { font-size: 34px; }
+.audience-choices { display: flex; gap: 6px; flex-wrap: wrap; }
+.audience-choices button { min-height: 44px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--ankelba-muted); font-size: 12px; padding: 8px 12px; font-weight: 600; }
+.audience-choices button[aria-pressed="true"] { color: var(--ankelba-navy); border-bottom-color: var(--ankelba-navy); }
+.audience-carousel-viewport { touch-action: pan-y; }
+.audience-carousel-slide { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 72px; min-height: 390px; }
+.audience-slide-copy h3 { font-size: clamp(28px,3vw,40px); letter-spacing: -.045em; line-height: 1.2; margin: 0 0 22px; }
+.audience-slide-copy p { color: var(--ankelba-muted); font-size: 14px; line-height: 1.9; margin: 0; }
+.audience-slide-copy li svg { color: var(--experience-ink); flex-shrink: 0; }
+.audience-slide-photo { position: relative; isolation: isolate; }
+.audience-slide-photo img { display: block; width: 100%; height: 340px; object-fit: cover; border-radius: 44% 44% 18% 18%; box-shadow: 0 25px 45px -20px rgba(6,18,36,.24); transform: rotate(3deg); }
+.audience-photo-shape { position: absolute; z-index: -1; inset: 8% -10% -8%; background: var(--ankelba-card); border-radius: 50%; filter: blur(30px); opacity: .8; }
+.audience-carousel-controls { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--ankelba-border); padding-top: 24px; margin-top: 32px; }
+.audience-slide-count { font-size: 15px; font-weight: 700; color: var(--ankelba-navy); }
+.audience-slide-count > span { color: var(--ankelba-muted); font-weight: 500; }
+.audience-carousel-controls > div { display: flex; gap: 10px; }
+.audience-carousel-controls button { width: 48px; height: 48px; display: grid; place-items: center; background: var(--ankelba-card); border: 1px solid var(--ankelba-border); border-radius: 50%; color: var(--ankelba-navy); box-shadow: var(--shadow-sm); }
+.audience-carousel-controls button:hover { background: var(--ankelba-navy); color: var(--ankelba-card); }
+.experience-arrow-back { display: grid; transform: rotate(180deg); }
+
+.centered-home-experiment .care-comparison { border-radius: 32px; border-color: var(--ankelba-border-light); box-shadow: 0 28px 65px -30px rgba(6,18,36,.2), 0 8px 32px -20px rgba(183,121,31,.18); }
+.centered-home-experiment .faq-list { border-top: 1px solid var(--ankelba-border); }
+.centered-home-experiment .faq-list details { padding: 20px 0; }
+.centered-home-experiment .faq-list details[open] { border-bottom-color: var(--ankelba-navy); }
+.centered-home-experiment .ankelba-home-cta-banner { border: 0; border-radius: 48px 48px 18px 18px; box-shadow: 0 28px 65px -25px rgba(45,122,88,.25); }
+
+@media (max-width: 1100px) {
+  .explorer-stage { grid-template-columns: 190px minmax(0,1fr); }
+  .explorer-content { padding: 28px; grid-template-columns: minmax(0,1fr) 180px; gap: 24px; }
+  .explorer-navigation { padding-inline: 10px; }
+  .explorer-tab-number { display: none; }
+  .experience-audiences { margin-inline: 32px; padding-inline: 36px; }
+  .audience-carousel-heading { align-items: start; flex-direction: column; gap: 20px; }
+  .audience-carousel-slide { gap: 40px; }
+  .roadmap-detail-inner { gap: 24px; padding: 28px; }
+  .roadmap-detail-icon { width: 72px; height: 90px; }
+}
+
+@media (max-width: 800px) {
+  .experience-heading { flex-direction: column; align-items: start; gap: 18px; }
+  .experience-heading p { max-width: 500px; }
+  .experience-explorer, .experience-roadmap { padding: 56px 24px; }
+  .explorer-stage { grid-template-columns: minmax(0,1fr); }
+  .explorer-navigation { border-radius: 35px 35px 0 0; border-right: 0; border-bottom: 1px solid var(--ankelba-border-light); display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 14px; gap: 8px; }
+  .explorer-navigation button { min-height: 48px; padding: 12px; }
+  .explorer-panel { border-radius: 0 0 35px 35px; }
+  .explorer-content { min-height: 550px; grid-template-columns: minmax(0,1fr) 180px; padding: 32px; }
+  .roadmap-detail-inner { grid-template-columns: minmax(0,1fr); gap: 26px; }
+  .roadmap-detail ol { border-left: 0; border-top: 1px solid var(--ankelba-border); padding: 22px 0 0; }
+  .experience-photo-story { padding: 64px 24px; gap: 32px; }
+  .photo-story-image img { height: 340px; }
+  .experience-audiences { margin: 0 24px 56px; padding: 32px; }
+  .audience-carousel-slide { gap: 28px; }
+  .audience-slide-photo img { height: 280px; }
+}
+
+@media (max-width: 600px) {
+  .experience-heading h2, .photo-story-copy h2 { font-size: 32px; }
+  .experience-heading { margin-bottom: 28px; }
+  .experience-explorer { padding-inline: 16px; }
+  .explorer-stage { border-radius: 28px; }
+  .explorer-navigation { border-radius: 27px 27px 0 0; padding: 10px; gap: 4px; }
+  .explorer-navigation button { font-size: 10px; gap: 7px; padding: 10px 8px; }
+  .explorer-tab-arrow { display: none; }
+  .explorer-content { min-height: 900px; grid-template-columns: minmax(0,1fr); padding: 28px 24px; gap: 36px; }
+  .explorer-copy h3 { font-size: 30px; }
+  .explorer-copy p { font-size: 13px; }
+  .experience-symbol { width: 52px; height: 52px; margin-bottom: 20px; border-radius: 18px; }
+  .explorer-visual img { width: 180px; }
+  .explorer-orbit { inset: 12% 4%; }
+  .roadmap-line { display: none; }
+  .roadmap-stops { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .roadmap-stops::before { content: ""; position: absolute; top: 24px; bottom: 24px; left: 25px; border-left: 2px dashed var(--pastel-purple-text); opacity: .3; }
+  .roadmap-stops button { flex-direction: row; gap: 20px; padding: 10px 0; }
+  .roadmap-node { width: 52px; height: 52px; flex-shrink: 0; }
+  .roadmap-node > span { width: 20px; height: 20px; }
+  .roadmap-stop-copy { text-align: left; margin-top: 0; }
+  .roadmap-detail-inner { min-height: 380px; padding: 26px 22px; }
+  .roadmap-detail-heading { gap: 18px; align-items: start; }
+  .roadmap-detail-icon { width: 52px; height: 68px; }
+  .roadmap-detail-icon svg { width: 28px; }
+  .roadmap-detail h3 { font-size: 22px; }
+  .experience-photo-story { grid-template-columns: minmax(0,1fr); gap: 40px; }
+  .photo-story-image img { height: 300px; max-width: 430px; margin: auto; }
+  .photo-story-copy p { font-size: 14px; }
+  .experience-audiences { margin-inline: 16px; padding: 32px 24px 24px; border-radius: 28px; }
+  .audience-carousel-heading h2 { font-size: 29px; }
+  .audience-carousel-heading { margin-bottom: 28px; }
+  .audience-choices { gap: 0; }
+  .audience-choices button { font-size: 11px; padding-inline: 9px; }
+  .audience-carousel-slide { grid-template-columns: minmax(0,1fr); min-height: 780px; gap: 36px; }
+  .audience-slide-copy h3 { font-size: 30px; }
+  .audience-slide-copy p { font-size: 13px; }
+  .audience-slide-photo img { height: 270px; max-width: 360px; margin-inline: auto; }
+  .centered-home-experiment .ankelba-home-cta-banner { border-radius: 32px 32px 16px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-experience *, .landing-experience *::before, .landing-experience *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
