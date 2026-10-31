@@ -5,9 +5,11 @@ import "./hero-atmosphere.css";
 function Cloud({ className }: { className: string }) {
   return (
     <div className={`hero-sky-cloud ${className}`}>
-      <svg viewBox="0 0 200 110" fill="none" focusable="false">
-        <path d="M43 91C8 91 7 47 39 43 40 15 75 5 94 26c20-17 55-3 55 24 36-7 51 40 15 41H43Z" fill="currentColor" />
-        <path d="M39 43c11-2 20 2 25 9m85-2c-8 0-16 4-20 10" stroke="var(--ankelba-navy)" strokeOpacity=".05" strokeWidth="2" strokeLinecap="round" />
+      <svg viewBox="0 0 210 120" fill="none" focusable="false">
+        <path d="M43 91C8 91 7 47 39 43 40 15 75 5 94 26c20-17 55-3 55 24 36-7 51 40 15 41H43Z" transform="translate(4 7)" fill="var(--cloud-edge)" fillOpacity=".2" />
+        <path d="M43 91C8 91 7 47 39 43 40 15 75 5 94 26c20-17 55-3 55 24 36-7 51 40 15 41H43Z" fill="currentColor" stroke="var(--cloud-edge)" strokeOpacity=".32" strokeWidth="1.5" />
+        <path d="M39 43c11-2 20 2 25 9m85-2c-8 0-16 4-20 10" stroke="var(--cloud-edge)" strokeOpacity=".3" strokeWidth="2" strokeLinecap="round" />
+        <path d="M52 34c6-10 18-13 26-8" stroke="var(--ankelba-card)" strokeWidth="5" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -40,7 +42,7 @@ export default function HeroAtmosphere() {
             <g className="hero-sky-rays" stroke="var(--pastel-yellow-text)" strokeWidth="5" strokeLinecap="round">
               <path d="M70 10v12m0 96v12M10 70h12m96 0h12M28 28l9 9m66 66 9 9M28 112l9-9m66-66 9-9M47 15l5 12m36 86 5 12M15 93l12-5m86-36 12-5M15 47l12 5m86 36 12 5M47 125l5-12m36-86 5-12" />
             </g>
-            <circle cx="70" cy="70" r="34" fill="var(--ankelba-gold)" fillOpacity=".34" />
+            <circle cx="70" cy="70" r="34" fill="var(--ankelba-gold)" fillOpacity=".9" />
             <circle cx="70" cy="70" r="25" fill="var(--pastel-yellow)" />
           </svg>
         </div>
@@ -49,6 +51,9 @@ export default function HeroAtmosphere() {
         <Cloud className="cloud-far-left" />
         <Cloud className="cloud-far-right" />
         <Cloud className="cloud-low-right" />
+        <Cloud className="cloud-upper-left" />
+        <Cloud className="cloud-upper-right" />
+        <Cloud className="cloud-low-left" />
 
         <svg className="hero-sky-toy hero-sky-kite" viewBox="0 0 110 200" fill="none" focusable="false">
           <path className="hero-sky-kite-tail" d="M55 102c26 29-26 24-7 49s-5 25-8 38" stroke="var(--pastel-purple-text)" strokeWidth="2" strokeLinecap="round" />
@@ -62,9 +67,9 @@ export default function HeroAtmosphere() {
 
         <div className="hero-sky-rainbow">
           <svg viewBox="0 0 160 115" fill="none" focusable="false">
-            <path d="M15 98a65 65 0 0 1 130 0" stroke="var(--ankelba-coral)" strokeWidth="12" strokeLinecap="round" strokeOpacity=".5" />
-            <path d="M34 98a46 46 0 0 1 92 0" stroke="var(--ankelba-gold)" strokeWidth="11" strokeLinecap="round" strokeOpacity=".55" />
-            <path d="M52 98a28 28 0 0 1 56 0" stroke="var(--ankelba-green)" strokeWidth="10" strokeLinecap="round" strokeOpacity=".4" />
+            <path d="M15 98a65 65 0 0 1 130 0" stroke="var(--ankelba-coral)" strokeWidth="12" strokeLinecap="round" strokeOpacity=".85" />
+            <path d="M34 98a46 46 0 0 1 92 0" stroke="var(--ankelba-gold)" strokeWidth="11" strokeLinecap="round" strokeOpacity=".9" />
+            <path d="M52 98a28 28 0 0 1 56 0" stroke="var(--ankelba-green)" strokeWidth="10" strokeLinecap="round" strokeOpacity=".75" />
           </svg>
         </div>
 
@@ -74,6 +79,31 @@ export default function HeroAtmosphere() {
           <path d="M50 10C33 30 33 72 50 94c17-22 17-64 0-84Z" fill="var(--pastel-peach)" />
           <path d="m50 94-7 10h14Z" fill="var(--pastel-pink-text)" fillOpacity=".45" />
           <path d="M33 27c-5 5-8 13-8 20" stroke="var(--ankelba-card)" strokeWidth="5" strokeLinecap="round" />
+        </svg>
+
+        <svg className="hero-sky-toy hero-sky-ball" viewBox="0 0 100 110" fill="none" focusable="false">
+          <ellipse cx="50" cy="101" rx="29" ry="5" fill="var(--pastel-cyan-text)" fillOpacity=".12" />
+          <g className="hero-sky-ball-spin">
+            <circle cx="50" cy="48" r="38" fill="var(--pastel-cyan)" stroke="var(--pastel-cyan-text)" strokeOpacity=".65" strokeWidth="2" />
+            <path d="M50 10c-24 20-24 56 0 76 24-20 24-56 0-76Z" fill="var(--ankelba-gold)" fillOpacity=".8" />
+            <path d="M13 48h74" stroke="var(--pastel-cyan-text)" strokeOpacity=".45" strokeWidth="2" />
+            <path d="M28 27c-4 4-7 10-7 15" stroke="var(--ankelba-card)" strokeWidth="5" strokeLinecap="round" />
+          </g>
+        </svg>
+
+        <svg className="hero-sky-toy hero-sky-crayons" viewBox="0 0 120 150" fill="none" focusable="false">
+          <g transform="rotate(-18 45 80)">
+            <path d="m31 36 14-23 14 23v94a6 6 0 0 1-6 6H37a6 6 0 0 1-6-6Z" fill="var(--pastel-purple)" stroke="var(--pastel-purple-text)" strokeWidth="2" strokeLinejoin="round" />
+            <path d="m37 26 8-13 8 13Z" fill="var(--pastel-purple-text)" />
+            <path d="M32 51h26v54H32Z" fill="var(--pastel-purple-text)" fillOpacity=".7" />
+            <path d="M39 61v34" stroke="var(--ankelba-card)" strokeOpacity=".7" strokeWidth="3" strokeLinecap="round" />
+          </g>
+          <g transform="rotate(16 82 84)">
+            <path d="m69 43 13-22 13 22v87a6 6 0 0 1-6 6H75a6 6 0 0 1-6-6Z" fill="var(--pastel-peach)" stroke="var(--ankelba-coral)" strokeWidth="2" strokeLinejoin="round" />
+            <path d="m75 32 7-11 7 11Z" fill="var(--ankelba-coral)" />
+            <path d="M70 56h24v50H70Z" fill="var(--ankelba-coral)" fillOpacity=".8" />
+            <path d="M77 65v30" stroke="var(--ankelba-card)" strokeOpacity=".7" strokeWidth="3" strokeLinecap="round" />
+          </g>
         </svg>
 
         <svg className="hero-sky-toy hero-sky-blocks" viewBox="0 0 135 150" fill="none" focusable="false">
