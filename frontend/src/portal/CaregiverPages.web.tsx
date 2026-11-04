@@ -21,18 +21,24 @@ export function CaregiverPage({
   const [contacts, setContacts] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>(ctx.data.messages);
   const [detail, setDetail] = useState<any>(null);
+  useEffect(() => { setReports(ctx.data.reports); }, [ctx.data.reports]);
+  useEffect(() => { setHealth(ctx.data.health); }, [ctx.data.health]);
+  useEffect(() => { setMessages(ctx.data.messages); }, [ctx.data.messages]);
   useEffect(() => {
+    let active = true;
     setMessage("");
     setDetail(null);
     if (page === "communication")
-      portalClient
-        .get("/communication/contacts")
-        .then((r) => setContacts(r.data.contacts || []))
+      Promise.all([portalClient.get("/communication/contacts"), portalClient.get("/communication/messages")])
+        .then(([contacts, inbox]) => {
+          if (!active) return;
+          setContacts(contacts.data.contacts || []);
+          setMessages(inbox.data.data || []);
+        })
         .catch(() =>
-          setMessage(
-            "Contacts could not be loaded. Reopen this page to retry.",
-          ),
+          { if (active) setMessage("Messages or contacts could not be loaded. Reopen this page to retry."); },
         );
+    return () => { active = false; };
   }, [page]);
   const send = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -128,7 +134,7 @@ export function CaregiverPage({
       >
         <p className="p-kpi-note">
           {page === "communication"
-            ? "Choose a daycare contact to start a conversation."
+            ? "Choose a daycare contact to start a conversation. Parent–caregiver messages can be reviewed by your daycare administrator."
             : "Only children assigned to your care can receive new reports and health records."}
         </p>
         <form onSubmit={send} className="care-form">
@@ -300,6 +306,7 @@ export function CaregiverPage({
             {messages.length ? (
               messages.map((m) => (
                 <article className="care-history" key={m.id}>
+                  <p>{m.sender_name || (m.sender_id === ctx.actor.id ? ctx.actor.name : ctx.data.users.find(u=>u.id===m.sender_id)?.name) || "Daycare contact"} → {m.recipient_name || (m.recipient_id === ctx.actor.id ? ctx.actor.name : ctx.data.users.find(u=>u.id===m.recipient_id)?.name) || "Daycare contact"}</p>
                   <strong>{m.subject || "Message"}</strong>
                   <p>{m.body}</p>
                   <small>{new Date(m.created_at).toLocaleString()}</small>

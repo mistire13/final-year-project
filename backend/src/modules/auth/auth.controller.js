@@ -33,6 +33,7 @@ const login = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
+    await authService.logout(req.user.id);
     // Clear the HttpOnly cookie (FR-UAM-07)
     res.clearCookie('token', {
       httpOnly: true,
@@ -41,7 +42,7 @@ const logout = async (req, res, next) => {
     });
 
     logger.info(`User ${req.user.id} logged out`);
-    res.json({ message: 'Logged out successfully' });
+    res.json({ message: 'Logged out successfully. Previous sessions for this account are invalidated.' });
   } catch (err) {
     next(err);
   }

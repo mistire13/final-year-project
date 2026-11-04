@@ -32,7 +32,8 @@ export default function ApplicationStatus() {
   const isApproved = result && (result.status === "active" || result.status === "approved");
   const isPending = result && result.status === "pending";
   const isRejected = result && result.status === "rejected";
-  const isSuspended = result && result.status === "suspended";
+  const isDeleted = result && result.status === "deleted";
+  const isSuspended = result && (result.status === "suspended" || isDeleted);
 
   return (
     <div className="landing-container" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -153,7 +154,7 @@ export default function ApplicationStatus() {
                 {isApproved && <Badge value="approved" tone="green" />}
                 {isPending && <Badge value="Under Review" tone="amber" />}
                 {isRejected && <Badge value="rejected" tone="red" />}
-                {isSuspended && <Badge value="suspended" tone="red" />}
+                {isSuspended && <Badge value={isDeleted ? "deleted" : "suspended"} tone="red" />}
               </div>
 
               {/* Status Message */}
@@ -177,7 +178,7 @@ export default function ApplicationStatus() {
                   )}
                   {isSuspended && (
                     <>
-                      This daycare center is currently suspended. Please contact Ankelba platform administration for assistance.
+                      This daycare center is currently {isDeleted ? "deleted and its account access is blocked" : "suspended"}. Please contact Ankelba platform administration for assistance.
                     </>
                   )}
                 </p>

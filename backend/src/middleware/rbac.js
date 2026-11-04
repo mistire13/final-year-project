@@ -18,7 +18,8 @@
  * @param {...string} roles - Allowed role names (e.g. 'admin', 'caregiver', 'parent')
  * @returns {Function} Express middleware
  */
-const allowRoles = (...roles) => (req, res, next) => {
+const allowRoles = (...roles) => {
+ const middleware = (req, res, next) => {
   if (!req.user) {
     // Auth middleware should have run first; defensive check
     return res.status(401).json({ error: 'Authentication required' });
@@ -29,6 +30,10 @@ const allowRoles = (...roles) => (req, res, next) => {
   }
 
   next();
+ };
+ // Machine-readable policy for route coverage; never accepted from client input.
+ middleware.allowedRoles = Object.freeze([...roles]);
+ return middleware;
 };
 
 module.exports = { allowRoles };

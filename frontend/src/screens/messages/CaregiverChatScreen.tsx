@@ -207,7 +207,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
       >
         <Lock size={13} color="#7D838C" style={{ marginRight: 6 }} />
         <Text size={11} color="#7D838C">
-          Private message with your daycare
+          Daycare messages can be reviewed by your daycare administrator.
         </Text>
       </View>
 

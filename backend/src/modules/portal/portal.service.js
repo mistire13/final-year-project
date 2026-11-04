@@ -106,7 +106,7 @@ async function snapshot(date,days,user,staffOnly=false) {
   if(ids.length > 0) {
    const contacts=await queryRows(client,'SELECT * FROM emergency_contacts WHERE child_id=ANY($1::int[]) ORDER BY id',[ids]);
    const instructions=await queryRows(client,'SELECT * FROM care_instructions WHERE child_id=ANY($1::int[]) ORDER BY id',[ids]);
-   const links=await queryRows(client,`SELECT gl.child_id, gl.relationship, gl.pickup_authorized, u.id AS parent_id, u.name AS parent_name, u.email AS parent_email${parentPhoneSql} FROM guardian_links gl JOIN users u ON u.id=gl.user_id WHERE gl.child_id=ANY($1::int[])`,[ids]);
+   const links=await queryRows(client,`SELECT gl.child_id, gl.relationship, gl.pickup_authorized, u.id AS parent_id, u.name AS parent_name, u.email AS parent_email${parentPhoneSql} FROM guardian_links gl JOIN users u ON u.id=gl.user_id WHERE gl.child_id=ANY($1::int[]) ORDER BY gl.pickup_authorized DESC,gl.id`,[ids]);
    children.forEach(child=>{
      child.emergency_contacts=contacts.filter(r=>r.child_id===child.id);
      child.care_instructions=instructions.filter(r=>r.child_id===child.id);

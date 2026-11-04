@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { MessageOversight } from './MessageOversight.web';
 import {
   Dataset,
   Row,
@@ -642,10 +643,10 @@ export function Overview(ctx: PageContext) {
             const parentName = c.parent_name || parentUser?.name || "Unlinked";
             const parentEmail = c.parent_email || parentUser?.email || "—";
             const relationship = c.parent_relationship || guardian?.relationship || "Parent";
-            const allergies = (c.care_instructions || []).filter((ci: any) => ci.category === "allergy");
+            const allergies = (c.care_instructions || []).filter((ci: any) => ["allergy", "dietary", "medical_note"].includes(ci.category));
             const allergyText = allergies.length > 0
-              ? allergies.map((a: any) => a.instruction_text.split("—")[0].trim()).join(", ")
-              : "No known allergies";
+              ? allergies.map((a: any) => `${label(a.category)}: ${a.instruction_text}`).join(", ")
+              : "No care alerts recorded";
             const att = m.rows.find((mr) => mr.child.id === c.id);
             const event_type = att?.status?.event_type || "not_marked";
             const event_time = att?.status?.event_time;
@@ -1234,17 +1235,17 @@ export function Children(ctx: PageContext) {
             key: "care_instructions",
             title: "Allergies & Care",
             render: (r) => {
-              const allergies = (r.care_instructions || []).filter((c: any) => c.category === "allergy");
+              const allergies = (r.care_instructions || []).filter((c: any) => ["allergy", "dietary", "medical_note"].includes(c.category));
               if (allergies.length > 0) {
                 return (
                   <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                     {allergies.map((a: any, i: number) => (
-                      <Badge key={i} value={a.instruction_text.split("—")[0].trim()} tone="gold" />
+                      <Badge key={i} value={`${label(a.category)}: ${a.instruction_text}`} tone="gold" />
                     ))}
                   </div>
                 );
               }
-              return <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 600 }}>✓ No known allergies</span>;
+              return <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 600 }}>No care alerts recorded</span>;
             },
           },
           {
@@ -1522,7 +1523,7 @@ export function Attendance(ctx: PageContext) {
                 const parentRel = child.parent_relationship || guardian?.relationship || "Parent";
                 const verification = data.verifications.find((v) => v.child_id === child.id && (status?.event_type === "checkout"));
                 const collectedBy = verification ? verification.guardian_name || userName(data, verification.guardian_user_id) : parentName;
-                const allergies = (child.care_instructions || []).filter((ci: any) => ci.category === "allergy");
+                const allergies = (child.care_instructions || []).filter((ci: any) => ["allergy", "dietary", "medical_note"].includes(ci.category));
                 return {
                   ...child,
                   parentName,
@@ -1564,7 +1565,7 @@ export function Attendance(ctx: PageContext) {
                   return (
                     <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
                       {r.allergies.map((a: any, i: number) => (
-                        <Badge key={i} value={a.instruction_text.split("—")[0].trim()} tone="gold" />
+                        <Badge key={i} value={`${label(a.category)}: ${a.instruction_text}`} tone="gold" />
                       ))}
                     </div>
                   );
@@ -1967,11 +1968,13 @@ export function Monitoring(ctx: PageContext & { page: string }) {
               data.messages.map((m) => ({
                 ...m,
                 from: userName(data, m.sender_id),
+                to: userName(data, m.recipient_id),
               })),
               query,
             )}
             columns={[
               { key: "from", title: "From" },
+              { key: "to", title: "To" },
               { key: "subject", title: "Subject" },
               {
                 key: "read_at",
@@ -1993,6 +1996,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
             ]}
           />
         </Card>
+        {!ctx.preview && !ctx.staff && <MessageOversight />}
       </>
     );
   if (page === "store")
@@ -2143,7 +2147,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         </div>
         <Table
           rows={search(
-            data.audit.map((a) => ({ ...a, name: a.actor_name || data.users.find(u=>u.id===a.actor_id)?.name || (a.actor_id ? `Account #${a.actor_id}` : 'System') })),
+            data.audit.map((a) => ({ ...a, action_label: label(a.action.toLowerCase()), name: a.actor_name || data.users.find(u=>u.id===a.actor_id)?.name || (a.actor_id ? `Account #${a.actor_id}` : 'System') })),
             query,
           )}
           columns={[

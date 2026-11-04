@@ -1,0 +1,267 @@
+
+> ankelba-backend@1.0.0 test:auth-security
+> node --test scripts/auth-security.test.cjs scripts/mfa-auth.test.cjs scripts/account-recovery.test.cjs scripts/platform-auth.test.cjs
+
+TAP version 13
+# Subtest: account recovery uses encrypted local delivery and independent tenant credentials
+    # Subtest: recovery routers pass unrelated login and protected paths through unchanged
+    ok 1 - recovery routers pass unrelated login and protected paths through unchanged
+      ---
+      duration_ms: 31.3266
+      ...
+    # Subtest: the guarded local inbox command lists metadata and explicitly decrypts one message
+    ok 2 - the guarded local inbox command lists metadata and explicitly decrypts one message
+      ---
+      duration_ms: 1118.7035
+      ...
+    # Subtest: known, unknown and suspended recovery requests return the same generic response
+    ok 3 - known, unknown and suspended recovery requests return the same generic response
+      ---
+      duration_ms: 69.2917
+      ...
+    # Subtest: local inbox listings omit recipients and secrets; encrypted messages use trusted fragment URLs
+    ok 4 - local inbox listings omit recipients and secrets; encrypted messages use trusted fragment URLs
+      ---
+      duration_ms: 22.8333
+      ...
+    # Subtest: public recovery endpoints enforce origin, strict bodies, JSON and byte length
+    ok 5 - public recovery endpoints enforce origin, strict bodies, JSON and byte length
+      ---
+      duration_ms: 31.0129
+      ...
+    # Subtest: wrong daycare, wrong principal kind and legacy reset tokens cannot consume a live link
+    ok 6 - wrong daycare, wrong principal kind and legacy reset tokens cannot consume a live link
+      ---
+      duration_ms: 22.4109
+      ...
+    # Subtest: new links invalidate older links and budgets persist through unknown account requests
+    ok 7 - new links invalidate older links and budgets persist through unknown account requests
+      ---
+      duration_ms: 72.0084
+      ...
+    # Subtest: successful tenant reset revokes only that account sessions, challenges and old reset tokens while retaining MFA
+    ok 8 - successful tenant reset revokes only that account sessions, challenges and old reset tokens while retaining MFA
+      ---
+      duration_ms: 649.3392
+      ...
+    # Subtest: concurrent reset attempts consume one link exactly once
+    ok 9 - concurrent reset attempts consume one link exactly once
+      ---
+      duration_ms: 344.1463
+      ...
+    # Subtest: expired links and suspended daycares cannot change credentials
+    ok 10 - expired links and suspended daycares cannot change credentials
+      ---
+      duration_ms: 45.7523
+      ...
+    # Subtest: platform recovery stays separate and revokes platform sessions only
+    ok 11 - platform recovery stays separate and revokes platform sessions only
+      ---
+      duration_ms: 644.491
+      ...
+    # Subtest: authenticated password change requires current credentials and invalidates all account links
+    ok 12 - authenticated password change requires current credentials and invalidates all account links
+      ---
+      duration_ms: 647.4959
+      ...
+    # Subtest: outbox and audit faults roll back token issuance or credential reset atomically
+    ok 13 - outbox and audit faults roll back token issuance or credential reset atomically
+      ---
+      duration_ms: 387.9587
+      ...
+    1..13
+ok 1 - account recovery uses encrypted local delivery and independent tenant credentials
+  ---
+  duration_ms: 7289.068
+  ...
+# Subtest: preview fails closed for missing, malformed or unselected encryption keys
+ok 2 - preview fails closed for missing, malformed or unselected encryption keys
+  ---
+  duration_ms: 2.7895
+  ...
+# Subtest: reset links use an exact trusted origin with no path, query, fragment or credentials
+ok 3 - reset links use an exact trusted origin with no path, query, fragment or credentials
+  ---
+  duration_ms: 0.5283
+  ...
+# Subtest: key rotation decrypts existing ciphertext only while its old key is retained
+ok 4 - key rotation decrypts existing ciphertext only while its old key is retained
+  ---
+  duration_ms: 2.538
+  ...
+# Subtest: authenticated encryption rejects altered principals, purposes and noncanonical envelopes
+ok 5 - authenticated encryption rejects altered principals, purposes and noncanonical envelopes
+  ---
+  duration_ms: 1.9452
+  ...
+# Subtest: local inbox rejects unsafe environments and accepts only explicit metadata or message commands
+ok 6 - local inbox rejects unsafe environments and accepts only explicit metadata or message commands
+  ---
+  duration_ms: 2.0322
+  ...
+# Subtest: TOTP follows RFC 6238 SHA1 vectors with six digits and accepts delta zero
+ok 7 - TOTP follows RFC 6238 SHA1 vectors with six digits and accepts delta zero
+  ---
+  duration_ms: 4.0566
+  ...
+# Subtest: MFA encryption authenticates the factor, principal, tenant, purpose, key and ciphertext
+ok 8 - MFA encryption authenticates the factor, principal, tenant, purpose, key and ciphertext
+  ---
+  duration_ms: 3.0799
+  ...
+# Subtest: MFA enrollment, challenges, proof limits and sessions use isolated databases
+    # Subtest: password challenge grants no session, setup rotates it, and enrollment creates hash-only recovery codes once
+    ok 1 - password challenge grants no session, setup rotates it, and enrollment creates hash-only recovery codes once
+      ---
+      duration_ms: 114.063
+      ...
+    # Subtest: platform enrollment requires its namespace, activates a pending account, and never asserts email verification
+    ok 2 - platform enrollment requires its namespace, activates a pending account, and never asserts email verification
+      ---
+      duration_ms: 37.7557
+      ...
+    # Subtest: fresh password challenges revoke older challenges and pending factors without replacing a confirmed factor
+    ok 3 - fresh password challenges revoke older challenges and pending factors without replacing a confirmed factor
+      ---
+      duration_ms: 43.4658
+      ...
+    # Subtest: normal TOTP consumes one challenge, enforces a monotonic absolute time step, and returns no new backups
+    ok 4 - normal TOTP consumes one challenge, enforces a monotonic absolute time step, and returns no new backups
+      ---
+      duration_ms: 55.0415
+      ...
+    # Subtest: concurrent valid TOTP verification creates at most one session
+    ok 5 - concurrent valid TOTP verification creates at most one session
+      ---
+      duration_ms: 105.9713
+      ...
+    # Subtest: recovery codes are single-use under concurrency and preserve the enrolled factor
+    ok 6 - recovery codes are single-use under concurrency and preserve the enrolled factor
+      ---
+      duration_ms: 68.7635
+      ...
+    # Subtest: backup codes cannot enroll a factor, cross principals, or combine with a TOTP proof
+    ok 7 - backup codes cannot enroll a factor, cross principals, or combine with a TOTP proof
+      ---
+      duration_ms: 100.5037
+      ...
+    # Subtest: five failed proofs persist, revoke the challenge, and survive new password challenges
+    ok 8 - five failed proofs persist, revoke the challenge, and survive new password challenges
+      ---
+      duration_ms: 63.6966
+      ...
+    # Subtest: principal failure budget cannot be bypassed by acquiring a new password challenge after every failed code
+    ok 9 - principal failure budget cannot be bypassed by acquiring a new password challenge after every failed code
+      ---
+      duration_ms: 110.71
+      ...
+    # Subtest: expired, revoked and unknown challenges fail without disclosing their state
+    ok 10 - expired, revoked and unknown challenges fail without disclosing their state
+      ---
+      duration_ms: 41.5337
+      ...
+    # Subtest: time spent acquiring locks cannot extend challenges or old TOTP codes
+    ok 11 - time spent acquiring locks cannot extend challenges or old TOTP codes
+      ---
+      duration_ms: 92.492
+      ...
+    # Subtest: live daycare, administrator role and account state are checked again before proof acceptance
+    ok 12 - live daycare, administrator role and account state are checked again before proof acceptance
+      ---
+      duration_ms: 146.8177
+      ...
+    # Subtest: suspended platform accounts cannot complete existing password challenges
+    ok 13 - suspended platform accounts cannot complete existing password challenges
+      ---
+      duration_ms: 31.088
+      ...
+    # Subtest: ciphertext swapping or corruption never issues a session or exposes internal errors
+    ok 14 - ciphertext swapping or corruption never issues a session or exposes internal errors
+      ---
+      duration_ms: 55.4658
+      ...
+    # Subtest: session and audit failures roll back confirmation, codes, challenge consumption and session creation together
+    ok 15 - session and audit failures roll back confirmation, codes, challenge consumption and session creation together
+      ---
+      duration_ms: 33.3767
+      ...
+    1..15
+ok 9 - MFA enrollment, challenges, proof limits and sessions use isolated databases
+  ---
+  duration_ms: 5714.1676
+  ...
+# Subtest: platform credential parsing rejects legacy/daycare namespaces and conflicting cookies
+ok 10 - platform credential parsing rejects legacy/daycare namespaces and conflicting cookies
+  ---
+  duration_ms: 1.924
+  ...
+# Subtest: bootstrap input is explicit and rejects unsafe credential lengths
+ok 11 - bootstrap input is explicit and rejects unsafe credential lengths
+  ---
+  duration_ms: 4.8962
+  ...
+# Subtest: first platform owner bootstrap is serialized, audited and never overwrites existing accounts
+ok 12 - first platform owner bootstrap is serialized, audited and never overwrites existing accounts
+  ---
+  duration_ms: 5386.2248
+  ...
+# Subtest: owner bootstrap rolls back the account if mandatory audit persistence fails
+ok 13 - owner bootstrap rolls back the account if mandatory audit persistence fails
+  ---
+  duration_ms: 1797.6979
+  ...
+# Subtest: platform HTTP authentication requires MFA, isolates its namespace and rechecks live status
+    # Subtest: password-only first-owner login creates a challenge and activates only after TOTP enrollment
+    ok 1 - password-only first-owner login creates a challenge and activates only after TOTP enrollment
+      ---
+      duration_ms: 221.2471
+      ...
+    # Subtest: normal owner sign-in requires a new MFA challenge and cannot reuse an enrollment TOTP step
+    ok 2 - normal owner sign-in requires a new MFA challenge and cannot reuse an enrollment TOTP step
+      ---
+      duration_ms: 59.1761
+      ...
+    # Subtest: cookie sessions use their own proof and logout revokes only the platform session
+    ok 3 - cookie sessions use their own proof and logout revokes only the platform session
+      ---
+      duration_ms: 76.5278
+      ...
+    # Subtest: platform tokens cannot enter daycare authentication and no token namespaces fall back
+    ok 4 - platform tokens cannot enter daycare authentication and no token namespaces fall back
+      ---
+      duration_ms: 37.8213
+      ...
+    # Subtest: daycare MFA challenges cannot reveal a secret or create a platform session
+    ok 5 - daycare MFA challenges cannot reveal a secret or create a platform session
+      ---
+      duration_ms: 33.3657
+      ...
+    # Subtest: revoked factors, suspended accounts, revoked/expired sessions and missing MFA proof all deny access
+    ok 6 - revoked factors, suspended accounts, revoked/expired sessions and missing MFA proof all deny access
+      ---
+      duration_ms: 59.9358
+      ...
+    # Subtest: unknown and disabled credentials share a denial; request validation and origin checks precede mutations
+    ok 7 - unknown and disabled credentials share a denial; request validation and origin checks precede mutations
+      ---
+      duration_ms: 316.2932
+      ...
+    # Subtest: canonical account attempt budget persists across failed password transactions
+    ok 8 - canonical account attempt budget persists across failed password transactions
+      ---
+      duration_ms: 149.496
+      ...
+    1..8
+ok 14 - platform HTTP authentication requires MFA, isolates its namespace and rechecks live status
+  ---
+  duration_ms: 2379.7867
+  ...
+1..14
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10484.6379

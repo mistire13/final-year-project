@@ -410,6 +410,7 @@ const updateOrderStatus = async (orderIdParam, body, user) => {
 
     const failure = (message, statusCode = 409) =>
       Object.assign(new Error(message), { statusCode });
+    if (body.version === undefined) throw failure("Reload the order before saving.", 422);
     if (body.version !== undefined) {
       if (!Number.isSafeInteger(body.version) || body.version < 1)
         throw failure("Reload the order before saving.", 422);

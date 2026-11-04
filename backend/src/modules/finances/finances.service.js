@@ -298,6 +298,13 @@ const createInvoice = async (daycareId, data, actorId) => {
     }
   }
 
+  if (effectiveParentId) {
+    const linked = await db.query(`SELECT 1 FROM guardian_links gl JOIN users u ON u.id=gl.user_id
+      JOIN roles r ON r.id=u.role_id WHERE gl.child_id=$1 AND gl.user_id=$2 AND gl.daycare_id=$3
+      AND u.daycare_id=$3 AND r.name='parent'`, [child_id,effectiveParentId,dcId]);
+    if (!linked.rows.length) throw Object.assign(new Error('Choose a parent linked to this child.'), {statusCode:422});
+  }
+
   const period = (billing_period && billing_period.trim()) ? billing_period.trim() : new Date().toISOString().slice(0, 7);
 
   const insertRes = await db.query(`

@@ -1,0 +1,38 @@
+{
+  "started": "2026-10-31T17:09:43.596Z",
+  "node": "v22.11.0",
+  "files": [
+    "account-recovery.test.cjs",
+    "ai-privacy.test.cjs",
+    "ai-provider-reliability.test.cjs",
+    "auth-security.test.cjs",
+    "daycare-auth-app.test.cjs",
+    "daycare-auth-config.test.cjs",
+    "daycare-auth-races.test.cjs",
+    "daycare-auth.test.cjs",
+    "daycare-deletion.test.cjs",
+    "daycare-users-unit.test.cjs",
+    "endpoint-authorization.test.cjs",
+    "essential-security.test.cjs",
+    "financial-authorization.test.cjs",
+    "foundation.test.cjs",
+    "mfa-auth.test.cjs",
+    "native-report-flow.test.cjs",
+    "phase1-legacy-auth.test.cjs",
+    "phase1-payments.test.cjs",
+    "phase2-daycare-isolation.test.cjs",
+    "phase3-child-safety.test.cjs",
+    "phase4-attendance-frontdesk.test.cjs",
+    "phase5-reports-health-metrics.test.cjs",
+    "phase6-communication-audiences.test.cjs",
+    "platform-auth.test.cjs",
+    "practical-subscriptions.test.cjs",
+    "profile-reliability.test.cjs",
+    "tenant-integrity.test.cjs",
+    "tenant-pool.test.cjs"
+  ],
+  "excludedFromMainRun": [
+    "portal.test.cjs: requires an outer disposable database because it otherwise uses configured DB_NAME"
+  ],
+  "command": "node --test --test-concurrency=2 --test-timeout=180000 scripts/<28 files>"
+}

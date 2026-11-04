@@ -23,7 +23,7 @@ import { contactError } from "../../utils/contact";
 import { updateMyProfile } from "../../api/parentApi";
 
 export function ParentProfileScreen({ navigation }: any) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -31,7 +31,7 @@ export function ParentProfileScreen({ navigation }: any) {
   // Meal Suggestions & Food Preferences (feature_design_plan_v2 §5.9)
   const [cuisine, setCuisine] = useState("");
   const [householdDiet, setHouseholdDiet] = useState("");
-  const [aiConsent, setAiConsent] = useState(true);
+  const [aiConsent, setAiConsent] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -57,6 +57,7 @@ export function ParentProfileScreen({ navigation }: any) {
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
       });
+      await refreshUser();
       setSuccess(true);
       setMessage("Your profile and food preferences have been saved successfully.");
     } catch (err: any) {
@@ -138,7 +139,7 @@ export function ParentProfileScreen({ navigation }: any) {
               </Text>
             </View>
             <Text size={11} color="#78818D" style={{ marginTop: 3 }}>
-              Save your meal-planning preferences for your account. Personalization requires the AI guide integration.
+              Allow the AI provider to use your child's saved age and allergy/dietary notes. Names and classroom names are excluded. Your question itself is sent when you use the guide.
             </Text>
           </View>
           <Switch

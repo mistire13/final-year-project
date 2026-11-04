@@ -1,0 +1,29 @@
+{
+  "executed": "2026-10-31T17:14:50.728Z",
+  "postgresVersion": "18.6",
+  "performanceScope": "small synthetic data; local HTTP; provisioning-pool fixture, not restricted-runtime production load",
+  "results": [
+    {
+      "id": "TC-PERF-001",
+      "status": "PASS",
+      "ok": 50,
+      "requests": 50,
+      "averageMs": 6.829214000000011,
+      "maxMs": 19.198100000000068
+    },
+    {
+      "id": "TC-PERF-002",
+      "status": "PASS",
+      "requests": 20,
+      "successful": 20,
+      "totalMs": 244.01099999999997
+    },
+    {
+      "id": "TC-DB-008",
+      "status": "PASS",
+      "restoredSentinelCenters": 1,
+      "restoredChildren": 2,
+      "scope": "fresh disposable source and target; schema/data restore, not production recovery certification"
+    }
+  ]
+}

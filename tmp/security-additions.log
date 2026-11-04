@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: AI external context honors consent and excludes child/classroom identifiers
+ok 1 - AI external context honors consent and excludes child/classroom identifiers
+  ---
+  duration_ms: 5287.5177
+  ...
+# 14:28:55 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 14:28:55 [[32minfo[39m]: User 3 (admin) authenticated
+# 14:28:55 [[31merror[39m]: Error: Enter the exact daycare name to confirm deletion.
+#     at Object.deleteDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:686:65)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.routes.js:17:59
+# 14:28:55 [[31merror[39m]: Error: Daycare changed. Refresh before deleting.
+#     at Object.deleteDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:688:63)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.routes.js:17:59
+# Subtest: operator deletion retains history, denies tenant actors and prevents resurrection
+ok 2 - operator deletion retains history, denies tenant actors and prevents resurrection
+  ---
+  duration_ms: 5054.316
+  ...
+# 14:28:55 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 14:28:55 [[32minfo[39m]: User 3 (admin) authenticated
+# 14:28:55 [[32minfo[39m]: User 4 (caregiver) authenticated
+# 14:28:55 [[32minfo[39m]: User 5 (parent) authenticated
+# Enumerated 176 mounted endpoints; 707 authentication/role denial checks; 0 failures.
+# Subtest: every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+ok 3 - every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+  ---
+  duration_ms: 7299.7196
+  ...
+# 14:28:54 [[32minfo[39m]: Child invoice created: ID 1 for child 1 (ETB 100) by 2
+# Subtest: private invoices require child-linked parents and cannot cross daycare/database boundaries
+ok 4 - private invoices require child-linked parents and cannot cross daycare/database boundaries
+  ---
+  duration_ms: 5272.7978
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8207.6769

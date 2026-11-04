@@ -4,7 +4,7 @@ import { PageTransition } from "./WebMotion.web";
 import "./saas.css";
 import { operatorApi as portalApi, apiError } from "./api";
 
-import { Badge, Button, Card, Icon } from "./ui.web";
+import { Badge, Button, Card, Icon, Modal } from "./ui.web";
 import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
 
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
@@ -218,6 +218,10 @@ export default function SuperAdmin() {
   });
 
   const [actionBusyId, setActionBusyId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DaycareItem | null>(null);
+  const [deleteName, setDeleteName] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [actionError, setActionError] = useState('');
   useEffect(() => { setActionError(''); }, [approveModal.open, rejectModal.open]);
   useDialogKeyboard(approveModal.open, 'approval-dialog', () => setApproveModal({open:false,daycare:null,plan:'standard',trialDays:30}));
@@ -1540,6 +1544,10 @@ export default function SuperAdmin() {
                                 >
                                   Inspect
                                 </Button>
+                                {!isPending && <Button variant="danger small" disabled={actionBusyId !== null}
+                                  onClick={() => { setDeleteTarget(d); setDeleteName(""); setDeleteReason(""); setDeleteError(""); }}>
+                                  Delete daycare
+                                </Button>}
 
                                 
 
@@ -2497,6 +2505,28 @@ export default function SuperAdmin() {
       {/* ========================================================================= */}
       {/* MODAL 3: INSPECT DAYCARE DETAILS */}
       {/* ========================================================================= */}
+      {deleteTarget && <Modal title={`Delete ${deleteTarget.name}`} onClose={() => { if (actionBusyId === null) setDeleteTarget(null); }}>
+        <p>This removes the daycare from the directory and blocks staff and parent access. Child records, reports, payments and audit history are retained. Finish any active care or pickups before proceeding.</p>
+        <label className="p-field">Type the daycare name: {deleteTarget.name}
+          <input value={deleteName} onChange={e => setDeleteName(e.target.value)} disabled={actionBusyId !== null} />
+        </label>
+        <label className="p-field">Reason for deletion (at least 12 characters)
+          <textarea value={deleteReason} onChange={e => setDeleteReason(e.target.value)} maxLength={2000} disabled={actionBusyId !== null} />
+        </label>
+        {deleteError && <p role="alert">{deleteError}</p>}
+        <Button variant="secondary" disabled={actionBusyId !== null} onClick={() => setDeleteTarget(null)}>Cancel</Button>
+        <Button variant="danger" disabled={actionBusyId !== null || deleteName !== deleteTarget.name || deleteReason.trim().length < 12}
+          onClick={async () => {
+            setActionBusyId(deleteTarget.id); setDeleteError("");
+            try {
+              await portalApi.deleteDaycare(deleteTarget.id, {version:deleteTarget.version,confirmation:deleteName,reason:deleteReason.trim()});
+              setDaycares(items => items.filter(item => item.id !== deleteTarget.id));
+              setDeleteTarget(null); showToast("Daycare deleted. Historical records retained.");
+              void loadAllPlatformData();
+            } catch (error) { setDeleteError(apiError(error)); }
+            finally { setActionBusyId(null); }
+          }}>{actionBusyId === deleteTarget.id ? "Deleting…" : "Delete daycare"}</Button>
+      </Modal>}
       {inspectModal.open && inspectModal.daycare && (
         <div
           id="inspection-dialog" role="dialog" aria-modal="true" aria-label={`Daycare details: ${inspectModal.daycare.name}`} aria-busy={actionBusyId===inspectModal.daycare.id}

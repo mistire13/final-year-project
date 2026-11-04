@@ -17,6 +17,7 @@ const limited = require('express-rate-limit')({windowMs:15*60*1000,max:20,standa
 const run = fn => async (req,res,next) => { try {res.json(await fn(req));} catch(e){next(e);} };
 const owner = [auth,allowRoles('super_admin')];
 const admin = [auth,allowRoles('admin')];
+router.delete('/super-admin/daycares/:id', ...owner, run(req => saasController.deleteDaycare(req)));
 router.get('/packages',run(()=>subscriptions.catalog()));
 router.post('/application-status',limited,run(req=>subscriptions.applicationStatus(req.body)));
 router.get('/super-admin/packages',...owner,run(()=>subscriptions.catalog(true)));

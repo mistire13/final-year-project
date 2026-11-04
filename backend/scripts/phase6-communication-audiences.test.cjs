@@ -131,6 +131,31 @@ test('Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F1
     const f = await fixture(db);
     const { commService, searchService } = setupContext(pool);
 
+    await t.test('Daycare message oversight is tenant/admin scoped, audited and preserves recipient receipts', async () => {
+      const first = await commService.sendMessage({recipient_id:f.caregiverA1.id,subject:'Oversight fixture',body:'Parent care question'},f.parentA1);
+      const second = await commService.sendMessage({recipient_id:f.parentA1.id,subject:'Oversight fixture',body:'Caregiver reply'},f.caregiverA1);
+      const foreign = await commService.sendMessage({recipient_id:f.caregiverB.id,subject:'Oversight fixture',body:'Other daycare private content'},f.parentB);
+      const office = await commService.sendMessage({recipient_id:f.adminA.id,subject:'Office only',body:'Office conversation'},f.parentA1);
+      for (const actor of [f.parentA1,f.caregiverA1,{id:999,role:'super_admin'}]) {
+        await assert.rejects(commService.reviewMessages({},actor),{statusCode:403});
+      }
+      const page = await commService.reviewMessages({search:'Oversight fixture',limit:1},f.adminA);
+      assert.equal(page.total,2); assert.equal(page.data.length,1);
+      const next = await commService.reviewMessages({search:'Oversight fixture',limit:1,offset:1},f.adminA);
+      assert.notEqual(page.data[0].id,next.data[0].id);
+      assert.deepEqual(new Set([...page.data,...next.data].map(m=>m.id)),new Set([first.id,second.id]));
+      const other = await commService.reviewMessages({search:'Oversight fixture'},f.adminB);
+      assert.deepEqual(other.data.map(m=>m.id),[foreign.id]);
+      assert.equal((await commService.listMessages({},f.adminA)).data.some(m=>m.id===first.id),false);
+      assert.equal((await db('messages').where({id:first.id}).first()).read_at,null);
+      const logs = await db('audit_logs').where({actor_id:f.adminA.id,action:'MESSAGE_OVERSIGHT_VIEWED'});
+      assert.equal(logs.length,2);
+      assert.equal(JSON.stringify(logs).includes('Parent care question'),false);
+      await assert.rejects(commService.reviewMessages({limit:1000},f.adminA),{statusCode:422});
+      await assert.rejects(commService.markMessageRead(first.id,f.adminA));
+      await db('messages').whereIn('id',[first.id,second.id,foreign.id,office.id]).delete();
+    });
+
     await t.test('Alternate inbox and meal routes preserve tenant and audience boundaries', async () => {
       const notifications = require('../src/modules/notifications/notifications.service');
       const foreign = await commService.createAlert({ title: 'Private other tenant alert', urgency: 'high', recipient_scope: 'all' }, f.adminB);
@@ -177,10 +202,17 @@ test('Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F1
         const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: owner.email, password }) });
         assert.equal(login.status, 200);
         const { token } = await login.json();
-        for (const route of ['/portal/snapshot', '/portal/workspace', '/children', '/notifications', '/search?q=test', '/announcements', '/communication/alerts']) {
+        for (const route of ['/portal/snapshot', '/portal/workspace', '/children', '/notifications', '/search?q=test', '/announcements', '/communication/alerts', '/communication/messages/oversight']) {
           const response = await fetch(`${base}/api${route}`, { headers: { Authorization: `Bearer ${token}` } });
           assert.equal(response.status, 403, route);
           await response.arrayBuffer();
+        }
+        for (const [actor, expected] of [[f.adminA,200],[f.parentA1,403],[f.caregiverA1,403]]) {
+          const signedIn = await fetch(`${base}/api/auth/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:actor.email,password})});
+          const session = await signedIn.json();
+          const review = await fetch(`${base}/api/communication/messages/oversight`, {headers:{Authorization:`Bearer ${session.token}`}});
+          assert.equal(review.status,expected);
+          await review.arrayBuffer();
         }
         const governance = await fetch(`${base}/api/saas/super-admin/daycares`, { headers: { Authorization: `Bearer ${token}` } });
         assert.equal(governance.status, 200);

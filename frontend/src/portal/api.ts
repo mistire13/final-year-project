@@ -237,6 +237,7 @@ export const operatorApi={
   async rejectDaycare(id:number,reason:string){return (await operatorClient.patch(`/super-admin/daycares/${id}/reject`,{reason})).data;},
   async suspendDaycare(id:number,reason:string){return (await operatorClient.patch(`/super-admin/daycares/${id}/suspend`,{reason})).data;},
   async activateDaycare(id:number){return (await operatorClient.patch(`/super-admin/daycares/${id}/activate`)).data;},
+  async deleteDaycare(id:number,body:{version:number;confirmation:string;reason:string}){return (await operatorClient.delete(`/super-admin/daycares/${id}`,{data:body})).data;},
   async packages(){return (await operatorClient.get('/super-admin/packages')).data;},
   async savePackage(code:string,body:any){return (await operatorClient.patch(`/super-admin/packages/${code}`,body)).data;},
   async subscription(id:number){return (await operatorClient.get(`/super-admin/daycares/${id}/subscription`)).data;},

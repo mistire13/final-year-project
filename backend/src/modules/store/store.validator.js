@@ -47,7 +47,7 @@ const placeOrderSchema = Joi.object({
 });
 
 const updateOrderStatusSchema = Joi.object({
-  version: Joi.number().integer().positive().optional(),
+  version: Joi.number().integer().positive().required(),
   order_status: Joi.string().valid(
     "placed",
     "confirmed",

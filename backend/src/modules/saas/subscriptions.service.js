@@ -83,7 +83,7 @@ function createSubscriptions(pool) {
       let daycareData = null;
       if (appRow.created_daycare_id) {
         daycareData = (await pool.query(
-          `SELECT id, name, status, subscription_plan, subscription_status, subscription_terms, billing_cycle, trial_ends_at, max_children
+          `SELECT id, name, status, deleted_at, subscription_plan, subscription_status, subscription_terms, billing_cycle, trial_ends_at, max_children
            FROM daycares WHERE id = $1`,
           [appRow.created_daycare_id]
         )).rows[0];
@@ -103,8 +103,8 @@ function createSubscriptions(pool) {
         billing_cycle: daycareData?.billing_cycle || 'monthly',
         trial_ends_at: daycareData?.trial_ends_at || null,
         max_children: daycareData?.max_children || 50,
-        status: isApprovedOrActive ? 'active' : appRow.status,
-        effective_status: appRow.status === 'pending' ? 'awaiting_review' : (isApprovedOrActive ? 'active' : appRow.status),
+        status: daycareData?.deleted_at ? 'deleted' : (daycareData?.status || appRow.status),
+        effective_status: daycareData?.deleted_at ? 'deleted' : (daycareData?.status || (appRow.status === 'pending' ? 'awaiting_review' : (isApprovedOrActive ? 'active' : appRow.status))),
         review_reason: appRow.rejection_reason || (appRow.status === 'rejected' ? 'Application not approved.' : null),
         created_daycare_id: appRow.created_daycare_id,
         created_at: appRow.created_at,
@@ -130,6 +130,7 @@ function createSubscriptions(pool) {
     return transaction(pool, async c => {
       const row = (await c.query('SELECT * FROM daycares WHERE id=$1 FOR UPDATE',[id])).rows[0];
       if (!row) throw fail('Daycare not found.',404);
+      if (row.deleted_at) throw fail('Deleted daycares cannot change subscription.',409);
       const prior=(await c.query('SELECT * FROM subscription_events WHERE daycare_id=$1 AND request_key=$2',[id,input.request_key])).rows[0];
       if(prior) { if(prior.details.request_hash!==hash) throw fail('This request key was already used for different terms.',409); return {replayed:true,event:prior}; }
       if(row.version!==input.version) throw fail('Subscription changed in another view. Refresh before saving.',409);

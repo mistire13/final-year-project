@@ -1,0 +1,60 @@
+Node.js (v22.11.0) is outdated and unsupported. Please update to a newer Node.js LTS version (required: >=22.13.0)
+Go to: https://nodejs.org/en/download
+
+Starting Metro Bundler
+
+Web Bundled 980ms index.ts (1535 modules)
+
+› Assets (38):
+assets\ankelba-artwork.48c579aabd8c97496d9b758eed16a641.jpg (11KB)
+assets\design\03-home-dashboard-0.0467392c03a85dc3b99940ace6d5d114.jpg (4KB)
+assets\design\03-home-dashboard-1.044244ad1489a10bf63318a33763fad3.jpg (13KB)
+assets\design\03-home-dashboard-2.7e76e9665f8fabc54f0e9b1690288ad4.jpg (3.4KB)
+assets\design\04-export-0.9de2c936c15bc0e315d83e509b19049c.jpg (42KB)
+assets\design\05-export-0.4f0263998b41042b3c43c1609ca08ada.jpg (28KB)
+assets\design\06-export-0.e1fb964b72dce34b098ae0aa348e4280.jpg (46KB)
+assets\design\13-export-0.3d99651eebc8de192ef10fd72e00711a.jpg (56KB)
+assets\design\14-export-2.8818dfc2ab9c2f2c30b95561878a5619.jpg (2.8KB)
+assets\design\14-export-3.519784463b17046d404a6ca97feb753c.jpg (1.9KB)
+assets\design\17-export-0.1b953a1cd666aed3a0ca7c7d577eda29.jpg (25KB)
+assets\design\17-export-1.a710f5477a1fee3a4dd42edaff4c19d5.jpg (29KB)
+assets\design\17-export-2.52451aff8d09dde7f5512b4800d9cba9.jpg (28KB)
+assets\design\17-export-3.3d2b5a6af6e816864690749214989721.jpg (30KB)
+assets\design\19-export-0.340b28fdd348b23383cc11413b34be59.jpg (5.6KB)
+assets\design\19-export-1.727d4049002fd52a08f68cf788d11dd7.jpg (6.1KB)
+assets\design\19-export-2.cbcaef2705c2005b8bce3de1efc29bca.jpg (3.8KB)
+assets\landing\app-guardians.c4354cbf3f90398c51a69ea7d8f36dea.png (189KB)
+assets\landing\app-home.738301b986f32eb76d38bd248ec079c8.png (362KB)
+assets\landing\app-messages.be53835139697ec6aba23bce02b9dc3d.png (195KB)
+assets\landing\app-reports.a6cfa73e1240f0674d32ef036e5bfd4b.png (170KB)
+design\figma-exports\ankelba-symbol.321bbc46416b2a7d1deef4bb10a8d110.png (40KB)
+node_modules\@expo-google-fonts\quicksand\300Light\Quicksand_300Light.271e0c24a39dadbe933bc774f64f68f5.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\400Regular\Quicksand_400Regular.5845af22f839a90a9cca3b8ec0e3cff4.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\500Medium\Quicksand_500Medium.95906e2457ee777801b3ca4b02b4947c.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\600SemiBold\Quicksand_600SemiBold.dc8fa3ed1fa18875d0aac23ecbf64e02.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\700Bold\Quicksand_700Bold.8003228962d5cafb549cf4034f9ece07.ttf (79KB)
+node_modules\@react-navigation\elements\lib\module\assets\back-icon-mask.0a328cd9c1afd0afe8e3b1ec5165b1b4.png (653B)
+node_modules\@react-navigation\elements\lib\module\assets\back-icon.35ba0eaec5a4f5ed12ca16fabeae451d.png (207B)
+node_modules\@react-navigation\elements\lib\module\assets\clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55.png (4 variations | 425B)
+node_modules\@react-navigation\elements\lib\module\assets\close-icon.808e1b1b9b53114ec2838071a7e6daa7.png (4 variations | 235B)
+node_modules\@react-navigation\elements\lib\module\assets\search-icon.286d67d3f74808a60a78d3ebf1a5fb57.png (928B)
+
+› web bundles (11):
+_expo/static/css/app-showcase-2eb8394101e8d2987da2e85ac4c8971d.css (2KB)
+_expo/static/css/caregiver-7599b8b8f5704bc0f6bbc054d540fc22.css (5.2KB)
+_expo/static/css/hero-atmosphere-d31a093ddd9cf396818f24de095fb16c.css (7.8KB)
+_expo/static/css/journey-9b54ca918b2555bec23cef2bc229552c.css (2.6KB)
+_expo/static/css/landing-1617f2ef178df99e6c8bd835bd73aa76.css (50KB)
+_expo/static/css/landing-experience-5fc3e33c518b7b7edc8f25bed272fd49.css (15KB)
+_expo/static/css/landing-footer-d8e0ebdfedad3dcee997b99bc329f22b.css (5.4KB)
+_expo/static/css/portal-6fa2bb71ed7be13c525302e7af9702a9.css (29KB)
+_expo/static/css/saas-6176044c503adf9b5e2fb7693ae24126.css (10KB)
+_expo/static/css/surface-3a84f4cc4531b5db1a1b3f5dd0e7679c.css (61B)
+_expo/static/js/web/index-91e297cc822e875918b1a2d145a750f2.js (2.6MB)
+
+› Files (3):
+favicon.ico (15KB)
+index.html (3.2KB)
+metadata.json (49B)
+
+Exported: ../tmp/test-plan-rerun-web

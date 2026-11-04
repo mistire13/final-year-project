@@ -1327,3 +1327,13 @@ The approved direction focuses on functional project workflows. Brightwheel's pu
 | FR-SUB-09 | For the project pilot, expired/cancelled subscription state shall be displayed for renewal review without abruptly preventing child care or safe pickup. This is an explicit pilot policy, not automatic paid-access enforcement. |
 
 The implementation and verification scope is documented in [PRACTICAL_SAAS_IMPLEMENTATION.md](docs/PRACTICAL_SAAS_IMPLEMENTATION.md). External invitation-mail delivery and automated recurring payment collection are separate integrations. This clarification does not waive the earlier biometric, privacy, backup-restore or other unresolved acceptance requirements.
+
+## Approved scope clarification — 31 October 2026
+
+The project owner confirmed that **platform subscriptions have been removed**. Platform package sales, subscription billing/renewal, trial countdowns and subscription-based enrollment quotas are no longer planned features. This supersedes the earlier subscription/trial obligations in FR-UAM-10 and FR-SUB-01–03,06–09 wherever those clauses require platform subscriptions, trials, package pricing or capacity enforcement. Existing daycare application approval/rejection, suspension/reactivation, credential-protected application status, operator session separation, guided center setup and tenant isolation remain in scope. Daycare tuition/fees and parent store payments are separate from platform subscriptions and remain unaffected. Remaining historical subscription UI, API and test artifacts should be retired or clearly identified as obsolete; they are not a request to restore subscriptions.
+
+The owner also authorized daycare administrators to review parent–caregiver direct messages for daycare management:
+
+- **FR-COM-09:** A daycare administrator may review parent–caregiver conversations belonging to their own daycare, including participants, content and time information. This does not grant platform operators or administrators from other daycares access.
+- **FR-COM-10:** Parents and caregivers shall be informed that daycare administrators can review their daycare messages. Ordinary personal inboxes remain limited to their participants.
+- **FR-COM-11:** Administrator review access shall be audited without copying message bodies into audit metadata. Reviewing a message shall not mark it read by the intended recipient or permit an administrator to act as another sender.

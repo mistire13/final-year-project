@@ -1,0 +1,46 @@
+TAP version 13
+# 19:16:41 [[33mwarn[39m]: AI provider unavailable
+# Subtest: AI external context honors consent and excludes child/classroom identifiers
+ok 1 - AI external context honors consent and excludes child/classroom identifiers
+  ---
+  duration_ms: 10445.0415
+  ...
+# Subtest: invalid primary model is quarantined while fallback succeeds and next request skips it
+ok 2 - invalid primary model is quarantined while fallback succeeds and next request skips it
+  ---
+  duration_ms: 3.5988
+  ...
+# Subtest: rate limit respects cooldown without retrying or fanning out; recovers after cooldown
+ok 3 - rate limit respects cooldown without retrying or fanning out; recovers after cooldown
+  ---
+  duration_ms: 0.5489
+  ...
+# Subtest: auth rejection stops all attempts and changing credentials resets the circuit
+ok 4 - auth rejection stops all attempts and changing credentials resets the circuit
+  ---
+  duration_ms: 0.3523
+  ...
+# Subtest: malformed JSON, empty content and truncated responses never become successful guidance
+ok 5 - malformed JSON, empty content and truncated responses never become successful guidance
+  ---
+  duration_ms: 0.9237
+  ...
+# Subtest: timeout budget bounds all attempts and concurrent callers cannot flood the provider
+ok 6 - timeout budget bounds all attempts and concurrent callers cannot flood the provider
+  ---
+  duration_ms: 85.8592
+  ...
+# Subtest: native report draft survives validation, database save and parent/admin read with all care entries
+ok 7 - native report draft survives validation, database save and parent/admin read with all care entries
+  ---
+  duration_ms: 3809.2095
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10960.7805

@@ -1,0 +1,43 @@
+Node.js (v22.11.0) is outdated and unsupported. Please update to a newer Node.js LTS version (required: >=22.13.0)
+Go to: https://nodejs.org/en/download
+
+Starting Metro Bundler
+
+Android Bundled 11295ms index.ts (1401 modules)
+
+› Assets (39):
+assets\ankelba-artwork.jpg (11KB)
+assets\design\03-home-dashboard-0.jpg (4KB)
+assets\design\03-home-dashboard-1.jpg (13KB)
+assets\design\03-home-dashboard-2.jpg (3.4KB)
+assets\design\04-export-0.jpg (42KB)
+assets\design\05-export-0.jpg (28KB)
+assets\design\06-export-0.jpg (46KB)
+assets\design\14-export-2.jpg (2.8KB)
+assets\design\14-export-3.jpg (1.9KB)
+assets\design\17-export-0.jpg (25KB)
+assets\design\17-export-1.jpg (29KB)
+assets\design\17-export-2.jpg (28KB)
+assets\design\17-export-3.jpg (30KB)
+assets\design\19-export-0.jpg (5.6KB)
+assets\design\19-export-1.jpg (6.1KB)
+assets\design\19-export-2.jpg (3.8KB)
+design\figma-exports\ankelba-symbol.png (40KB)
+node_modules\@expo-google-fonts\quicksand\300Light\Quicksand_300Light.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\400Regular\Quicksand_400Regular.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\500Medium\Quicksand_500Medium.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\600SemiBold\Quicksand_600SemiBold.ttf (79KB)
+node_modules\@expo-google-fonts\quicksand\700Bold\Quicksand_700Bold.ttf (79KB)
+node_modules\@react-navigation\elements\lib\module\assets\back-icon-mask.png (653B)
+node_modules\@react-navigation\elements\lib\module\assets\back-icon.png (4 variations | 152B)
+node_modules\@react-navigation\elements\lib\module\assets\clear-icon.png (4 variations | 425B)
+node_modules\@react-navigation\elements\lib\module\assets\close-icon.png (4 variations | 235B)
+node_modules\@react-navigation\elements\lib\module\assets\search-icon.png (4 variations | 599B)
+
+› android bundles (1):
+_expo/static/js/android/index-a25eb0ac408aba9e12385c1da23dbbfe.hbc (3.2MB)
+
+› Files (1):
+metadata.json (2.6KB)
+
+Exported: ../tmp/test-plan-rerun-android

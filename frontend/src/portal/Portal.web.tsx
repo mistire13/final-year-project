@@ -1620,6 +1620,82 @@ function PortalModal({
         guardians from the children list.
       </div>
     );
+  } else if (kind === "checkin" || kind === "absent") {
+    title = `${kind === "checkin" ? "Check in" : "Record absence"} · ${row.full_name}`;
+    submit = kind === "checkin" ? "Confirm check-in" : "Confirm absence";
+    fields = [field("notes", "Attendance notes", "textarea", false, {wide:true})];
+    detail = <p>Confirm attendance for {row.full_name}. The server checks your current assignment and the child's attendance state.</p>;
+  } else if (kind === "pickup") {
+    title = `Verify pickup · ${row.full_name}`;
+    submit = "Verify guardian and check out";
+    initial = {guardian_key:"",identity_confirmed:false,reason:""};
+    const adults = [
+      ...data.guardians.filter(g=>g.child_id===row.id && g.pickup_authorized && data.users.some(u=>u.id===g.user_id && u.status==='active'))
+        .map(g=>({value:`user:${g.user_id}`,label:`${userName(data,g.user_id)} · ${g.relationship || 'Guardian'}`})),
+      ...(data.guardianRequests || []).filter(g=>g.child_id===row.id && g.status==='approved')
+        .map(g=>({value:`pickup:${g.id}`,label:`${g.name} · ${g.relationship}`})),
+    ];
+    fields = [field("guardian_key","Approved adult collecting this child","select",true,{options:adults,wide:true}),
+      field("identity_confirmed","I checked this adult's identity against the approved guardian record","checkbox",true,{wide:true}),
+      field("reason","How was identity verified? (at least 12 characters)","textarea",true,{wide:true})];
+    detail = <p>Child: {row.full_name}. Use the approved manual identity check. Biometric devices are unavailable. Selecting an adult alone does not confirm their identity.</p>;
+  } else if (kind === "group") {
+    title = row.id ? "Edit classroom" : "Create classroom";
+    fields = [field("name", "Classroom name"), field("description", "Description", "textarea", false),
+      field("lead_caregiver_id", "Lead caregiver", "select", false, {options: options(data.users.filter(u => u.role === "caregiver" && u.status === "active"))}),
+      field("assign_children", "Assign this caregiver to children in the classroom", "checkbox", false)];
+  } else if (kind === "duty") {
+    title = "Assign front desk duty";
+    initial = {date, start: "07:00", end: "18:00", can_attendance: true, can_pickup: false, ...row};
+    fields = [field("staff_id", "Staff member", "select", true, {options: options(data.users.filter(u => ["admin", "caregiver"].includes(u.role) && u.status === "active"))}),
+      field("group_id", "Classroom (blank for all)", "select", false, {options: options(data.groups)}),
+      field("date", "Duty date", "date"), field("start", "Start time (Addis Ababa)", "time"), field("end", "End time (Addis Ababa)", "time"),
+      field("can_attendance", "Manage attendance", "checkbox", false), field("can_pickup", "Verify pickups", "checkbox", false)];
+  } else if (["revoke-duty", "cancel-event", "user-status"].includes(kind)) {
+    title = kind === "revoke-duty" ? "Revoke duty" : kind === "cancel-event" ? "Cancel event" : `${row.status === "active" ? "Deactivate" : "Activate"} account`;
+    submit = "Confirm";
+    detail = <p>Confirm this change for {row.name || row.title || "the selected duty"}. Historical records will remain available.</p>;
+  } else if (kind === "contact") {
+    title = row.id ? "Edit emergency contact" : "Add emergency contact";
+    fields = [field("name", "Contact name"), field("relationship", "Relationship"), field("phone", "Phone number", "tel")];
+  } else if (kind === "instruction") {
+    title = row.id ? "Edit care instruction" : "Add care instruction";
+    initial = {category: "general", ...row};
+    fields = [field("category", "Category", "select", true, {options: ["allergy", "dietary", "medical_note", "general"].map(value => ({value,label:label(value)}))}), field("instruction_text", "Care instruction", "textarea", true, {wide:true})];
+  } else if (kind === "guardian") {
+    title = `Link guardian · ${row.full_name}`;
+    initial = {relationship:"parent", pickup_authorized:false};
+    fields = [field("user_id", "Parent account", "select", true, {options:options(data.users.filter(u => u.role === "parent" && u.status === "active" && !data.guardians.some(g => g.child_id === row.id && g.user_id === u.id)))}), field("relationship", "Relationship"), field("pickup_authorized", "Authorize pickup", "checkbox", false)];
+  } else if (kind === "guardian-request-create") {
+    title = "Request pickup guardian approval";
+    fields = [field("child_id", "Child", "select", true, {options:options(data.children, "full_name")}), field("name", "Guardian name"), field("relationship", "Relationship"), field("phone", "Phone number", "tel"), field("email", "Email address", "email", false)];
+    detail = <p>This request must be reviewed before the guardian can collect a child.</p>;
+  } else if (kind === "guardian-request-review") {
+    title = `Review pickup guardian · ${row.name}`;
+    initial = {...row, decision:row.status === "approved" ? "revoked" : "approved", review_note:""};
+    fields = [field("decision", "Decision", "select", true, {options:(row.status === "approved" ? ["revoked"] : ["approved","rejected"]).map(value=>({value,label:label(value)}))}), field("review_note", "Verification notes (at least 12 characters)", "textarea", true, {wide:true})];
+    detail = <p>{row.relationship} · {row.phone}. Verify the guardian's identity and authorization before approving.</p>;
+  } else if (kind === "event") {
+    title = row.id ? "Edit event" : "Create event";
+    initial = {event_type:"activity_day", event_date:date, ...row, ...(row.event_date ? {event_date:dayOf(row.event_date)} : {})};
+    fields = [field("title", "Event title"), field("event_date", "Event date", "date"), field("event_time", "Event time", "time", false), field("event_type", "Event type", "select", true, {options:["holiday","meeting","activity_day","special_program","closing_date"].map(value=>({value,label:label(value)}))}), field("description", "Description", "textarea", false, {wide:true})];
+  } else if (kind === "announcement") {
+    title = "Publish announcement";
+    initial = {announcement_type:"general", ...row};
+    fields = [field("title", "Announcement title"), field("announcement_type", "Type", "select", true, {options:["general","alert","meal_plan"].map(value=>({value,label:label(value)}))}), field("target_group_id", "Classroom (blank for everyone)", "select", false, {options:options(data.groups)}), field("body", "Announcement", "textarea", true, {wide:true})];
+  } else if (kind === "message") {
+    title = "Send message";
+    fields = [field("recipient_id", "Recipient", "select", true, {options:options(data.users.filter(u=>u.id !== ctx.actor?.id && u.status === "active"))}), field("subject", "Subject", "text", false), field("body", "Message", "textarea", true, {wide:true})];
+  } else if (kind === "product") {
+    title = row.id ? "Edit product" : "Add product";
+    initial = {price:0, stock_qty:0, available:true, ...row};
+    fields = [field("name", "Product name"), field("price", "Price (ETB)", "number", true, {min:"0"}), field("stock_qty", "Stock quantity", "number", true, {min:"0"}), field("available", "Available for purchase", "checkbox", false), field("description", "Description", "textarea", false), field("image_url", "Image URL", "url", false)];
+  } else if (kind === "order") {
+    title = `Update order #${row.id}`;
+    fields = [field("order_status", "Order status", "select", true, {options:["placed","confirmed","ready_for_pickup","collected","cancelled"].map(value=>({value,label:label(value)}))}), field("payment_status", "Payment status", "select", false, {options:["unpaid","pending","paid","failed"].map(value=>({value,label:label(value)}))})];
+  } else if (kind === "edit-settings") {
+    title = "Edit daycare settings";
+    fields = [field("name", "Daycare name"), field("license_number", "License number", "text", false), field("contact_email", "Contact email", "email", false), field("contact_phone", "Contact phone", "tel", false), field("address", "Address", "textarea", false, {wide:true})];
   } else if (kind === "child-profile") {
     const guardian = (data.guardians || []).find((g) => g.child_id === row.id);
     const parentUser = guardian ? (data.users || []).find((u) => u.id === guardian.user_id) : null;
@@ -1765,7 +1841,7 @@ function PortalModal({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {data.guardians.filter((g) => g.child_id === row.id).map((g) => (
                 <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
-                  <Person name={userName(data, g.user_id)} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || parentPhone}`} />
+                  <Person name={userName(data, g.user_id)} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || "No phone on record"}`} />
                   <Badge value={g.pickup_authorized ? "Approved for Pickup" : "Not authorized"} tone={g.pickup_authorized ? "green" : "quiet"} />
                 </div>
               ))}
@@ -1778,7 +1854,7 @@ function PortalModal({
             {(data.guardianRequests || []).filter((g) => g.child_id === row.id).length > 0 && (
               <div style={{ marginTop: 10 }}>
                 <small style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: 4 }}>
-                  Additional Approved Pickup Contacts
+                  Additional Pickup Contacts
                 </small>
                 {(data.guardianRequests || []).filter((g) => g.child_id === row.id).map((g) => (
                   <div key={'req-' + g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
@@ -1845,6 +1921,7 @@ function PortalModal({
             ) : (
               <p style={{ fontSize: 13, color: "#166534", margin: "0 0 6px", fontWeight: 500 }}>✓ No known allergies recorded.</p>
             )}
+            {dietary.map((item: any) => <div key={item.id} className="p-notice"><Badge value="Dietary" /> {item.instruction_text}</div>)}
             {generalInstructions.map((gi: any, i: number) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                 <Badge value={gi.category} tone="quiet" />
@@ -1876,6 +1953,8 @@ function PortalModal({
             Date: dayOf(row.report_date),
             Mood: label(row.mood),
             "Sleep (minutes)": row.sleep_duration_min ?? "—",
+            "Sleep notes": row.sleep_notes || "No sleep notes recorded",
+            "Behavior notes": row.behavior_notes || "No behavior notes recorded",
             Observations:
               row.general_observations || "No observations recorded",
             Meals: (row.meals && row.meals.length > 0)
@@ -1896,6 +1975,7 @@ function PortalModal({
           : kind === "message-detail"
             ? {
                 From: userName(data, row.sender_id),
+                To: userName(data, row.recipient_id),
                 Subject: row.subject || "No subject",
                 Message: row.body,
               }
@@ -2011,13 +2091,15 @@ function FamilyEnrollmentModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.terms_accepted) {
+    const submitted = new FormData(e.currentTarget as HTMLFormElement);
+    const values = {...formData, ...Object.fromEntries(submitted.entries()), terms_accepted:submitted.has("terms_accepted"), agreement_signed:submitted.has("agreement_signed")};
+    if (!values.terms_accepted) {
       setValidationError("Please review and confirm that the parent/guardian accepts the Daycare Terms & Policies before proceeding.");
       return;
     }
     setValidationError("");
     save({
-      ...formData,
+      ...values,
       new_group_name: isNewGroup ? newGroupName.trim() : "",
     });
   };
@@ -2050,6 +2132,8 @@ function FamilyEnrollmentModal({
                   required
                   placeholder="e.g., Sara Mengistu"
                   value={formData.parent_name}
+                  name="parent_name"
+                  onInput={(e) => handleChange("parent_name", e.currentTarget.value)}
                   onChange={(e) => handleChange("parent_name", e.target.value)}
                 />
               </label>
@@ -2060,6 +2144,8 @@ function FamilyEnrollmentModal({
                   required
                   placeholder="sara@example.com"
                   value={formData.parent_email}
+                  name="parent_email"
+                  onInput={(e) => handleChange("parent_email", e.currentTarget.value)}
                   onChange={(e) => handleChange("parent_email", e.target.value)}
                 />
               </label>
@@ -2070,6 +2156,8 @@ function FamilyEnrollmentModal({
                   required
                   placeholder="+251 911 223 344"
                   value={formData.parent_phone}
+                  name="parent_phone"
+                  onInput={(e) => handleChange("parent_phone", e.currentTarget.value)}
                   onChange={(e) => handleChange("parent_phone", e.target.value)}
                 />
               </label>
@@ -2077,6 +2165,8 @@ function FamilyEnrollmentModal({
                 Relationship to child
                 <select
                   value={formData.parent_relationship}
+                  name="parent_relationship"
+                  onInput={(e) => handleChange("parent_relationship", e.currentTarget.value)}
                   onChange={(e) => handleChange("parent_relationship", e.target.value)}
                 >
                   <option value="Mother">Mother</option>
@@ -2097,6 +2187,8 @@ function FamilyEnrollmentModal({
                   minLength={8}
                   placeholder="At least 8 characters (e.g., Welcome123!)"
                   value={formData.parent_password}
+                  name="parent_password"
+                  onInput={(e) => handleChange("parent_password", e.currentTarget.value)}
                   onChange={(e) => handleChange("parent_password", e.target.value)}
                 />
                 <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
@@ -2124,6 +2216,8 @@ function FamilyEnrollmentModal({
                   required
                   placeholder="e.g., Nathaniel Dawit"
                   value={formData.child_full_name}
+                  name="child_full_name"
+                  onInput={(e) => handleChange("child_full_name", e.currentTarget.value)}
                   onChange={(e) => handleChange("child_full_name", e.target.value)}
                 />
               </label>
@@ -2134,6 +2228,8 @@ function FamilyEnrollmentModal({
                   required
                   max={today()}
                   value={formData.child_dob}
+                  name="child_dob"
+                  onInput={(e) => handleChange("child_dob", e.currentTarget.value)}
                   onChange={(e) => handleChange("child_dob", e.target.value)}
                 />
                 {formData.child_dob && (
@@ -2147,6 +2243,8 @@ function FamilyEnrollmentModal({
                 Gender
                 <select
                   value={formData.child_gender}
+                  name="child_gender"
+                  onInput={(e) => handleChange("child_gender", e.currentTarget.value)}
                   onChange={(e) => handleChange("child_gender", e.target.value)}
                 >
                   <option value="female">Female</option>
@@ -2229,6 +2327,7 @@ function FamilyEnrollmentModal({
                   <select
                     aria-label="Classroom group"
                     value={formData.child_group_id}
+                  name="child_group_id"
                     onChange={(e) => handleGroupSelect(e.target.value)}
                   >
                     <option value="">Select classroom group</option>
@@ -2250,6 +2349,8 @@ function FamilyEnrollmentModal({
                 Assigned primary caregiver (Lead Teacher)
                 <select
                   value={formData.child_caregiver_id}
+                  name="child_caregiver_id"
+                  onInput={(e) => handleChange("child_caregiver_id", e.currentTarget.value)}
                   onChange={(e) => handleChange("child_caregiver_id", e.target.value)}
                 >
                   <option value="">Unassigned (Select educator)</option>
@@ -2275,6 +2376,8 @@ function FamilyEnrollmentModal({
                   required
                   placeholder="3500.00"
                   value={formData.monthly_care_fee}
+                  name="monthly_care_fee"
+                  onInput={(e) => handleChange("monthly_care_fee", e.currentTarget.value)}
                   onChange={(e) => handleChange("monthly_care_fee", e.target.value)}
                 />
                 <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
@@ -2296,6 +2399,8 @@ function FamilyEnrollmentModal({
                 <input
                   placeholder="e.g., Peanut allergy — carries EpiPen (or leave empty if none)"
                   value={formData.allergy_note}
+                  name="allergy_note"
+                  onInput={(e) => handleChange("allergy_note", e.currentTarget.value)}
                   onChange={(e) => handleChange("allergy_note", e.target.value)}
                 />
               </label>
@@ -2304,6 +2409,8 @@ function FamilyEnrollmentModal({
                 <textarea
                   placeholder="e.g., Sleeps best with stuffed rabbit. Needs water bottle refilled at noon."
                   value={formData.care_note}
+                  name="care_note"
+                  onInput={(e) => handleChange("care_note", e.currentTarget.value)}
                   onChange={(e) => handleChange("care_note", e.target.value)}
                   rows={2}
                 />
@@ -2313,6 +2420,8 @@ function FamilyEnrollmentModal({
                 <input
                   placeholder="e.g., Dawit Abebe"
                   value={formData.sec_contact_name}
+                  name="sec_contact_name"
+                  onInput={(e) => handleChange("sec_contact_name", e.currentTarget.value)}
                   onChange={(e) => handleChange("sec_contact_name", e.target.value)}
                 />
               </label>
@@ -2322,6 +2431,8 @@ function FamilyEnrollmentModal({
                   type="tel"
                   placeholder="+251 911 554 433"
                   value={formData.sec_contact_phone}
+                  name="sec_contact_phone"
+                  onInput={(e) => handleChange("sec_contact_phone", e.currentTarget.value)}
                   onChange={(e) => handleChange("sec_contact_phone", e.target.value)}
                 />
               </label>
@@ -2339,6 +2450,7 @@ function FamilyEnrollmentModal({
                 <input
                   type="checkbox"
                   checked={formData.agreement_signed}
+                  name="agreement_signed"
                   onChange={(e) => handleChange("agreement_signed", e.target.checked)}
                   style={{ marginTop: 3 }}
                 />
@@ -2356,6 +2468,7 @@ function FamilyEnrollmentModal({
                 <input
                   type="checkbox"
                   checked={formData.terms_accepted}
+                  name="terms_accepted"
                   onChange={(e) => handleChange("terms_accepted", e.target.checked)}
                   style={{ marginTop: 3 }}
                 />
@@ -2742,4 +2855,3 @@ function AssignGroupCaregiverModal({
     </Modal>
   );
 }
-

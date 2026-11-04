@@ -24,6 +24,11 @@ async function verifyRole(pool, group, forbiddenGroup) {
 }
 
 async function verifyRuntime(tenant, control) {
+  const financialTables = [];
+  for (const table of ['child_invoices', 'child_payments']) {
+    if ((await tenant.query('SELECT to_regclass($1) AS name',[table])).rows[0].name) financialTables.push(table);
+  }
+  const runtimeTables = [...scopedTables, ...financialTables];
   const tenantName = await verifyRole(tenant, 'ankelba_tenant', 'ankelba_control');
   const controlName = await verifyRole(control, 'ankelba_control', 'ankelba_tenant');
   if (tenantName === controlName) throw new Error('Tenant and control database logins must be separate.');
@@ -32,7 +37,7 @@ async function verifyRuntime(tenant, control) {
   try {
     await client.query('BEGIN');
     await client.query("SELECT set_config('app.current_daycare_id','',true),set_config('app.daycare_id','',true)");
-    for (const table of [...scopedTables, 'product_categories']) {
+    for (const table of [...runtimeTables, 'product_categories']) {
       const { rows: [policy] } = await client.query(`SELECT relrowsecurity,relforcerowsecurity,
         pg_has_role(current_user,relowner,'MEMBER') AS owned FROM pg_class
         WHERE oid=$1::regclass`, [table]);
@@ -49,7 +54,7 @@ async function verifyRuntime(tenant, control) {
     await client.query('ROLLBACK').catch(() => { cleanupFailed = true; });
     throw error;
   } finally { client.release(cleanupFailed || undefined); }
-  for (const table of [...scopedTables.filter(name => !controlShared.has(name)), 'product_categories']) {
+  for (const table of [...runtimeTables.filter(name => !controlShared.has(name)), 'product_categories']) {
     if ((await control.query("SELECT has_table_privilege(current_user,$1,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') AS allowed",[table])).rows[0].allowed) {
       throw new Error(`Control login must not access private operational records: ${table}`);
     }

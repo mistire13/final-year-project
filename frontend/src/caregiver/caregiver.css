@@ -1,16 +1,16 @@
 /* Caregiver Front-Desk Attendance & Pickup Terminal Styles */
 .caregiver-terminal-container {
   font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #FFFDF8;
-  color: #061224;
+  background-color: var(--cream-soft);
+  color: var(--navy);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.terminal-header {
-  background: #FFFFFF;
-  border-bottom: 1px solid #E8E4DA;
+.caregiver-terminal-container .terminal-header {
+  background: var(--cream-card);
+  border-bottom: 1px solid var(--line);
   padding: 1.25rem 2.5rem;
   display: flex;
   align-items: center;
@@ -18,49 +18,49 @@
   box-shadow: 0 4px 15px rgba(6, 18, 36, 0.03);
 }
 
-.terminal-title h1 {
+.caregiver-terminal-container .terminal-title h1 {
   font-size: 1.45rem;
   font-weight: 800;
   margin: 0;
-  color: #061224;
+  color: var(--navy);
 }
 
-.terminal-title p {
+.caregiver-terminal-container .terminal-title p {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
-  color: #6B7280;
+  color: var(--muted);
 }
 
-.terminal-stats-bar {
+.caregiver-terminal-container .terminal-stats-bar {
   display: flex;
   gap: 1.5rem;
-  background: #FFFBED;
+  background: var(--cream-soft);
   padding: 1rem 2.5rem;
-  border-bottom: 1px solid #E8E4DA;
+  border-bottom: 1px solid var(--line);
 }
 
-.terminal-stat-chip {
+.caregiver-terminal-container .terminal-stat-chip {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: #FFFFFF;
+  background: var(--cream-card);
   padding: 0.5rem 1.25rem;
   border-radius: 9999px;
-  border: 1px solid #E8E4DA;
+  border: 1px solid var(--line);
   font-weight: 700;
   font-size: 0.9rem;
 }
 
-.stat-dot {
+.caregiver-terminal-container .stat-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
 }
-.stat-dot.green { background: #10B981; }
-.stat-dot.yellow { background: #F59E0B; }
-.stat-dot.navy { background: #061224; }
+.caregiver-terminal-container .stat-dot.green { background: var(--green); }
+.caregiver-terminal-container .stat-dot.yellow { background: var(--amber); }
+.caregiver-terminal-container .stat-dot.navy { background: var(--navy); }
 
-.terminal-content {
+.caregiver-terminal-container .terminal-content {
   padding: 2rem 2.5rem;
   max-width: 1300px;
   margin: 0 auto;
@@ -68,18 +68,18 @@
   box-sizing: border-box;
 }
 
-.terminal-roster-grid {
+.caregiver-terminal-container .terminal-roster-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
 }
 
-.child-terminal-card {
-  background: #FFFFFF;
+.caregiver-terminal-container .child-terminal-card {
+  background: var(--cream-card);
   border-radius: 20px;
   padding: 1.5rem;
-  border: 1px solid #E8E4DA;
+  border: 1px solid var(--line);
   box-shadow: 0 6px 20px rgba(6, 18, 36, 0.04);
   display: flex;
   flex-direction: column;
@@ -87,24 +87,24 @@
   transition: transform 0.2s ease;
 }
 
-.child-terminal-card:hover {
+.caregiver-terminal-container .child-terminal-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(6, 18, 36, 0.08);
 }
 
-.child-card-header {
+.caregiver-terminal-container .child-card-header {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.child-avatar-img {
+.caregiver-terminal-container .child-avatar-img {
   width: 54px;
   height: 54px;
   border-radius: 16px;
-  background: #FEF7E6;
-  color: #B7791F;
+  background: var(--amber-soft);
+  color: var(--amber);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,18 +113,18 @@
   object-fit: cover;
 }
 
-.child-meta h3 {
+.caregiver-terminal-container .child-meta h3 {
   margin: 0 0 0.25rem 0;
   font-size: 1.15rem;
   font-weight: 700;
 }
 
-.child-meta span {
+.caregiver-terminal-container .child-meta span {
   font-size: 0.8rem;
-  color: #6B7280;
+  color: var(--muted);
 }
 
-.terminal-status-indicator {
+.caregiver-terminal-container .terminal-status-indicator {
   display: inline-block;
   font-size: 0.75rem;
   font-weight: 700;
@@ -132,11 +132,11 @@
   border-radius: 9999px;
   margin-bottom: 1rem;
 }
-.terminal-status-indicator.not-arrived { background: #FEF7E6; color: #B7791F; }
-.terminal-status-indicator.present { background: #EDF7ED; color: #2E7D32; }
-.terminal-status-indicator.checked-out { background: #F3EEF9; color: #7E57C2; }
+.caregiver-terminal-container .terminal-status-indicator.not-arrived { background: var(--amber-soft); color: var(--amber); }
+.caregiver-terminal-container .terminal-status-indicator.present { background: var(--green-soft); color: var(--green); }
+.caregiver-terminal-container .terminal-status-indicator.checked-out { background: var(--sky-soft); color: var(--sky); }
 
-.btn-terminal-action {
+.caregiver-terminal-container .btn-terminal-action {
   width: 100%;
   padding: 0.75rem;
   border-radius: 9999px;
@@ -150,24 +150,24 @@
   gap: 0.5rem;
   transition: all 0.2s ease;
 }
-.btn-terminal-action.checkin {
-  background: #10B981;
-  color: #FFFFFF;
+.caregiver-terminal-container .btn-terminal-action.checkin {
+  background: var(--green);
+  color: var(--cream-card);
 }
-.btn-terminal-action.checkin:hover {
-  background: #059669;
+.caregiver-terminal-container .btn-terminal-action.checkin:hover {
+  background: var(--green-hover);
 }
-.btn-terminal-action.checkout {
-  background: #061224;
-  color: #FFFFFF;
+.caregiver-terminal-container .btn-terminal-action.checkout {
+  background: var(--navy);
+  color: var(--cream-card);
 }
-.btn-terminal-action.checkout:hover {
-  background: #0d2242;
+.caregiver-terminal-container .btn-terminal-action.checkout:hover {
+  background: var(--navy-light);
 }
 
 /* Pickup Modal */
-.pickup-modal-dialog {
-  background: #FFFFFF;
+.caregiver-terminal-container .pickup-modal-dialog {
+  background: var(--cream-card);
   border-radius: 28px;
   max-width: 620px;
   width: 100%;
@@ -176,31 +176,31 @@
   position: relative;
 }
 
-.guardian-select-list {
+.caregiver-terminal-container .guardian-select-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   margin: 1.25rem 0;
 }
 
-.guardian-item-card {
+.caregiver-terminal-container .guardian-item-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
   border-radius: 16px;
-  border: 1.5px solid #E8E4DA;
+  border: 1.5px solid var(--line);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.guardian-item-card.selected {
-  border-color: #061224;
-  background: #FFFBED;
+.caregiver-terminal-container .guardian-item-card.selected {
+  border-color: var(--navy);
+  background: var(--cream-soft);
 }
 
 /* Modal Backdrop */
-.modal-backdrop {
+.caregiver-terminal-container .modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(6, 18, 36, 0.65);
@@ -212,11 +212,11 @@
   padding: 1.5rem;
 }
 
-.dialog-close {
+.caregiver-terminal-container .dialog-close {
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
-  background: #F3F4F6;
+  background: var(--cream-soft);
   border: none;
   width: 36px;
   height: 36px;
@@ -226,19 +226,19 @@
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  color: #374151;
+  color: var(--navy);
   font-weight: 700;
   transition: all 0.2s ease;
 }
 
-.dialog-close:hover {
-  background: #E5E7EB;
-  color: #111827;
+.caregiver-terminal-container .dialog-close:hover {
+  background: var(--line);
+  color: var(--navy);
 }
 
-.btn-primary-pill {
-  background: #061224;
-  color: #FFFFFF;
+.caregiver-terminal-container .btn-primary-pill {
+  background: var(--navy);
+  color: var(--cream-card);
   border: none;
   padding: 0.75rem 1.75rem;
   border-radius: 9999px;
@@ -249,14 +249,14 @@
   font-family: inherit;
 }
 
-.btn-primary-pill:hover:not(:disabled) {
-  background: #0d2242;
+.caregiver-terminal-container .btn-primary-pill:hover:not(:disabled) {
+  background: var(--navy-light);
 }
 
-.btn-secondary-pill {
-  background: #FFFFFF;
-  color: #4B5563;
-  border: 1.5px solid #D1D5DB;
+.caregiver-terminal-container .btn-secondary-pill {
+  background: var(--cream-card);
+  color: var(--muted);
+  border: 1.5px solid var(--line);
   padding: 0.75rem 1.5rem;
   border-radius: 9999px;
   font-weight: 700;
@@ -266,81 +266,249 @@
   font-family: inherit;
 }
 
-.btn-secondary-pill:hover {
-  background: #F9FAFB;
-  border-color: #9CA3AF;
+.caregiver-terminal-container .btn-secondary-pill:hover {
+  background: var(--cream-soft);
+  border-color: var(--muted);
 }
 
 /* Front-Desk Login Card */
-.terminal-login-card {
-  background: #FFFFFF;
+.caregiver-terminal-container .terminal-login-card {
+  background: var(--cream-card);
   max-width: 440px;
   width: 100%;
   margin: 6rem auto;
   padding: 2.5rem;
   border-radius: 28px;
-  border: 1px solid #E8E4DA;
+  border: 1px solid var(--line);
   box-shadow: 0 15px 40px rgba(6, 18, 36, 0.08);
   text-align: center;
 }
 
-.terminal-login-card h2 {
+.caregiver-terminal-container .terminal-login-card h2 {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #061224;
+  color: var(--navy);
   margin: 0.5rem 0;
 }
 
-.terminal-login-card p {
-  color: #6B7280;
+.caregiver-terminal-container .terminal-login-card p {
+  color: var(--muted);
   font-size: 0.9rem;
   margin-bottom: 2rem;
 }
 
-.terminal-login-input {
+.caregiver-terminal-container .terminal-login-input {
   width: 100%;
   box-sizing: border-box;
   padding: 0.85rem 1.15rem;
   border-radius: 14px;
-  border: 1.5px solid #E5E7EB;
+  border: 1.5px solid var(--line);
   font-size: 0.95rem;
   margin-bottom: 1.25rem;
   font-family: inherit;
 }
 
-.terminal-login-input:focus {
+.caregiver-terminal-container .terminal-login-input:focus {
   outline: none;
-  border-color: #061224;
+  border-color: var(--navy);
 }
 
 /* Filter Bar & Tabs */
-.terminal-filter-tabs {
+.caregiver-terminal-container .terminal-filter-tabs {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   align-items: center;
 }
 
-.terminal-filter-tab {
-  background: #FFFFFF;
-  border: 1px solid #E8E4DA;
+.caregiver-terminal-container .terminal-filter-tab {
+  background: var(--cream-card);
+  border: 1px solid var(--line);
   padding: 0.5rem 1.15rem;
   border-radius: 9999px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #6B7280;
+  color: var(--muted);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.terminal-filter-tab:hover {
-  background: #FEF7E6;
-  color: #061224;
+.caregiver-terminal-container .terminal-filter-tab:hover {
+  background: var(--amber-soft);
+  color: var(--navy);
 }
 
-.terminal-filter-tab.active {
-  background: #061224;
-  color: #FFFFFF;
-  border-color: #061224;
+.caregiver-terminal-container .terminal-filter-tab.active {
+  background: var(--navy);
+  color: var(--cream-card);
+  border-color: var(--navy);
 }
 
+
+/* Shared admin foundation with a focused, responsive front desk layout. */
+.ankelba-portal.caregiver-terminal-container { font-family: Quicksand_500Medium, Quicksand, sans-serif; background: var(--cream-soft); }
+.caregiver-terminal-container .terminal-header { padding: 24px 36px; box-shadow: none; gap: 24px; align-items: flex-start; }
+.terminal-header-icon { width: 42px; height: 42px; display: grid; place-items: center; color: var(--green); background: var(--green-soft); border-radius: var(--radius-md); flex-shrink: 0; }
+.caregiver-terminal-container .terminal-title h1 { font-size: 21px; font-weight: 700; letter-spacing: -.5px; }
+.caregiver-terminal-container .terminal-title p { margin-top: 10px; font-size: 12px; line-height: 1.8; }
+.caregiver-terminal-container .terminal-header > div:last-child { flex-wrap: wrap; }
+.caregiver-terminal-container .terminal-header button, .caregiver-terminal-container .terminal-header a { min-height: 40px; border-radius: var(--radius-sm) !important; background: var(--cream-card) !important; color: var(--navy); }
+.caregiver-terminal-container .terminal-stats-bar { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); padding: 28px 36px 0; gap: 16px; background: transparent; border: 0; }
+.caregiver-terminal-container .terminal-stat-chip { border-radius: var(--radius-md); padding: 20px; gap: 12px; box-shadow: var(--shadow-xs); }
+.caregiver-terminal-container .terminal-stat-chip > span:last-child { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 6px; }
+.caregiver-terminal-container .terminal-stat-chip strong { font-size: 28px; font-weight: 700; color: var(--navy); line-height: 1.2; }
+.caregiver-terminal-container .terminal-content { max-width: none; padding: 32px 36px; }
+.terminal-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.terminal-section-heading h2 { font-size: 25px; letter-spacing: -.6px; margin: 5px 0; }
+.terminal-section-heading p { color: var(--muted); margin: 0; font-size: 13px; }
+.terminal-roster-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.caregiver-terminal-container .terminal-filter-tabs { gap: 4px; padding: 4px; background: var(--cream-card); border: 1px solid var(--line); border-radius: var(--radius-md); }
+.caregiver-terminal-container .terminal-filter-tab { border: 0; border-radius: var(--radius-sm); font-size: 12px; padding: 10px 12px; min-height: 40px; }
+.caregiver-terminal-container .terminal-filter-tab.active { background: var(--green-soft); color: var(--green-hover); }
+.caregiver-terminal-container .terminal-content input, .caregiver-terminal-container .terminal-content select { min-height: 44px; border-radius: var(--radius-sm) !important; background: var(--cream-card); }
+.caregiver-terminal-container .terminal-roster-grid { grid-template-columns: repeat(auto-fill,minmax(min(100%,310px),1fr)); gap: 18px; margin-top: 24px; }
+.caregiver-terminal-container .child-terminal-card { padding: 22px; border-radius: var(--radius-lg); box-shadow: var(--shadow-xs); }
+.caregiver-terminal-container .child-terminal-card:hover { transform: none; box-shadow: var(--shadow-sm); border-color: var(--muted-light); }
+.caregiver-terminal-container .child-meta h3 { font-size: 16px; }
+.caregiver-terminal-container .child-avatar-img { background: var(--green-soft); color: var(--green); border-radius: var(--radius-md); }
+.caregiver-terminal-container .btn-terminal-action, .caregiver-terminal-container .btn-primary-pill, .caregiver-terminal-container .btn-secondary-pill { border-radius: var(--radius-sm); min-height: 44px; font-size: 13px; }
+.caregiver-terminal-container .btn-terminal-action.checkin, .caregiver-terminal-container .btn-primary-pill { color: var(--cream-card); }
+.caregiver-terminal-container button:disabled { opacity: .5; cursor: not-allowed; }
+.caregiver-terminal-container :is(button,a,input,select):focus-visible, .caregiver-login :is(button,a,input):focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+.caregiver-terminal-container .pickup-modal-dialog { max-height: calc(100dvh - 48px); overflow-y: auto; border-radius: var(--radius-lg); border: 1px solid var(--line); padding: 30px; }
+.caregiver-terminal-container .pickup-modal-dialog h2 { padding-right: 30px; }
+.caregiver-terminal-container .guardian-item-card { border-radius: var(--radius-md); }
+.caregiver-terminal-container .guardian-item-card.selected { border-color: var(--green); background: var(--green-soft); }
+.caregiver-login .terminal-brand { display: flex; align-items: center; gap: 12px; color: var(--navy); text-decoration: none; margin-bottom: 70px; width: fit-content; }
+.terminal-brand img { width: 32px; height: 48px; object-fit: contain; }
+.terminal-brand span { font-size: 26px; font-weight: 700; }
+.terminal-brand small { display: block; font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+.caregiver-login .p-login-story { padding: 48px 12%; }
+.caregiver-login .p-login-story h1 { font-size: clamp(32px,3.4vw,48px); line-height: 1.18; margin: 18px 0 0; }
+.caregiver-login .p-login-story p { color: var(--muted); }
+.terminal-login-features { display: grid; gap: 22px; margin-top: 12px; }
+.terminal-login-features > div { display: flex; gap: 14px; align-items: flex-start; color: var(--green); }
+.terminal-login-features span { color: var(--navy); font-size: 13px; font-weight: 700; }
+.terminal-login-features small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin-top: 4px; }
+.caregiver-login .p-login-card h1 { margin: 12px 0 8px; font-size: 30px; letter-spacing: -.7px; }
+.terminal-login-description { color: var(--muted); font-size: 14px; line-height: 1.7; }
+.terminal-password-field { position: relative; }
+.terminal-password-field input { width: 100%; padding-right: 48px !important; }
+.terminal-password-field button { position: absolute; right: 3px; top: 3px; bottom: 3px; width: 42px; background: transparent; border: 0; display: grid; place-items: center; color: var(--muted); border-radius: var(--radius-sm); }
+.caregiver-login .p-login-card input { min-height: 48px; }
+.caregiver-login .p-button { min-height: 48px; }
+.terminal-access-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin: 24px 0 0; }
+@media(max-width: 900px) {
+ .caregiver-terminal-container .terminal-header { flex-direction: column; padding: 20px; }
+ .caregiver-terminal-container .terminal-stats-bar { padding: 20px 20px 0; }
+ .caregiver-terminal-container .terminal-content { padding: 24px 20px; }
+ .caregiver-login .terminal-brand { margin-bottom: 30px; }
+}
+@media(max-width: 600px) {
+ .caregiver-login.p-login { grid-template-columns: 1fr; }
+ .caregiver-login .p-login-story { display: flex; padding: 28px 24px; }
+ .caregiver-login .p-login-story h1 { font-size: 30px; }
+ .caregiver-login .p-login-story p, .caregiver-login .terminal-login-features { display: none; }
+ .caregiver-login .terminal-brand { margin-bottom: 24px; }
+ .caregiver-login .p-login-card { padding: 32px 24px; }
+ .caregiver-terminal-container .terminal-stats-bar { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+ .caregiver-terminal-container .terminal-stat-chip { padding: 14px; }
+ .caregiver-terminal-container .terminal-title h1 { font-size: 18px; }
+ .terminal-section-heading { align-items: flex-start; flex-direction: column; }
+ .caregiver-terminal-container .terminal-content > div > div:has(>select) { flex-wrap: wrap; width: 100%; }
+ .caregiver-terminal-container .terminal-content input[type=search], .caregiver-terminal-container .terminal-content select { width: 100% !important; }
+ .caregiver-terminal-container .modal-backdrop { padding: 12px; }
+ .caregiver-terminal-container .pickup-modal-dialog { padding: 24px 18px; max-height: calc(100dvh - 24px); }
+}
+.caregiver-login > section { min-width: 0; }
+.caregiver-login .p-login-card > div { width: 390px; max-width: 100%; min-width: 0; }
+.caregiver-login input { width: 100%; min-width: 0; }
+.caregiver-login .p-login-story h1, .caregiver-login .p-login-story p { overflow-wrap: break-word; }
+
+/* Distinct staff entry: one centered form, with the workspace name prominent. */
+.caregiver-login.p-login { display: flex; justify-content: center; align-items: center; padding: 40px 24px; background: var(--cream-soft); }
+.caregiver-login .p-login-story { display: none; }
+.caregiver-login .p-login-card { width: 100%; max-width: 500px; padding: 40px; background: var(--cream-card); border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow-md); }
+.caregiver-login .p-login-card > div { width: 100%; }
+.terminal-login-heading-icon { width: 54px; height: 54px; display: grid; place-items: center; color: var(--green); background: var(--green-soft); border-radius: var(--radius-md); margin-bottom: 24px; }
+.caregiver-login .p-login-card h1 { font-size: 29px; line-height: 1.25; }
+@media(max-width: 600px) {
+ .caregiver-login.p-login { padding: 24px 16px; }
+ .caregiver-login .p-login-card { padding: 28px 22px; }
+ .caregiver-login .p-login-card h1 { font-size: 25px; }
+}
+
+/* Quiet hero details frame the staff sign-in without competing with the form. */
+.caregiver-login.p-login { position: relative; isolation: isolate; overflow: hidden; background: var(--cream); }
+.terminal-login-backdrop { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.terminal-hero-orbit { position: absolute; border-radius: 50%; }
+.terminal-hero-orbit-one { width: min(62vw,820px); aspect-ratio: 1; top: -30%; left: -22%; background: radial-gradient(circle, var(--amber-soft) 0%, var(--cream-soft) 68%, transparent 70%); border: 1px solid var(--line); }
+.terminal-hero-orbit-two { width: min(62vw,850px); aspect-ratio: 1; bottom: -40%; right: -25%; background: radial-gradient(circle, var(--green-soft) 0%, var(--cream-soft) 68%, transparent 70%); border: 1px solid var(--line); }
+.terminal-hero-grid { position: absolute; inset: 0; opacity: .32; background-image: radial-gradient(var(--muted-light) .8px, transparent .8px); background-size: 26px 26px; mask-image: linear-gradient(90deg,black,transparent 35%,transparent 65%,black); }
+.terminal-hero-detail { position: absolute; display: flex; align-items: center; gap: 12px; padding: 16px 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--cream-card); box-shadow: var(--shadow-sm); color: var(--navy); font-size: 13px; font-weight: 700; }
+.terminal-hero-detail > span { width: 38px; height: 38px; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--green-soft); color: var(--green); }
+.terminal-hero-detail small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; margin-top: 4px; }
+.terminal-hero-detail-arrivals { left: max(32px,calc(50% - 650px)); top: 30%; transform: rotate(-5deg); }
+.terminal-hero-detail-pickup { right: max(32px,calc(50% - 650px)); bottom: 25%; transform: rotate(5deg); }
+.terminal-hero-caption { position: absolute; left: 0; right: 0; bottom: 28px; text-align: center; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 2px; }
+.caregiver-login .p-login-card { position: relative; }
+@media(max-width: 1150px) { .terminal-hero-detail { display: none; } }
+@media(max-width: 600px) {
+ .terminal-hero-orbit-one { width: 500px; top: -240px; left: -300px; }
+ .terminal-hero-orbit-two { width: 500px; bottom: -280px; right: -300px; }
+ .terminal-hero-caption { display: none; }
+}
+
+/* Front desk workspace: the same calm hierarchy as the daycare admin portal. */
+.caregiver-terminal-container .terminal-header { align-items: center; padding: 20px 36px; }
+.terminal-workspace-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--navy); }
+.terminal-workspace-brand img { width: 28px; height: 42px; object-fit: contain; }
+.terminal-workspace-brand > span { font-size: 23px; font-weight: 700; line-height: 1.3; }
+.terminal-workspace-brand small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 3px; }
+.terminal-workspace-actions { display: flex; align-items: center; gap: 20px; }
+.terminal-staff-profile { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; }
+.terminal-staff-profile small { display: block; color: var(--muted); font-size: 11px; font-weight: 500; }
+.terminal-staff-avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--green-soft); color: var(--green); }
+.terminal-admin-link { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); font-size: 12px; text-decoration: none; }
+.terminal-workspace-intro { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 32px 36px 0; }
+.terminal-workspace-intro h1 { margin: 5px 0; font-size: 32px; letter-spacing: -.9px; line-height: 1.25; }
+.terminal-workspace-intro p { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.terminal-shift-panel { display: flex; gap: 14px; align-items: center; color: var(--muted); }
+.terminal-shift-panel strong { display: block; font-size: 17px; color: var(--navy); font-variant-numeric: tabular-nums; }
+.terminal-shift-panel small { display: block; font-size: 11px; margin-top: 3px; }
+.caregiver-terminal-container .terminal-stats-bar { grid-template-columns: repeat(4,minmax(0,1fr)); }
+.terminal-metric { padding: 20px 22px; border: 1px solid var(--line); background: var(--cream-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-xs); }
+.terminal-metric-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.terminal-metric-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--cream-soft); color: var(--muted); }
+.terminal-metric-icon.green { background: var(--green-soft); color: var(--green); }
+.terminal-metric-icon.amber { background: var(--amber-soft); color: var(--amber); }
+.terminal-metric-icon.sky { background: var(--sky-soft); color: var(--sky); }
+.terminal-metric > strong { display: block; font-size: 34px; letter-spacing: -1px; line-height: 1.2; margin: 10px 0 6px; }
+.terminal-metric > small { font-size: 11px; color: var(--muted); }
+.terminal-roster-toolbar { display: flex; flex-direction: column; gap: 18px; padding: 18px; background: var(--cream-card); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.caregiver-terminal-container .terminal-filter-tabs { border: 0; padding: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding-bottom: 16px; }
+.terminal-roster-search { display: flex; align-items: center; gap: 12px; }
+.terminal-roster-search input { flex: 1; max-width: 360px; }
+.caregiver-terminal-container .child-terminal-card { border-top: 3px solid var(--line); }
+.caregiver-terminal-container .child-terminal-card:has(.terminal-status-indicator.present) { border-top-color: var(--green); }
+.caregiver-terminal-container .child-terminal-card:has(.terminal-status-indicator.not-arrived) { border-top-color: var(--amber); }
+.caregiver-terminal-container .child-terminal-card:has(.terminal-status-indicator.checked-out) { border-top-color: var(--sky); }
+.caregiver-terminal-container .child-card-header { margin-bottom: 18px; }
+.caregiver-terminal-container .child-terminal-card > div:last-child { padding-top: 16px; border-top: 1px solid var(--line-light); }
+@media(max-width: 1000px) {
+ .terminal-workspace-intro { align-items: flex-start; flex-direction: column; }
+ .caregiver-terminal-container .terminal-stats-bar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(max-width: 600px) {
+ .caregiver-terminal-container .terminal-header { padding: 18px 20px; align-items: stretch; }
+ .terminal-workspace-actions { justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+ .terminal-workspace-intro { padding: 24px 20px 0; }
+ .terminal-shift-panel { width: 100%; gap: 10px; }
+ .terminal-shift-panel .p-button { margin-left: auto; }
+ .terminal-workspace-intro h1 { font-size: 28px; }
+ .terminal-metric { padding: 16px; }
+ .terminal-metric-top { font-size: 11px; }
+ .terminal-metric > strong { font-size: 28px; }
+ .terminal-roster-search { flex-wrap: wrap; }
+ .terminal-roster-search input { max-width: none; }
+}

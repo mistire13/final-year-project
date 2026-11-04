@@ -126,13 +126,15 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (genBusy) return;
+    const submitted = new FormData(e.currentTarget as HTMLFormElement);
     setGenBusy(true);
     setGenNotice(null);
     try {
       const res = await portalApi.generateMonthlyInvoices({
-        billingPeriod: genPeriod,
-        dueDate: genDueDate,
-        defaultFee: parseFloat(genFee) || 3500.0,
+        billingPeriod: String(submitted.get("billingPeriod")),
+        dueDate: String(submitted.get("dueDate")),
+        defaultFee: Number(submitted.get("defaultFee")),
       });
       setGenNotice(res.message);
       await loadData();
@@ -159,15 +161,16 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!payingInvoice) return;
+    if (!payingInvoice || payBusy) return;
+    const submitted = new FormData(e.currentTarget as HTMLFormElement);
     setPayBusy(true);
     setPayError(null);
     try {
       const res = await portalApi.recordInvoicePayment(payingInvoice.id, {
-        amount_paid: parseFloat(payAmount),
-        payment_method: payMethod,
-        reference_code: payReference || undefined,
-        notes: payNotes || undefined,
+        amount_paid: Number(submitted.get("amount_paid")),
+        payment_method: String(submitted.get("payment_method")),
+        reference_code: String(submitted.get("reference_code") || "") || undefined,
+        notes: String(submitted.get("notes") || "") || undefined,
       });
       setPayingInvoice(null);
       // Immediately display the newly generated digital receipt!
@@ -259,7 +262,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               {money(overview.total_billed)}
             </div>
             <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
-              Active care fees this period
+              Active care fees across all billing periods
             </div>
           </Card>
 
@@ -331,7 +334,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
             <input
               type="month"
               value={periodFilter}
-              onChange={(e) => setPeriodFilter(e.target.value)}
+              onInput={(e) => setPeriodFilter(e.currentTarget.value)}
+                onChange={(e) => setPeriodFilter(e.target.value)}
               style={{
                 padding: "6px 10px",
                 borderRadius: 8,
@@ -343,7 +347,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               type="text"
               placeholder="Search child or parent…"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onInput={(e) => setSearchTerm(e.currentTarget.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 padding: "6px 10px",
                 borderRadius: 8,
@@ -491,7 +496,9 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               Billing Period (Month)
               <input
                 type="month"
+                onInput={(e) => {setGenPeriod(e.currentTarget.value);setGenDueDate(`${e.currentTarget.value}-10`);}}
                 value={genPeriod}
+                name="billingPeriod"
                 onChange={(e) => {
                   setGenPeriod(e.target.value);
                   setGenDueDate(`${e.target.value}-10`);
@@ -506,6 +513,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               <input
                 type="date"
                 value={genDueDate}
+                name="dueDate"
+                onInput={(e) => setGenDueDate(e.currentTarget.value)}
                 onChange={(e) => setGenDueDate(e.target.value)}
                 required
                 style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
@@ -518,6 +527,9 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 type="number"
                 step="0.01"
                 value={genFee}
+                name="defaultFee"
+                min="0.01"
+                onInput={(e) => setGenFee(e.currentTarget.value)}
                 onChange={(e) => setGenFee(e.target.value)}
                 required
                 style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
@@ -572,6 +584,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 max={parseFloat(String(payingInvoice.balance_remaining))}
                 min="1"
                 value={payAmount}
+                name="amount_paid"
+                onInput={(e) => setPayAmount(e.currentTarget.value)}
                 onChange={(e) => setPayAmount(e.target.value)}
                 required
                 style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14, fontWeight: 700 }}
@@ -582,6 +596,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               Payment Method
               <select
                 value={payMethod}
+                name="payment_method"
                 onChange={(e) => setPayMethod(e.target.value)}
                 style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
               >
@@ -599,7 +614,9 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                   type="text"
                   placeholder="e.g. TB-89234812 / CBE-77234"
                   value={payReference}
-                  onChange={(e) => setPayReference(e.target.value)}
+                  name="reference_code"
+                  onInput={(e) => setPayReference(e.currentTarget.value)}
+                onChange={(e) => setPayReference(e.target.value)}
                   required
                   style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
                 />
@@ -612,6 +629,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 type="text"
                 placeholder="Optional notes for the parent receipt"
                 value={payNotes}
+                name="notes"
+                onInput={(e) => setPayNotes(e.currentTarget.value)}
                 onChange={(e) => setPayNotes(e.target.value)}
                 style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
               />

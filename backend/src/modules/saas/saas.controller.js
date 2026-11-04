@@ -215,6 +215,7 @@ const purgeApplication = async (req, res, next) => {
 };
 
 module.exports = {
+  deleteDaycare: req => saasService.deleteDaycare(req.params.id, req.body, req.user.id),
   registerDaycare,
   getStats,
   listDaycares,

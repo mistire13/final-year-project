@@ -1,0 +1,139 @@
+TAP version 13
+# Subtest: AI external context honors consent and excludes child/classroom identifiers
+ok 1 - AI external context honors consent and excludes child/classroom identifiers
+  ---
+  duration_ms: 6068.8644
+  ...
+# 14:30:44 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 14:30:44 [[32minfo[39m]: User 3 (admin) authenticated
+# 14:30:44 [[32minfo[39m]: User 4 (caregiver) authenticated
+# 14:30:44 [[32minfo[39m]: User 5 (parent) authenticated
+# 14:30:47 [[32minfo[39m]: User 5 logged out
+# 14:30:47 [[32minfo[39m]: User 5 (parent) authenticated
+# Enumerated 176 mounted endpoints; 707 authentication/role denial checks; 0 failures.
+# Subtest: every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+ok 2 - every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+  ---
+  duration_ms: 6766.5351
+  ...
+# 14:30:43 [[32minfo[39m]: Child invoice created: ID 1 for child 1 (ETB 100) by 2
+# Subtest: private invoices require child-linked parents and cannot cross daycare/database boundaries
+ok 3 - private invoices require child-linked parents and cannot cross daycare/database boundaries
+  ---
+  duration_ms: 6056.9402
+  ...
+# Subtest: phase one legacy authentication closes public bypasses and revokes stale access at migration013
+    # Subtest: fresh JWTs carry bound state and support bearer and cookie requests
+    ok 1 - fresh JWTs carry bound state and support bearer and cookie requests
+      ---
+      duration_ms: 191.4596
+      ...
+    # Subtest: unversioned, wrong-audience and wrong-algorithm tokens are rejected
+    ok 2 - unversioned, wrong-audience and wrong-algorithm tokens are rejected
+      ---
+      duration_ms: 72.8647
+      ...
+    # Subtest: tenant accounts require an active daycare and account before login
+    ok 3 - tenant accounts require an active daycare and account before login
+      ---
+      duration_ms: 67.2835
+      ...
+    # Subtest: public parent signup is denied in HTTP and service without provisioning records
+    ok 4 - public parent signup is denied in HTTP and service without provisioning records
+      ---
+      duration_ms: 23.5371
+      ...
+    # Subtest: daycare suspension revokes existing JWTs permanently through reactivation
+    ok 5 - daycare suspension revokes existing JWTs permanently through reactivation
+      ---
+      duration_ms: 85.3445
+      ...
+    # Subtest: user deactivation revokes existing JWTs permanently through reactivation
+    ok 6 - user deactivation revokes existing JWTs permanently through reactivation
+      ---
+      duration_ms: 192.7331
+      ...
+    # Subtest: sub-millisecond user and daycare revision changes invalidate issued JWTs
+    ok 7 - sub-millisecond user and daycare revision changes invalidate issued JWTs
+      ---
+      duration_ms: 51.7684
+      ...
+    # Subtest: password changes reject wrong current passwords and revoke all previously issued JWTs
+    ok 8 - password changes reject wrong current passwords and revoke all previously issued JWTs
+      ---
+      duration_ms: 2091.0072
+      ...
+    # Subtest: concurrent changes using the same old password have only one winner
+    ok 9 - concurrent changes using the same old password have only one winner
+      ---
+      duration_ms: 1728.4969
+      ...
+    # Subtest: previously leaked 64-character reset tokens cannot be redeemed
+    ok 10 - previously leaked 64-character reset tokens cannot be redeemed
+      ---
+      duration_ms: 71.9299
+      ...
+    # Subtest: recovery responses are identical for eligible, unknown and ineligible accounts
+    ok 11 - recovery responses are identical for eligible, unknown and ineligible accounts
+      ---
+      duration_ms: 64.678
+      ...
+    # Subtest: local inbox encrypts token and recipient while its listing exposes metadata only
+    ok 12 - local inbox encrypts token and recipient while its listing exposes metadata only
+      ---
+      duration_ms: 46.9762
+      ...
+    # Subtest: same reset token can succeed only once under concurrent HTTP requests
+    ok 13 - same reset token can succeed only once under concurrent HTTP requests
+      ---
+      duration_ms: 2105.5826
+      ...
+    # Subtest: requesting a replacement reset link invalidates the earlier link
+    ok 14 - requesting a replacement reset link invalidates the earlier link
+      ---
+      duration_ms: 1566.3656
+      ...
+    # Subtest: expired reset links cannot change credentials
+    ok 15 - expired reset links cannot change credentials
+      ---
+      duration_ms: 497.3535
+      ...
+    # Subtest: password changes invalidate all outstanding recovery links
+    ok 16 - password changes invalidate all outstanding recovery links
+      ---
+      duration_ms: 1092.24
+      ...
+    # Subtest: recovery links remain revoked after daycare suspension and reactivation
+    ok 17 - recovery links remain revoked after daycare suspension and reactivation
+      ---
+      duration_ms: 1089.9042
+      ...
+    # Subtest: recovery links remain revoked after account deactivation and reactivation
+    ok 18 - recovery links remain revoked after account deactivation and reactivation
+      ---
+      duration_ms: 1161.9888
+      ...
+    # Subtest: racing a reset and password change admits only one credential update
+    ok 19 - racing a reset and password change admits only one credential update
+      ---
+      duration_ms: 1577.3878
+      ...
+    # Subtest: production recovery is uniformly unavailable without issuing a token
+    ok 20 - production recovery is uniformly unavailable without issuing a token
+      ---
+      duration_ms: 18.8454
+      ...
+    1..20
+ok 4 - phase one legacy authentication closes public bypasses and revokes stale access at migration013
+  ---
+  duration_ms: 16032.9196
+  ...
+1..4
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17080.4617

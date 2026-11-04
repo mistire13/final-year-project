@@ -1,0 +1,108 @@
+TAP version 13
+# Subtest: duty assignment rejects overlap, invalid duration and inactive staff
+not ok 1 - duty assignment rejects overlap, invalid duration and inactive staff
+  ---
+  duration_ms: 1703.7431
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:37:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+# Subtest: staff is limited to active shift scope and simultaneous check-in is serialized
+not ok 2 - staff is limited to active shift scope and simultaneous check-in is serialized
+  ---
+  duration_ms: 0.8968
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:43:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+# Subtest: checkout requires authorization and actual manual identity confirmation
+not ok 3 - checkout requires authorization and actual manual identity confirmation
+  ---
+  duration_ms: 0.0576
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:48:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+# Subtest: concurrent pickups create one checkout, verification and audit record
+not ok 4 - concurrent pickups create one checkout, verification and audit record
+  ---
+  duration_ms: 0.1058
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:59:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+# Subtest: snapshot forbids parents and does not expose password or biometric reference data
+not ok 5 - snapshot forbids parents and does not expose password or biometric reference data
+  ---
+  duration_ms: 0.0782
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:66:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+# Subtest: revocation and expired shifts immediately prevent desk operations
+not ok 6 - revocation and expired shifts immediately prevent desk operations
+  ---
+  duration_ms: 0.0515
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:72:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+# Subtest: HTTP routes reject unauthenticated, parent and deactivated accounts
+not ok 7 - HTTP routes reject unauthenticated, parent and deactivated accounts
+  ---
+  duration_ms: 0.091
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\portal.test.cjs:78:1'
+  failureType: 'hookFailed'
+  error: 'relation "roles" does not exist'
+  code: '42P01'
+  name: 'error'
+  stack: |-
+    C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg\lib\client.js:694:17
+    process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    async execute (C:\Users\Mistire\Desktop\final year project\backend\src\db\tenant-pool.js:45:26)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 0
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2613.6192

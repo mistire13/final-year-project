@@ -742,12 +742,15 @@ export function RecordForm({
               {field.label}
               {field.required ? " *" : ""}
             </span>
-            {field.type === "image" ? (
+            {field.type === "image" || field.type === "document" ? (
               <ImageDropzone
                 value={values[field.key]}
                 onChange={(val) => change(field.key, val)}
                 disabled={busy}
                 hint={field.hint}
+                allowPdf={field.type === "document"}
+                allowUrl={field.type !== "document"}
+                promptTitle={field.type === "document" ? "Choose a PDF or image file" : undefined}
               />
             ) : field.type === "select" ? (
               <select

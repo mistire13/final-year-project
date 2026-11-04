@@ -22,9 +22,14 @@ function emailValue(value) {
   return value.trim().toLowerCase();
 }
 
+function rejectSharedOperatorCredential(email, password) {
+  // Migration 013's historical demo credential must never grant platform access.
+  if (email === 'superadmin@ankelba.com' && password === '1234') throw failure(401, 'Invalid credentials');
+}
+
 function validateNewPassword(value) {
-  if (typeof value !== 'string' || value.length < 4 || Buffer.byteLength(value, 'utf8') > 72) {
-    throw failure(422, 'New password must have at least 4 characters and at most 72 UTF-8 bytes');
+  if (typeof value !== 'string' || value.length < 12 || Buffer.byteLength(value, 'utf8') > 72) {
+    throw failure(422, 'New password must have at least 12 characters and at most 72 UTF-8 bytes');
   }
 }
 
@@ -45,7 +50,9 @@ async function publicProfile(user) {
 }
 
 const login = async (email, password) => {
-  const user = await security.findAccount(control, { email: emailValue(email) });
+  const normalizedEmail = emailValue(email);
+  rejectSharedOperatorCredential(normalizedEmail,password);
+  const user = await security.findAccount(control, { email: normalizedEmail });
   if (!user || typeof password !== 'string' || !await bcrypt.compare(password, user.password_hash)) {
     throw failure(401, 'Invalid credentials');
   }
@@ -129,5 +136,13 @@ const register = async () => {
   throw failure(403, 'Public parent registration is unavailable. Contact your daycare administrator to create your account.');
 };
 
-module.exports = { login, register, getCurrentUser, forgotPassword, resetPassword, changePassword };
+const logout = async userId => security.transaction(control, async client => {
+  const account = await security.lockAccount(client, {id:userId});
+  if (!account) return;
+  const modern = (await client.query("SELECT to_jsonb(u) ? 'security_revision' AS modern FROM users u WHERE id=$1",[userId])).rows[0].modern;
+  if (modern) await client.query('UPDATE users SET security_revision=$2,updated_at=clock_timestamp() WHERE id=$1',[userId,crypto.randomUUID()]);
+  else await client.query('UPDATE users SET updated_at=clock_timestamp() WHERE id=$1',[userId]);
+});
+
+module.exports = { login, register, getCurrentUser, forgotPassword, resetPassword, changePassword, logout };
 

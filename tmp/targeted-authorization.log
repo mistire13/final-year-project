@@ -1,0 +1,294 @@
+TAP version 13
+# 14:21:40 [[32minfo[39m]: Child invoice created: ID 1 for child 1 (ETB 100) by 2
+# Subtest: private invoices require child-linked parents and cannot cross daycare/database boundaries
+ok 1 - private invoices require child-linked parents and cannot cross daycare/database boundaries
+  ---
+  duration_ms: 5071.2666
+  ...
+# Subtest: phase one legacy authentication closes public bypasses and revokes stale access at migration013
+    # Subtest: fresh JWTs carry bound state and support bearer and cookie requests
+    ok 1 - fresh JWTs carry bound state and support bearer and cookie requests
+      ---
+      duration_ms: 126.6843
+      ...
+    # Subtest: unversioned, wrong-audience and wrong-algorithm tokens are rejected
+    ok 2 - unversioned, wrong-audience and wrong-algorithm tokens are rejected
+      ---
+      duration_ms: 25.9119
+      ...
+    # Subtest: tenant accounts require an active daycare and account before login
+    ok 3 - tenant accounts require an active daycare and account before login
+      ---
+      duration_ms: 48.949
+      ...
+    # Subtest: public parent signup is denied in HTTP and service without provisioning records
+    ok 4 - public parent signup is denied in HTTP and service without provisioning records
+      ---
+      duration_ms: 18.82
+      ...
+    # Subtest: daycare suspension revokes existing JWTs permanently through reactivation
+    ok 5 - daycare suspension revokes existing JWTs permanently through reactivation
+      ---
+      duration_ms: 72.0057
+      ...
+    # Subtest: user deactivation revokes existing JWTs permanently through reactivation
+    ok 6 - user deactivation revokes existing JWTs permanently through reactivation
+      ---
+      duration_ms: 95.8399
+      ...
+    # Subtest: sub-millisecond user and daycare revision changes invalidate issued JWTs
+    ok 7 - sub-millisecond user and daycare revision changes invalidate issued JWTs
+      ---
+      duration_ms: 33.6059
+      ...
+    # Subtest: password changes reject wrong current passwords and revoke all previously issued JWTs
+    ok 8 - password changes reject wrong current passwords and revoke all previously issued JWTs
+      ---
+      duration_ms: 1173.0297
+      ...
+    # Subtest: concurrent changes using the same old password have only one winner
+    ok 9 - concurrent changes using the same old password have only one winner
+      ---
+      duration_ms: 327.24
+      ...
+    # Subtest: previously leaked 64-character reset tokens cannot be redeemed
+    ok 10 - previously leaked 64-character reset tokens cannot be redeemed
+      ---
+      duration_ms: 13.5632
+      ...
+    # Subtest: recovery responses are identical for eligible, unknown and ineligible accounts
+    ok 11 - recovery responses are identical for eligible, unknown and ineligible accounts
+      ---
+      duration_ms: 52.8142
+      ...
+    # Subtest: local inbox encrypts token and recipient while its listing exposes metadata only
+    ok 12 - local inbox encrypts token and recipient while its listing exposes metadata only
+      ---
+      duration_ms: 38.2186
+      ...
+    # Subtest: same reset token can succeed only once under concurrent HTTP requests
+    ok 13 - same reset token can succeed only once under concurrent HTTP requests
+      ---
+      duration_ms: 1224.8718
+      ...
+    # Subtest: requesting a replacement reset link invalidates the earlier link
+    ok 14 - requesting a replacement reset link invalidates the earlier link
+      ---
+      duration_ms: 942.681
+      ...
+    # Subtest: expired reset links cannot change credentials
+    ok 15 - expired reset links cannot change credentials
+      ---
+      duration_ms: 327.955
+      ...
+    # Subtest: password changes invalidate all outstanding recovery links
+    ok 16 - password changes invalidate all outstanding recovery links
+      ---
+      duration_ms: 673.9068
+      ...
+    # Subtest: recovery links remain revoked after daycare suspension and reactivation
+    ok 17 - recovery links remain revoked after daycare suspension and reactivation
+      ---
+      duration_ms: 692.4289
+      ...
+    # Subtest: recovery links remain revoked after account deactivation and reactivation
+    ok 18 - recovery links remain revoked after account deactivation and reactivation
+      ---
+      duration_ms: 712.4001
+      ...
+    # Subtest: racing a reset and password change admits only one credential update
+    ok 19 - racing a reset and password change admits only one credential update
+      ---
+      duration_ms: 946.594
+      ...
+    # Subtest: production recovery is uniformly unavailable without issuing a token
+    ok 20 - production recovery is uniformly unavailable without issuing a token
+      ---
+      duration_ms: 23.3401
+      ...
+    1..20
+ok 2 - phase one legacy authentication closes public bypasses and revokes stale access at migration013
+  ---
+  duration_ms: 9773.9928
+  ...
+# Subtest: phase two: daycare isolation and permission enforcement
+    # Subtest: admin A only sees users from daycare A and never super_admin
+    ok 1 - admin A only sees users from daycare A and never super_admin
+      ---
+      duration_ms: 34.0063
+      ...
+    # Subtest: admin A cannot get, update, or deactivate user from daycare B
+    ok 2 - admin A cannot get, update, or deactivate user from daycare B
+      ---
+      duration_ms: 10.9282
+      ...
+    # Subtest: owner-only admin appointment: tenant admin cannot create another admin (B07)
+    ok 3 - owner-only admin appointment: tenant admin cannot create another admin (B07)
+      ---
+      duration_ms: 0.4469
+      ...
+    # Subtest: tenant admin creating caregiver stamps actor daycare_id (B04)
+    ok 4 - tenant admin creating caregiver stamps actor daycare_id (B04)
+      ---
+      duration_ms: 104.9403
+      ...
+    # Subtest: admin A only lists children from daycare A
+    not ok 5 - admin A only lists children from daycare A
+      ---
+      duration_ms: 7.9551
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\phase2-daycare-isolation.test.cjs:199:13'
+      failureType: 'testCodeFailure'
+      error: 'column c.birth_certificate_url does not exist'
+      code: '42703'
+      name: 'error'
+      stack: |-
+        C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-pool\index.js:45:11
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async Object.listChildren (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.service.js:84:20)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:200:22)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:199:5
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:138:3)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: admin A cannot get or update child from daycare B
+    ok 6 - admin A cannot get or update child from daycare B
+      ---
+      duration_ms: 59.5272
+      ...
+    # Subtest: admin A cannot assign caregiver or group from daycare B to child A
+    ok 7 - admin A cannot assign caregiver or group from daycare B to child A
+      ---
+      duration_ms: 5.7551
+      ...
+    # Subtest: admin A cannot link parent B to child A
+    ok 8 - admin A cannot link parent B to child A
+      ---
+      duration_ms: 1.7033
+      ...
+    # Subtest: admin A cannot add, update or delete emergency contacts or care instructions on child B
+    ok 9 - admin A cannot add, update or delete emergency contacts or care instructions on child B
+      ---
+      duration_ms: 3.746
+      ...
+    # Subtest: parent A cannot self-authorize pickup or change classroom group (B08)
+    ok 10 - parent A cannot self-authorize pickup or change classroom group (B08)
+      ---
+      duration_ms: 167.7232
+      ...
+    # Subtest: admin A only sees daycare A groups and cannot modify group B
+    ok 11 - admin A only sees daycare A groups and cannot modify group B
+      ---
+      duration_ms: 3.2213
+      ...
+    # Subtest: health records stamp daycare_id and reject cross-daycare access and unassigned caregivers
+    ok 12 - health records stamp daycare_id and reject cross-daycare access and unassigned caregivers
+      ---
+      duration_ms: 20.7173
+      ...
+    # Subtest: announcements stamp daycare_id and isolate across tenants
+    ok 13 - announcements stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 12.8337
+      ...
+    # Subtest: direct messages reject cross-daycare recipients
+    ok 14 - direct messages reject cross-daycare recipients
+      ---
+      duration_ms: 1.0622
+      ...
+    # Subtest: alerts reject targeting users from another daycare
+    ok 15 - alerts reject targeting users from another daycare
+      ---
+      duration_ms: 0.9247
+      ...
+    # Subtest: daily reports stamp daycare_id and isolate across tenants
+    ok 16 - daily reports stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 11.294
+      ...
+    # Subtest: store products and orders enforce strict daycare isolation
+    ok 17 - store products and orders enforce strict daycare isolation
+      ---
+      duration_ms: 27.5428
+      ...
+    # Subtest: calendar events stamp daycare_id and isolate across tenants
+    ok 18 - calendar events stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 11.788
+      ...
+    # Subtest: global search results never leak records from another daycare
+    ok 19 - global search results never leak records from another daycare
+      ---
+      duration_ms: 11.54
+      ...
+    # Subtest: admin dashboard statistics only aggregate for own daycare
+    ok 20 - admin dashboard statistics only aggregate for own daycare
+      ---
+      duration_ms: 58.1848
+      ...
+    # Subtest: audit logs stamp daycare_id and isolate across tenants
+    ok 21 - audit logs stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 18.4546
+      ...
+    # Subtest: restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+        # Subtest: un-contexted queries fail closed and return 0 rows under RLS
+        ok 1 - un-contexted queries fail closed and return 0 rows under RLS
+          ---
+          duration_ms: 27.7769
+          ...
+        # Subtest: queries with Daycare A context return only Daycare A rows without WHERE clause
+        ok 2 - queries with Daycare A context return only Daycare A rows without WHERE clause
+          ---
+          duration_ms: 2.0391
+          ...
+        # Subtest: direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy
+        ok 3 - direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy
+          ---
+          duration_ms: 1.6149
+          ...
+        # Subtest: direct SQL insert into dependent table for cross-tenant child is rejected by RLS
+        ok 4 - direct SQL insert into dependent table for cross-tenant child is rejected by RLS
+          ---
+          duration_ms: 1.4106
+          ...
+        # Subtest: direct SQL update targeting Daycare B record under Daycare A context affects 0 rows
+        ok 5 - direct SQL update targeting Daycare B record under Daycare A context affects 0 rows
+          ---
+          duration_ms: 1.78
+          ...
+        # Subtest: queries with Daycare B context return only Daycare B rows
+        ok 6 - queries with Daycare B context return only Daycare B rows
+          ---
+          duration_ms: 1.4994
+          ...
+        # Subtest: tenant connection pool isolates context, prevents leakage across checkouts, and fails closed
+        ok 7 - tenant connection pool isolates context, prevents leakage across checkouts, and fails closed
+          ---
+          duration_ms: 104.9031
+          ...
+        1..7
+    ok 22 - restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+      ---
+      duration_ms: 450.1189
+      ...
+    1..22
+not ok 3 - phase two: daycare isolation and permission enforcement
+  ---
+  duration_ms: 5050.6912
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\phase2-daycare-isolation.test.cjs:137:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..3
+# tests 52
+# suites 0
+# pass 50
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10786.2843

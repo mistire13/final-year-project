@@ -60,6 +60,9 @@ export function ParentBillsScreen({ navigation }: any) {
 
   const displayedBills = activeTab === "active" ? activeBills : paidBills;
 
+  if (loading) return <Page title="Care Fees & Receipts" back><ActivityIndicator /><Text>Loading care fees and receipts…</Text></Page>;
+  if (error) return <Page title="Care Fees & Receipts" back><Notice>{error}</Notice><Button title="Retry" onPress={loadBills} /></Page>;
+
   return (
     <Page title="Care Fees & Receipts" back tabs activeTab="Profile">
       {/* Overview Card */}
@@ -181,7 +184,7 @@ export function ParentBillsScreen({ navigation }: any) {
         displayedBills.map((b) => {
           const bal = parseFloat(String(b.balance_remaining)) || 0;
           const isOverdue =
-            b.status !== "paid" && new Date(b.due_date) < new Date();
+            b.status !== "paid" && String(b.due_date).slice(0,10) < new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 
           return (
             <Card key={b.id} style={{ marginBottom: 14, padding: 18 }}>

@@ -14,30 +14,30 @@ const { loadDaycareAuthConfig } = require('./config/daycare-auth');
 const daycareAuthConfig = loadDaycareAuthConfig();
 
 // Module routers
-const authRoutes          = daycareAuthConfig.enabled
+const authRoutes = daycareAuthConfig.enabled
   ? require('./modules/daycare-auth/runtime').router
   : require('./modules/auth/auth.routes');
-const usersRoutes         = daycareAuthConfig.enabled
+const usersRoutes = daycareAuthConfig.enabled
   ? require('./modules/daycare-auth/runtime').usersRouter
   : require('./modules/users/users.routes');
-const childrenRoutes      = require('./modules/children/children.routes');
-const parentRoutes        = require('./modules/children/children.parent.routes');
-const attendanceRoutes    = require('./modules/attendance/attendance.routes');
-const reportsRoutes       = require('./modules/reports/reports.routes');
-const healthRoutes        = require('./modules/health/health.routes');
+const childrenRoutes = require('./modules/children/children.routes');
+const parentRoutes = require('./modules/children/children.parent.routes');
+const attendanceRoutes = require('./modules/attendance/attendance.routes');
+const reportsRoutes = require('./modules/reports/reports.routes');
+const healthRoutes = require('./modules/health/health.routes');
 const communicationRoutes = require('./modules/communication/communication.routes');
-const aiGuideRoutes       = require('./modules/ai-guide/ai-guide.routes');
-const biometricRoutes     = require('./modules/biometric/biometric.routes');
-const storeRoutes         = require('./modules/store/store.routes');
-const paymentsRoutes      = require('./modules/payments/payments.routes');
-const eventsRoutes        = require('./modules/events/events.routes');
-const auditRoutes         = require('./modules/audit/audit.routes');
-const groupsRoutes        = require('./modules/groups/groups.routes');
-const dashboardRoutes     = require('./modules/dashboard/dashboard.routes');
+const aiGuideRoutes = require('./modules/ai-guide/ai-guide.routes');
+const biometricRoutes = require('./modules/biometric/biometric.routes');
+const storeRoutes = require('./modules/store/store.routes');
+const paymentsRoutes = require('./modules/payments/payments.routes');
+const eventsRoutes = require('./modules/events/events.routes');
+const auditRoutes = require('./modules/audit/audit.routes');
+const groupsRoutes = require('./modules/groups/groups.routes');
+const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 const notificationsRoutes = require('./modules/notifications/notifications.routes');
-const searchRoutes        = require('./modules/search/search.routes');
-const saasRoutes          = require('./modules/saas/saas.routes');
-const financesRoutes      = require('./modules/finances/finances.routes');
+const searchRoutes = require('./modules/search/search.routes');
+const saasRoutes = require('./modules/saas/saas.routes');
+const financesRoutes = require('./modules/finances/finances.routes');
 
 const app = express();
 
@@ -67,8 +67,8 @@ app.use(cors({
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,             // allow HttpOnly cookies to be passed
-  methods: ['GET','POST','PATCH','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization', ...(daycareAuthConfig.enabled ? ['X-CSRF-Token'] : [])],
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', ...(daycareAuthConfig.enabled ? ['X-CSRF-Token'] : [])],
 }));
 
 // ──────────────────────────────────────────────
@@ -163,29 +163,29 @@ app.use([
   next();
 });
 app.use('/api/portal', require('./modules/portal/portal.routes'));
-app.use('/api/auth',          authLimiter, authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 if (daycareAuthConfig.enabled) {
   app.use('/api/platform/auth', authLimiter, require('./modules/daycare-auth/runtime').platformRouter);
 }
-app.use('/api/users',         usersRoutes);
-app.use('/api/children',      childrenRoutes);
-app.use('/api/parent',        parentRoutes);
-app.use('/api/attendance',    attendanceRoutes);
-app.use('/api/reports',       reportsRoutes);
-app.use('/api/health',        healthRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/children', childrenRoutes);
+app.use('/api/parent', parentRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/health', healthRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api', communicationRoutes);
-app.use('/api/ai',            aiGuideRoutes);
-app.use('/api/biometric',     biometricRoutes);
-app.use('/api/store',         storeRoutes);
-app.use('/api/payments',      paymentsRoutes);
-app.use('/api/finances',      financesRoutes);
-app.use('/api/events',        eventsRoutes);
-app.use('/api/audit',         auditRoutes);
-app.use('/api/groups',        groupsRoutes);
-app.use('/api/dashboard',     dashboardRoutes);
+app.use('/api/ai', aiGuideRoutes);
+app.use('/api/biometric', biometricRoutes);
+app.use('/api/store', storeRoutes);
+app.use('/api/payments', paymentsRoutes);
+app.use('/api/finances', financesRoutes);
+app.use('/api/events', eventsRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/groups', groupsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationsRoutes);
-app.use('/api/search',        searchRoutes);
+app.use('/api/search', searchRoutes);
 
 // ──────────────────────────────────────────────
 // 9. 404 handler

@@ -25,8 +25,8 @@ export function OTPScreen({ navigation, route }: any) {
       setError("Please enter your verification code or reset token.");
       return;
     }
-    if (!newPassword || newPassword.length < 8) {
-      setError("New password must be at least 8 characters long.");
+    if (!newPassword || newPassword.length < 12) {
+      setError("New password must be at least 12 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {

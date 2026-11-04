@@ -140,6 +140,8 @@ test('phase two: daycare isolation and permission enforcement', async (t) => {
     // Keep the pre-RLS upgrade scenario below, with current API-only fields.
     await require('../src/db/migrations/030_announcement_request_keys').up(db);
     await require('../src/db/migrations/033_child_and_classroom_edit_versions').up(db);
+    await require('../src/db/migrations/039_child_registration_documents').up(db);
+    await db.schema.alterTable('children', t => t.decimal('monthly_care_fee',10,2).defaultTo(3500));
     const f = await fixture(db);
     const mod = setupContext(pool);
 

@@ -32,6 +32,10 @@ router.get('/announcements/:id', auth, async (req, res, next) => {
 router.post('/announcements', auth, allowRoles('admin'), validate(createAnnouncementSchema), c.createAnnouncement);
 
 // Messages
+router.get('/messages/oversight', auth, allowRoles('admin'), async (req,res,next) => {
+  try { res.json(await require('./communication.service').reviewMessages(req.query,req.user)); }
+  catch (error) { next(error); }
+});
 router.get('/messages', auth, c.listMessages);
 router.post('/messages', auth, validate(sendMessageSchema), c.sendMessage);
 router.patch('/messages/:id/read', auth, c.markMessageRead);

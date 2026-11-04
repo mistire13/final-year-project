@@ -164,10 +164,10 @@ const registerDaycare = async (data) => {
  */
 const getPlatformStats = async () => {
   const [daycaresCount, pendingCount, activeCount, suspendedCount, childrenCount, usersCount, trialCount, standardCount, premiumCount] = await Promise.all([
-    db.query('SELECT COUNT(*)::int AS count FROM daycares'),
+    db.query("SELECT COUNT(*)::int AS count FROM daycares d WHERE to_jsonb(d)->>'deleted_at' IS NULL"),
     db.query("SELECT (SELECT COUNT(*)::int FROM daycares WHERE status = 'pending') + (SELECT COUNT(*)::int FROM daycare_applications WHERE status = 'pending') AS count"),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'active'"),
-    db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'suspended'"),
+    db.query("SELECT COUNT(*)::int AS count FROM daycares d WHERE status = 'suspended' AND to_jsonb(d)->>'deleted_at' IS NULL"),
     db.query(`SELECT COALESCE(SUM(child_count),0)::int AS count FROM ${childCountsSource} counts`),
     db.query('SELECT COUNT(*)::int AS count FROM users'),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_status = 'trialing' AND status = 'active' AND trial_ends_at > NOW()"),
@@ -224,7 +224,7 @@ const listDaycares = async ({ status, search } = {}) => {
   `;
 
   const params = [];
-  const whereClauses = [];
+  const whereClauses = ["to_jsonb(d)->>'deleted_at' IS NULL"];
 
   if (status && status !== 'all') {
     params.push(status);
@@ -641,7 +641,7 @@ async function changeDaycareStatus(id, expected, status, action, actorId, metada
   try {
     await client.query('BEGIN');
     const { rows } = await client.query(
-      'UPDATE daycares SET status=$2,updated_at=NOW() WHERE id=$1 AND status=$3 RETURNING *', [id, status, expected]
+      "UPDATE daycares SET status=$2,updated_at=NOW() WHERE id=$1 AND status=$3 AND to_jsonb(daycares)->>'deleted_at' IS NULL RETURNING *", [id, status, expected]
     );
     if (!rows[0]) throw Object.assign(new Error(`Daycare is no longer ${expected}. Refresh before trying again.`), { statusCode: 409 });
     if (deactivateAdmin) await client.query("UPDATE users SET status='inactive' WHERE daycare_id=$1 AND role_id=1", [id]);
@@ -669,6 +669,31 @@ const suspendDaycare = async (id, actorId) => {
  */
 const activateDaycare = async (id, actorId) => {
   return changeDaycareStatus(id, 'suspended', 'active', 'DAYCARE_REACTIVATED', actorId);
+};
+
+const deleteDaycare = async (id, body, actorId) => {
+  const { value, error } = Joi.object({
+    version: Joi.number().integer().min(1).required(),
+    confirmation: Joi.string().required(),
+    reason: Joi.string().trim().min(12).max(2000).required(),
+  }).required().validate(body);
+  if (error) throw Object.assign(new Error(error.details[0].message), { statusCode: 422 });
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const center = (await client.query('SELECT * FROM daycares WHERE id=$1 FOR UPDATE', [id])).rows[0];
+    if (!center) throw Object.assign(new Error('Daycare not found.'), { statusCode: 404 });
+    if (value.confirmation !== center.name) throw Object.assign(new Error('Enter the exact daycare name to confirm deletion.'), { statusCode: 422 });
+    if (center.deleted_at) { await client.query('COMMIT'); return { message: 'Daycare already deleted.', id: center.id }; }
+    if (center.version !== value.version) throw Object.assign(new Error('Daycare changed. Refresh before deleting.'), { statusCode: 409 });
+    await client.query("UPDATE daycares SET status='suspended',deleted_at=NOW(),deletion_reason=$2,updated_at=NOW() WHERE id=$1", [id, value.reason]);
+    await client.query(`INSERT INTO audit_logs(actor_id,action,target_table,target_id,daycare_id,metadata)
+      VALUES($1,'DAYCARE_DELETED','daycares',$2,$2,$3)`,
+    [actorId, id, JSON.stringify({ name: center.name, reason: value.reason, previous_status: center.status, history_retained: true })]);
+    await client.query('COMMIT');
+    return { message: 'Daycare deleted. Account access is blocked; historical records are retained.', id: center.id };
+  } catch (err) { await client.query('ROLLBACK'); throw err; }
+  finally { client.release(); }
 };
 
 /**
@@ -819,6 +844,7 @@ module.exports = {
   rejectDaycare,
   suspendDaycare,
   activateDaycare,
+  deleteDaycare,
 
   listApplications,
   getApplicationById,

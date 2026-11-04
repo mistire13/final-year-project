@@ -1,0 +1,415 @@
+TAP version 13
+# Subtest: essential security with separate restricted PostgreSQL logins
+    # Subtest: flow migration can roll back and reapply without dropping stored columns
+    ok 1 - flow migration can roll back and reapply without dropping stored columns
+      ---
+      duration_ms: 125.2799
+      ...
+    # Subtest: startup rejects privileged logins and verifies restricted roles
+    ok 2 - startup rejects privileged logins and verifies restricted roles
+      ---
+      duration_ms: 354.0015
+      ...
+    # Subtest: unscoped reads fail closed and concurrent tenants stay isolated
+    ok 3 - unscoped reads fail closed and concurrent tenants stay isolated
+      ---
+      duration_ms: 108.547
+      ...
+    # Subtest: one physical connection clears scope after commits, failures and background jobs
+    ok 4 - one physical connection clears scope after commits, failures and background jobs
+      ---
+      duration_ms: 109.8631
+      ...
+    # Subtest: startup catches policy and control-grant regressions beyond core tables
+    ok 5 - startup catches policy and control-grant regressions beyond core tables
+      ---
+      duration_ms: 272.7921
+      ...
+    # Subtest: evidence migration refuses inconsistent history and can roll back and reapply
+    ok 6 - evidence migration refuses inconsistent history and can roll back and reapply
+      ---
+      duration_ms: 164.5915
+      ...
+    # Subtest: database constrains biometric, pickup and audit actors even for maintenance SQL
+    ok 7 - database constrains biometric, pickup and audit actors even for maintenance SQL
+      ---
+      duration_ms: 36.904
+      ...
+    # Subtest: control can update and audit package terms without accessing child evidence
+    ok 8 - control can update and audit package terms without accessing child evidence
+      ---
+      duration_ms: 129.7286
+      ...
+# 14:23:20 [[32minfo[39m]: User 4 (parent) authenticated
+# 14:23:20 [[32minfo[39m]: User 5 (parent) authenticated
+# 14:23:20 [[32minfo[39m]: User 2 (admin) authenticated
+# 14:23:20 [[32minfo[39m]: User 3 (caregiver) authenticated
+# 14:23:20 [[32minfo[39m]: User 6 (super_admin) authenticated
+# 14:23:20 [[31merror[39m]: Error: Child not linked to this account.
+#     at assertParentOwnsChild (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.parent.service.js:30:17)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async getMyChild (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.parent.service.js:70:5)
+    # Subtest: restricted HTTP login and parent profile loading work
+    ok 9 - restricted HTTP login and parent profile loading work
+      ---
+      duration_ms: 221.3399
+      ...
+# 14:23:20 [[31merror[39m]: Error: Child profile not found
+#     at Object.createReport (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\reports\\reports.service.js:25:17)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async createReport (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\reports\\reports.controller.js:10:20)
+    # Subtest: staff can operate within their daycare and parents cannot open staff APIs
+    ok 10 - staff can operate within their daycare and parents cannot open staff APIs
+      ---
+      duration_ms: 153.0238
+      ...
+# 14:23:20 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+#     at conflict (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:3:38)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:21:100
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async run (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\utils\\auditedWrite.js:28:22)
+#     at async addContact (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.controller.js:13:79)
+# 14:23:20 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+#     at conflict (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:3:38)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:21:100
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async run (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\utils\\auditedWrite.js:28:22)
+#     at async addContact (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.controller.js:13:79)
+# 14:23:21 [[31merror[39m]: Error: Profile changed. Reload it before saving.
+#     at fail (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.profile-save.js:7:53)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.profile-save.js:71:49
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\auth\\legacy-security.js:62:20)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.profile-save.js:102:18
+    # Subtest: parent and admin care writers invalidate each other and serialize concurrent edits
+    ok 11 - parent and admin care writers invalidate each other and serialize concurrent edits
+      ---
+      duration_ms: 118.3643
+      ...
+# 14:23:21 [[31merror[39m]: Error: No active front-desk assignment for this child and action.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at assertScope (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:33:24)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:77:16
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+# 14:23:21 [[31merror[39m]: Error: Child must be checked in before pickup.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:84:78
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+    # Subtest: assigned caregiver check-in and verified manual pickup commit with scoped evidence
+    ok 12 - assigned caregiver check-in and verified manual pickup commit with scoped evidence
+      ---
+      duration_ms: 71.485
+      ...
+    # Subtest: announcement details enforce audience, expiry and tenant boundaries
+    ok 13 - announcement details enforce audience, expiry and tenant boundaries
+      ---
+      duration_ms: 83.9347
+      ...
+# 14:23:21 [[31merror[39m]: Error: This checkout was already submitted with different items. Start a new checkout.
+#     at Object.placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:191:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:37:20)
+# 14:23:21 [[31merror[39m]: Error: Product ID 1 is not available
+#     at Object.placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:220:21)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:37:20)
+# 14:23:21 [[31merror[39m]: Error: Product changed. Reload before saving.
+#     at Object.updateProduct (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:155:25)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateProduct (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:28:20)
+    # Subtest: checkout retries preserve one order, notes and inventory; changed payload conflicts
+    ok 14 - checkout retries preserve one order, notes and inventory; changed payload conflicts
+      ---
+      duration_ms: 75.6531
+      ...
+# 14:23:21 [[31merror[39m]: Error: Event changed. Reload before saving.
+#     at Object.updateEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.service.js:142:25)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.controller.js:28:20)
+# 14:23:21 [[31merror[39m]: Error: Center settings changed. Reload before saving.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:182:25
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+    # Subtest: event and center settings edits reject stale versions
+    ok 15 - event and center settings edits reject stale versions
+      ---
+      duration_ms: 38.6897
+      ...
+# 14:23:21 [[31merror[39m]: Error: Order changed. Reload before saving.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:418:15)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 14:23:21 [[31merror[39m]: Error: This order status transition is not allowed.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:433:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 14:23:21 [[31merror[39m]: Error: A cancelled order cannot accept payment.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:438:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 14:23:21 [[31merror[39m]: ValidationError: "version" is required
+# 14:23:21 [[31merror[39m]: Error: Resolve payment or refund before cancelling this order.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:446:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 14:23:21 [[31merror[39m]: Error: Recorded payments cannot be reversed here. A refund workflow is required.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:440:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 14:23:21 [[31merror[39m]: Error: This order status transition is not allowed.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:433:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+    # Subtest: order edits reject stale writes and cancellation returns stock once
+    ok 16 - order edits reject stale writes and cancellation returns stock once
+      ---
+      duration_ms: 191.9952
+      ...
+# 14:23:21 [[31merror[39m]: Error: Event changed. Reload before cancelling.
+#     at Object.cancelEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.service.js:179:25)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async cancelEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.controller.js:37:20)
+# 14:23:21 [[31merror[39m]: ValidationError: "version" is required
+    # Subtest: event cancellation conflicts with stale edits and stays tenant scoped
+    ok 17 - event cancellation conflicts with stale edits and stays tenant scoped
+      ---
+      duration_ms: 35.3843
+      ...
+# 14:23:21 [[31merror[39m]: Error: Event unavailable
+#     at Object.save (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\notifications\\preferences.js:66:29)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\notifications\\notifications.routes.js:13:72
+    # Subtest: preferences and reminders persist per account; health notify sends one parent message
+    ok 18 - preferences and reminders persist per account; health notify sends one parent message
+      ---
+      duration_ms: 316.6596
+      ...
+# 14:23:21 [[31merror[39m]: Error: Subscription changes require platform approval. Contact platform support.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at Object.renewPlan (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:189:9)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:20:65
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:57
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at middleware (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\middleware\\rbac.js:32:3)
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at Route.dispatch (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)
+# 14:23:21 [[31merror[39m]: Error: Platform operators cannot impersonate daycare accounts.
+#     at Object.impersonateDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:703:23)
+#     at impersonateDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.controller.js:132:39)
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at middleware (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\middleware\\rbac.js:32:3)
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at auth (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\middleware\\auth.js:68:5)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    # Subtest: self-renewal and impersonation fail without changing subscription
+    ok 19 - self-renewal and impersonation fail without changing subscription
+      ---
+      duration_ms: 29.9331
+      ...
+    # Subtest: platform governance works using aggregates while private APIs stay denied
+    ok 20 - platform governance works using aggregates while private APIs stay denied
+      ---
+      duration_ms: 1405.5072
+      ...
+    1..20
+ok 1 - essential security with separate restricted PostgreSQL logins
+  ---
+  duration_ms: 7111.0132
+  ...
+# Subtest: phase two: daycare isolation and permission enforcement
+    # Subtest: admin A only sees users from daycare A and never super_admin
+    ok 1 - admin A only sees users from daycare A and never super_admin
+      ---
+      duration_ms: 33.0075
+      ...
+    # Subtest: admin A cannot get, update, or deactivate user from daycare B
+    ok 2 - admin A cannot get, update, or deactivate user from daycare B
+      ---
+      duration_ms: 11.1223
+      ...
+    # Subtest: owner-only admin appointment: tenant admin cannot create another admin (B07)
+    ok 3 - owner-only admin appointment: tenant admin cannot create another admin (B07)
+      ---
+      duration_ms: 0.5019
+      ...
+    # Subtest: tenant admin creating caregiver stamps actor daycare_id (B04)
+    ok 4 - tenant admin creating caregiver stamps actor daycare_id (B04)
+      ---
+      duration_ms: 123.5348
+      ...
+    # Subtest: admin A only lists children from daycare A
+    not ok 5 - admin A only lists children from daycare A
+      ---
+      duration_ms: 7.6239
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\phase2-daycare-isolation.test.cjs:200:13'
+      failureType: 'testCodeFailure'
+      error: 'column c.monthly_care_fee does not exist'
+      code: '42703'
+      name: 'error'
+      stack: |-
+        C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-pool\index.js:45:11
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async Object.listChildren (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.service.js:84:20)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:201:22)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:200:5
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:138:3)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+      ...
+    # Subtest: admin A cannot get or update child from daycare B
+    ok 6 - admin A cannot get or update child from daycare B
+      ---
+      duration_ms: 53.9684
+      ...
+    # Subtest: admin A cannot assign caregiver or group from daycare B to child A
+    ok 7 - admin A cannot assign caregiver or group from daycare B to child A
+      ---
+      duration_ms: 6.06
+      ...
+    # Subtest: admin A cannot link parent B to child A
+    ok 8 - admin A cannot link parent B to child A
+      ---
+      duration_ms: 2.1745
+      ...
+    # Subtest: admin A cannot add, update or delete emergency contacts or care instructions on child B
+    ok 9 - admin A cannot add, update or delete emergency contacts or care instructions on child B
+      ---
+      duration_ms: 3.1169
+      ...
+    # Subtest: parent A cannot self-authorize pickup or change classroom group (B08)
+    ok 10 - parent A cannot self-authorize pickup or change classroom group (B08)
+      ---
+      duration_ms: 202.0178
+      ...
+    # Subtest: admin A only sees daycare A groups and cannot modify group B
+    ok 11 - admin A only sees daycare A groups and cannot modify group B
+      ---
+      duration_ms: 3.6111
+      ...
+    # Subtest: health records stamp daycare_id and reject cross-daycare access and unassigned caregivers
+    ok 12 - health records stamp daycare_id and reject cross-daycare access and unassigned caregivers
+      ---
+      duration_ms: 63.6532
+      ...
+    # Subtest: announcements stamp daycare_id and isolate across tenants
+    ok 13 - announcements stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 13.2159
+      ...
+    # Subtest: direct messages reject cross-daycare recipients
+    ok 14 - direct messages reject cross-daycare recipients
+      ---
+      duration_ms: 1.3909
+      ...
+    # Subtest: alerts reject targeting users from another daycare
+    ok 15 - alerts reject targeting users from another daycare
+      ---
+      duration_ms: 1.1346
+      ...
+    # Subtest: daily reports stamp daycare_id and isolate across tenants
+    ok 16 - daily reports stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 10.9669
+      ...
+    # Subtest: store products and orders enforce strict daycare isolation
+    ok 17 - store products and orders enforce strict daycare isolation
+      ---
+      duration_ms: 27.6059
+      ...
+    # Subtest: calendar events stamp daycare_id and isolate across tenants
+    ok 18 - calendar events stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 10.2766
+      ...
+    # Subtest: global search results never leak records from another daycare
+    ok 19 - global search results never leak records from another daycare
+      ---
+      duration_ms: 12.6468
+      ...
+    # Subtest: admin dashboard statistics only aggregate for own daycare
+    ok 20 - admin dashboard statistics only aggregate for own daycare
+      ---
+      duration_ms: 66.4516
+      ...
+    # Subtest: audit logs stamp daycare_id and isolate across tenants
+    ok 21 - audit logs stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 61.5683
+      ...
+    # Subtest: restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+        # Subtest: un-contexted queries fail closed and return 0 rows under RLS
+        ok 1 - un-contexted queries fail closed and return 0 rows under RLS
+          ---
+          duration_ms: 32.6745
+          ...
+        # Subtest: queries with Daycare A context return only Daycare A rows without WHERE clause
+        ok 2 - queries with Daycare A context return only Daycare A rows without WHERE clause
+          ---
+          duration_ms: 2.2208
+          ...
+        # Subtest: direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy
+        ok 3 - direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy
+          ---
+          duration_ms: 2.1611
+          ...
+        # Subtest: direct SQL insert into dependent table for cross-tenant child is rejected by RLS
+        ok 4 - direct SQL insert into dependent table for cross-tenant child is rejected by RLS
+          ---
+          duration_ms: 2.3048
+          ...
+        # Subtest: direct SQL update targeting Daycare B record under Daycare A context affects 0 rows
+        ok 5 - direct SQL update targeting Daycare B record under Daycare A context affects 0 rows
+          ---
+          duration_ms: 2.3935
+          ...
+        # Subtest: queries with Daycare B context return only Daycare B rows
+        ok 6 - queries with Daycare B context return only Daycare B rows
+          ---
+          duration_ms: 2.1132
+          ...
+        # Subtest: tenant connection pool isolates context, prevents leakage across checkouts, and fails closed
+        ok 7 - tenant connection pool isolates context, prevents leakage across checkouts, and fails closed
+          ---
+          duration_ms: 226.9709
+          ...
+        1..7
+    ok 22 - restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+      ---
+      duration_ms: 583.6503
+      ...
+    1..22
+not ok 2 - phase two: daycare isolation and permission enforcement
+  ---
+  duration_ms: 5411.7472
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\phase2-daycare-isolation.test.cjs:137:1'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..2
+# tests 51
+# suites 0
+# pass 49
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7916.085

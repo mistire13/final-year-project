@@ -1,0 +1,53 @@
+TAP version 13
+# 14:37:55 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 14:37:55 [[32minfo[39m]: User 3 (admin) authenticated
+# 14:37:55 [[31merror[39m]: Error: Enter the exact daycare name to confirm deletion.
+#     at Object.deleteDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:686:65)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.routes.js:17:59
+# 14:37:55 [[31merror[39m]: Error: Daycare changed. Refresh before deleting.
+#     at Object.deleteDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:688:63)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.routes.js:17:59
+# Subtest: operator deletion retains history, denies tenant actors and prevents resurrection
+ok 1 - operator deletion retains history, denies tenant actors and prevents resurrection
+  ---
+  duration_ms: 544422.1589
+  ...
+# 14:37:55 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 14:37:55 [[32minfo[39m]: User 3 (admin) authenticated
+# 14:37:55 [[32minfo[39m]: User 4 (caregiver) authenticated
+# 14:37:55 [[32minfo[39m]: User 5 (parent) authenticated
+# Subtest: every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+not ok 2 - every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+  ---
+  duration_ms: 5838645.1267
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\endpoint-authorization.test.cjs:11:1'
+  failureType: 'testCodeFailure'
+  error: 'fetch failed'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    node:internal/deps/undici/undici:13392:13
+    async request (C:\Users\Mistire\Desktop\final year project\backend\scripts\endpoint-authorization.test.cjs:38:19)
+    async C:\Users\Mistire\Desktop\final year project\backend\scripts\endpoint-authorization.test.cjs:45:19
+    async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+    async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\endpoint-authorization.test.cjs:12:2)
+    async Test.run (node:internal/test_runner/test:935:9)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# 14:37:55 [[32minfo[39m]: Child invoice created: ID 1 for child 1 (ETB 100) by 2
+# Subtest: private invoices require child-linked parents and cannot cross daycare/database boundaries
+ok 3 - private invoices require child-linked parents and cannot cross daycare/database boundaries
+  ---
+  duration_ms: 544555.6271
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 2
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5839741.3217

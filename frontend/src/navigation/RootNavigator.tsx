@@ -1,6 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import { AnnouncementDetailScreen } from "../screens/messages/AnnouncementDetailScreen";
 import { StaffComposeScreen } from "../screens/profile/StaffScreens";
+import { StaffReportDetailScreen } from "../screens/profile/NativeDailyReport";
 import { HelpSupportScreen } from "../screens/profile/HelpSupportScreen";
 import React from "react";
 import { useReducedMotion } from "../components/design/Motion";
@@ -48,6 +49,7 @@ export type RootStackParamList = {
   HelpSupport: undefined;
   AnnouncementDetail: { announcementId: number };
   StaffCompose: {kind: "report" | "health"; childId?: number};
+  StaffReportDetail: {reportId:number};
   Splash: { stay?: boolean } | undefined;
   Onboarding: undefined;
   Login: { mode?: "signin" | "register" } | undefined;
@@ -129,6 +131,7 @@ export function RootNavigator() {
           <Stack.Screen name="EventDetail" component={EventDetailScreen}/>
         </Stack.Group>}
         {staff && <Stack.Screen name="StaffCompose" component={StaffComposeScreen}/>}
+        {staff && <Stack.Screen name="StaffReportDetail" component={StaffReportDetailScreen}/>}
         {parent && <Stack.Group>
           <Stack.Screen name="ChildProfileWizard" component={ChildProfileWizardScreen}/>
           <Stack.Screen name="FullDailyReport" component={FullDailyReportScreen}/>

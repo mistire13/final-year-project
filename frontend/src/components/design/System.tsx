@@ -327,7 +327,7 @@ export function Page({
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const nav = useNavigation<any>();
-  const scrollRef = React.useRef<ScrollView>(null);
+  const scrollRef = React.useRef<React.ElementRef<typeof ScrollView>>(null);
   const reduceMotion = useReducedMotion();
   const heading = title ? (
     <View style={{ marginBottom: 24 }}>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
+import "../portal/portal.css";
 import "./caregiver.css";
+import { Button, Icon } from "../portal/ui.web";
 import { portalClient, portalApi, apiError, portalTokenStorage } from "../portal/api";
 import { Dataset, emptyDataset, today, localTime, localDay } from "../portal/model";
 
@@ -33,6 +35,7 @@ export default function CaregiverTerminal() {
   const [authChecking, setAuthChecking] = useState(true);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState("");
 
@@ -49,7 +52,7 @@ export default function CaregiverTerminal() {
 
   // Clock
   const [currentTime, setCurrentTime] = useState(
-    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Africa/Addis_Ababa" })
   );
 
   // Verified Pickup Modal State
@@ -64,7 +67,7 @@ export default function CaregiverTerminal() {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(
-        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Africa/Addis_Ababa" })
       );
     }, 1000);
     return () => clearInterval(timer);
@@ -333,202 +336,86 @@ export default function CaregiverTerminal() {
 
   if (authChecking) {
     return (
-      <div className="caregiver-terminal-container" style={{ alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: "#6B7280", fontSize: "1.1rem", fontWeight: 600 }}>Connecting to Front-Desk Terminal...</p>
+      <div className="ankelba-portal caregiver-terminal-container" style={{ alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "var(--muted)", fontSize: "1.1rem", fontWeight: 600 }}>Connecting to Front-Desk Terminal...</p>
       </div>
     );
   }
 
-  // If not logged in as staff
+  // Staff authentication shares the daycare portal design and session boundary.
   if (!actor) {
     return (
-      <div className="caregiver-terminal-container" style={{ background: "#FDFCF7" }}>
-        <div className="terminal-login-card">
-          <div style={{ fontSize: "2.8rem", marginBottom: "0.5rem" }}>🛡️</div>
-          <h2>Staff Front-Desk Terminal</h2>
-          <p>Sign in with your Daycare Staff or Administrator credentials to begin check-in and pickup operations.</p>
-
-          {loginError && (
-            <div
-              style={{
-                background: "#FEE2E2",
-                color: "#B91C1C",
-                padding: "0.75rem 1rem",
-                borderRadius: "12px",
-                fontSize: "0.88rem",
-                marginBottom: "1.25rem",
-                textAlign: "left",
-              }}
-            >
-              {loginError}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin}>
-            <input
-              type="email"
-              className="terminal-login-input"
-              placeholder="Staff Email (e.g., staff@ankelba.com)"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              className="terminal-login-input"
-              placeholder="Password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              required
-            />
-            <button
-              type="submit"
-              disabled={loginBusy}
-              className="btn-primary-pill"
-              style={{ width: "100%", padding: "0.85rem", fontSize: "1rem" }}
-            >
-              {loginBusy ? "Signing in..." : "Open Front-Desk Terminal ➔"}
-            </button>
-          </form>
-
-          <div style={{ marginTop: "1.5rem", borderTop: "1px solid #E8E4DA", paddingTop: "1.25rem" }}>
-            <span style={{ fontSize: "0.8rem", color: "#6B7280", display: "block", marginBottom: "0.75rem" }}>
-              Quick Demo Staff Access:
-            </span>
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
-              <button
-                type="button"
-                className="btn-secondary-pill"
-                style={{ fontSize: "0.8rem", padding: "0.4rem 0.8rem" }}
-                onClick={() => {
-                  setLoginEmail("admin@ankelba.dev");
-                  setLoginPassword("Admin@123!");
-                }}
-              >
-                Fill Admin Credentials
-              </button>
-              <button
-                type="button"
-                className="btn-secondary-pill"
-                style={{ fontSize: "0.8rem", padding: "0.4rem 0.8rem" }}
-                onClick={() => {
-                  setLoginEmail("caregiver@ankelba.dev");
-                  setLoginPassword("Care@123!");
-                }}
-              >
-                Fill Caregiver Credentials
-              </button>
-            </div>
-          </div>
+      <div className="ankelba-portal p-login caregiver-login">
+        <div className="terminal-login-backdrop" aria-hidden="true">
+          <div className="terminal-hero-orbit terminal-hero-orbit-one" />
+          <div className="terminal-hero-orbit terminal-hero-orbit-two" />
+          <div className="terminal-hero-grid" />
+          <div className="terminal-hero-detail terminal-hero-detail-arrivals"><span><Icon name="checkCircle" size={20} /></span><div>Every arrival, welcomed.<small>A thoughtful start to the day.</small></div></div>
+          <div className="terminal-hero-detail terminal-hero-detail-pickup"><span><Icon name="shield" size={20} /></span><div>Every handover, considered.<small>Care that keeps families connected.</small></div></div>
+          <div className="terminal-hero-caption">A LITTLE CLOSER. EVERY DAY.</div>
         </div>
+        <section className="p-login-story">
+          <a href="/" className="terminal-brand"><img src={require("../../design/figma-exports/ankelba-symbol.png")} alt="" /><span>Ankelba<small>DAYCARE WORKSPACE</small></span></a>
+          <span className="p-eyebrow">CARE WITH CONFIDENCE</span>
+          <h1>A warm welcome.<br />A safe handover.</h1>
+          <p>Keep arrivals organized and every pickup accounted for. One clear workspace for your front desk team.</p>
+          <div className="terminal-login-features">
+            <div><Icon name="checkCircle" /><span>Daily attendance<small>Know who is here and who is expected.</small></span></div>
+            <div><Icon name="shield" /><span>Verified pickups<small>Check authorized guardians before release.</small></span></div>
+          </div>
+        </section>
+        <section className="p-login-card"><div>
+          <div className="terminal-login-heading-icon"><Icon name="desk" size={26} /></div>
+          <span className="p-eyebrow">CAREGIVER WORKSPACE</span>
+          <h1>Staff Front Desk Login</h1>
+          <p className="terminal-login-description">Sign in with your caregiver or daycare administrator account.</p>
+          <form onSubmit={handleLogin}>
+            <label htmlFor="terminal-email">Email address<input id="terminal-email" name="email" type="email" autoComplete="username" placeholder="you@daycare.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required /></label>
+            <label htmlFor="terminal-password">Password<div className="terminal-password-field"><input id="terminal-password" name="password" type={showPassword ? "text" : "password"} autoComplete="current-password" placeholder="Your password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required /><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}><Icon name="eye" size={18} /></button></div></label>
+            {loginError && <div role="alert" className="p-error">{loginError}</div>}
+            <Button type="submit" disabled={loginBusy}>{loginBusy ? "Signing in…" : "Sign in to front desk"}<Icon name="arrow" size={18} /></Button>
+          </form>
+          <p className="terminal-access-note"><Icon name="lock" size={16} />Need access? Contact your daycare administrator.</p>
+          <footer><a href="/">Back to Ankelba</a><a href="/admin/login">Daycare admin portal</a></footer>
+        </div></section>
       </div>
     );
   }
 
   return (
-    <div className="caregiver-terminal-container">
-      {/* ─── Top Terminal Header ─── */}
+    <div className="ankelba-portal caregiver-terminal-container">
       <header className="terminal-header">
-        <div className="terminal-title">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>👶</span>
-            <h1>{data.daycare?.name || "Ankelba Daycare"} · Front-Desk Terminal</h1>
-          </div>
-          <p>
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}{" "}
-            · <strong style={{ color: "#061224" }}>{currentTime}</strong> (Addis Ababa Time) · Duty Staff:{" "}
-            <strong>{actor.name}</strong> ({actor.role})
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-          {actor.role === "admin" && (
-            <a
-              href="/admin/dashboard"
-              style={{
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 700,
-                color: "#061224",
-                padding: "0.5rem 1rem",
-                borderRadius: "9999px",
-                background: "#FEF7E6",
-                border: "1px solid #E8E4DA",
-              }}
-            >
-              🏢 Admin Portal ➔
-            </a>
-          )}
-          <button
-            onClick={fetchWorkspace}
-            style={{
-              background: "#FFFBED",
-              border: "1px solid #E8E4DA",
-              borderRadius: "9999px",
-              padding: "0.55rem 1rem",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: "0.85rem",
-            }}
-          >
-            ↻ Refresh Roster
-          </button>
-          <button
-            onClick={handleSignOut}
-            style={{
-              background: "#F3F4F6",
-              border: "1px solid #D1D5DB",
-              borderRadius: "9999px",
-              padding: "0.55rem 1rem",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: "0.85rem",
-              color: "#374151",
-            }}
-          >
-            Sign Out
-          </button>
+        <a className="terminal-workspace-brand" href="/"><img src={require("../../design/figma-exports/ankelba-symbol.png")} alt="" /><span>Ankelba<small>{data.daycare?.name || actor.daycare_name || "Daycare workspace"}</small></span></a>
+        <div className="terminal-workspace-actions">
+          <span className="terminal-staff-profile"><span className="terminal-staff-avatar">{String(actor.name || "Staff").split(" ").map((part: string) => part[0]).slice(0, 2).join("")}</span><span>{actor.name}<small>{actor.role === "admin" ? "Daycare administrator" : "Caregiver"}</small></span></span>
+          {actor.role === "admin" && <a className="terminal-admin-link" href="/admin/dashboard"><Icon name="building" size={16} />Admin portal</a>}
+          <Button variant="secondary" onClick={handleSignOut} icon="logout">Sign out</Button>
         </div>
       </header>
-
-      {/* ─── Real-Time Live Stats Bar ─── */}
-      <div className="terminal-stats-bar">
-        <div className="terminal-stat-chip">
-          <span className="stat-dot green" />
-          <span>At Daycare (Present): <strong>{presentCount}</strong></span>
-        </div>
-        <div className="terminal-stat-chip">
-          <span className="stat-dot yellow" />
-          <span>Expected Today: <strong>{notArrivedCount}</strong></span>
-        </div>
-        <div className="terminal-stat-chip">
-          <span className="stat-dot navy" />
-          <span>Released (Picked Up): <strong>{checkedOutCount}</strong></span>
-        </div>
-        {absentCount > 0 && (
-          <div className="terminal-stat-chip" style={{ color: "#9CA3AF" }}>
-            <span className="stat-dot" style={{ background: "#D1D5DB" }} />
-            <span>Marked Absent: <strong>{absentCount}</strong></span>
-          </div>
-        )}
-      </div>
+      <section className="terminal-workspace-intro">
+        <div><span className="p-eyebrow">STAFF WORKSPACE</span><h1>Front desk</h1><p>A clear view of today's arrivals, attendance, and safe pickups.</p></div>
+        <div className="terminal-shift-panel"><Icon name="clock" size={20} /><div><strong>{currentTime}</strong><small>{new Date().toLocaleDateString("en-US", { timeZone: "Africa/Addis_Ababa", weekday: "short", month: "short", day: "numeric" })} · Addis Ababa</small></div><Button variant="secondary" onClick={fetchWorkspace} disabled={loading} icon="refresh">{loading ? "Refreshing…" : "Refresh"}</Button></div>
+      </section>
+      <section className="terminal-stats-bar" aria-label="Today's attendance overview">
+        {[
+          { label: "At daycare", count: presentCount, note: "Checked in and in care", icon: "people", tone: "green" },
+          { label: "Expected arrivals", count: notArrivedCount, note: "Not yet checked in", icon: "clock", tone: "amber" },
+          { label: "Picked up", count: checkedOutCount, note: "Handovers completed", icon: "shield", tone: "sky" },
+          { label: "Absent", count: absentCount, note: "Marked absent today", icon: "calendar", tone: "neutral" },
+        ].map(stat => <div className="terminal-metric" key={stat.label}><div className="terminal-metric-top"><span>{stat.label}</span><span className={"terminal-metric-icon " + stat.tone}><Icon name={stat.icon} size={19} /></span></div><strong>{loading ? "—" : stat.count}</strong><small>{stat.note}</small></div>)}
+      </section>
 
       {/* ─── Feedback Banner ─── */}
       {feedback && (
-        <div
+        <div role={feedback.type === "error" ? "alert" : "status"}
           style={{
             maxWidth: 1300,
             margin: "1rem auto 0",
             width: "calc(100% - 5rem)",
             padding: "0.85rem 1.25rem",
             borderRadius: "14px",
-            background: feedback.type === "success" ? "#EDF7ED" : "#FEE2E2",
-            color: feedback.type === "success" ? "#1E4620" : "#B91C1C",
+            background: feedback.type === "success" ? "var(--green-soft)" : "var(--coral-soft)",
+            color: feedback.type === "success" ? "var(--green)" : "var(--navy)",
             fontWeight: 700,
             fontSize: "0.95rem",
             display: "flex",
@@ -538,6 +425,7 @@ export default function CaregiverTerminal() {
         >
           <span>{feedback.text}</span>
           <button
+            aria-label="Dismiss notification"
             onClick={() => setFeedback(null)}
             style={{ background: "none", border: "none", cursor: "pointer", fontWeight: 800, fontSize: "1rem" }}
           >
@@ -548,39 +436,35 @@ export default function CaregiverTerminal() {
 
       {/* ─── Main Content Container ─── */}
       <main className="terminal-content">
+        <div className="terminal-section-heading"><div><span className="p-eyebrow">DAILY OPERATIONS</span><h2>Attendance &amp; pickup</h2><p>Manage arrivals and verify every handover.</p></div><span className="terminal-roster-count">{filteredChildren.length} of {roster.length} children</span></div>
         {/* Controls: Search, Classroom Group Filter & Status Tabs */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1rem",
-            marginBottom: "1rem",
-          }}
-        >
+        <div className="terminal-roster-toolbar">
           {/* Status Tabs */}
-          <div className="terminal-filter-tabs">
+          <div className="terminal-filter-tabs" role="group" aria-label="Filter children by attendance">
             <button
               className={`terminal-filter-tab ${statusFilter === "all" ? "active" : ""}`}
+              aria-pressed={statusFilter === "all"}
               onClick={() => setStatusFilter("all")}
             >
               All Children ({roster.length})
             </button>
             <button
               className={`terminal-filter-tab ${statusFilter === "not_arrived" ? "active" : ""}`}
+              aria-pressed={statusFilter === "not_arrived"}
               onClick={() => setStatusFilter("not_arrived")}
             >
               Expected Today ({notArrivedCount})
             </button>
             <button
               className={`terminal-filter-tab ${statusFilter === "present" ? "active" : ""}`}
+              aria-pressed={statusFilter === "present"}
               onClick={() => setStatusFilter("present")}
             >
               At Daycare ({presentCount})
             </button>
             <button
               className={`terminal-filter-tab ${statusFilter === "checked_out" ? "active" : ""}`}
+              aria-pressed={statusFilter === "checked_out"}
               onClick={() => setStatusFilter("checked_out")}
             >
               Picked Up ({checkedOutCount})
@@ -588,17 +472,18 @@ export default function CaregiverTerminal() {
           </div>
 
           {/* Search & Group Filter */}
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <div className="terminal-roster-search">
             <select
+              aria-label="Classroom group"
               value={groupFilter}
               onChange={(e) => setGroupFilter(e.target.value)}
               style={{
                 padding: "0.6rem 1rem",
                 borderRadius: "9999px",
-                border: "1.5px solid #E8E4DA",
+                border: "1.5px solid var(--line)",
                 fontFamily: "inherit",
                 fontSize: "0.85rem",
-                background: "#FFFFFF",
+                background: "var(--cream-card)",
                 cursor: "pointer",
                 fontWeight: 600,
               }}
@@ -613,13 +498,13 @@ export default function CaregiverTerminal() {
 
             <input
               type="search"
-              placeholder="🔍 Search child by name..."
+              aria-label="Search children" placeholder="Search children by name"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 padding: "0.6rem 1rem",
                 borderRadius: "9999px",
-                border: "1.5px solid #E8E4DA",
+                border: "1.5px solid var(--line)",
                 fontFamily: "inherit",
                 fontSize: "0.88rem",
                 width: "220px",
@@ -630,19 +515,19 @@ export default function CaregiverTerminal() {
 
         {/* Child Roster Grid */}
         {loading ? (
-          <p style={{ textAlign: "center", color: "#6B7280", margin: "4rem 0", fontSize: "1.05rem" }}>
+          <p style={{ textAlign: "center", color: "var(--muted)", margin: "4rem 0", fontSize: "1.05rem" }}>
             Loading children roster & live attendance...
           </p>
         ) : error ? (
           <div style={{ textAlign: "center", margin: "4rem 0" }}>
-            <p style={{ color: "#C2185B", fontWeight: 700, fontSize: "1.05rem" }}>{error}</p>
+            <p style={{ color: "var(--navy)", fontWeight: 700, fontSize: "1.05rem" }}>{error}</p>
             <button onClick={fetchWorkspace} className="btn-secondary-pill" style={{ marginTop: "1rem" }}>
               Try Reconnecting
             </button>
           </div>
         ) : filteredChildren.length === 0 ? (
-          <div style={{ textAlign: "center", color: "#6B7280", margin: "4rem 0", padding: "3rem", background: "#FFFFFF", borderRadius: "20px", border: "1px solid #E8E4DA" }}>
-            <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.5rem" }}>🔍</span>
+          <div style={{ textAlign: "center", color: "var(--muted)", margin: "4rem 0", padding: "3rem", background: "var(--cream-card)", borderRadius: "20px", border: "1px solid var(--line)" }}>
+            <Icon name="search" size={28} />
             <p style={{ fontWeight: 700, fontSize: "1.1rem", margin: 0 }}>No children found matching the filter.</p>
             <button
               onClick={() => {
@@ -691,7 +576,7 @@ export default function CaregiverTerminal() {
                         gap: "0.35rem",
                       }}
                     >
-                      <span>⚠️ Alert:</span>
+                      <span><Icon name="alert" size={16} /> Care alert:</span>
                       <span>{child.allergies}</span>
                     </div>
                   )}
@@ -700,26 +585,26 @@ export default function CaregiverTerminal() {
                   <div>
                     {child.status === "not_arrived" && (
                       <span className="terminal-status-indicator not-arrived">
-                        ● Expected Today
+                        Expected today
                       </span>
                     )}
                     {child.status === "present" && (
                       <span className="terminal-status-indicator present">
-                        ● At Daycare {child.checkin_time ? `(Arrived ${child.checkin_time})` : ""}
+                        At daycare {child.checkin_time ? `(Arrived ${child.checkin_time})` : ""}
                       </span>
                     )}
                     {child.status === "checked_out" && (
                       <span className="terminal-status-indicator checked-out">
-                        ✓ Picked Up {child.checkout_time ? `at ${child.checkout_time}` : ""}{" "}
+                        Picked up {child.checkout_time ? `at ${child.checkout_time}` : ""}{" "}
                         {child.collector_name ? `by ${child.collector_name}` : ""}
                       </span>
                     )}
                     {child.status === "absent" && (
                       <span
                         className="terminal-status-indicator"
-                        style={{ background: "#F3F4F6", color: "#6B7280" }}
+                        style={{ background: "var(--cream-soft)", color: "var(--muted)" }}
                       >
-                        ○ Marked Absent Today
+                        Absent today
                       </span>
                     )}
                   </div>
@@ -734,17 +619,17 @@ export default function CaregiverTerminal() {
                         disabled={actionBusy}
                         className="btn-terminal-action checkin"
                       >
-                        ✓ Morning Check-In
+                        <Icon name="check" size={17} /> Check in
                       </button>
                       <button
                         onClick={() => handleMarkAbsent(child.id)}
                         disabled={actionBusy}
                         style={{
-                          background: "#FFFFFF",
-                          border: "1.5px solid #E5E7EB",
+                          background: "var(--cream-card)",
+                          border: "1.5px solid var(--line)",
                           borderRadius: "9999px",
                           padding: "0 0.85rem",
-                          color: "#6B7280",
+                          color: "var(--muted)",
                           fontWeight: 700,
                           fontSize: "0.8rem",
                           cursor: "pointer",
@@ -763,7 +648,7 @@ export default function CaregiverTerminal() {
                       disabled={actionBusy}
                       className="btn-terminal-action checkout"
                     >
-                      🛡️ Verify Guardian &amp; Release Child ➔
+                      <Icon name="shield" size={17} /> Verify guardian &amp; check out
                     </button>
                   )}
 
@@ -774,15 +659,15 @@ export default function CaregiverTerminal() {
                         boxSizing: "border-box",
                         padding: "0.75rem",
                         borderRadius: "9999px",
-                        border: "1px solid #E8E4DA",
-                        background: "#F9FAFB",
-                        color: "#9CA3AF",
+                        border: "1px solid var(--line)",
+                        background: "var(--cream-soft)",
+                        color: "var(--muted)",
                         fontWeight: 700,
                         fontSize: "0.88rem",
                         textAlign: "center",
                       }}
                     >
-                      ✓ Released for Today
+                      Released for today
                     </div>
                   )}
 
@@ -806,18 +691,18 @@ export default function CaregiverTerminal() {
       {/* ─── Verified Guardian Pickup Modal (SRS: FR-ATT-07, FR-BIO-04..08) ─── */}
       {selectedChildForPickup && (
         <div className="modal-backdrop" onClick={() => setSelectedChildForPickup(null)}>
-          <div className="pickup-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <button className="dialog-close" onClick={() => setSelectedChildForPickup(null)}>
+          <div role="dialog" aria-modal="true" aria-label="Verify child pickup" className="pickup-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <button aria-label="Close pickup dialog" className="dialog-close" onClick={() => setSelectedChildForPickup(null)}>
               ✕
             </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.5rem" }}>
-              <span style={{ fontSize: "1.6rem" }}>🛡️</span>
+              <Icon name="shield" size={24} />
               <h2 style={{ fontSize: "1.45rem", fontWeight: 800, margin: 0 }}>
                 Verified Child Pickup: {selectedChildForPickup.full_name}
               </h2>
             </div>
-            <p style={{ color: "#6B7280", fontSize: "0.9rem", margin: "0 0 1.25rem 0" }}>
+            <p style={{ color: "var(--muted)", fontSize: "0.9rem", margin: "0 0 1.25rem 0" }}>
               Classroom: <strong>{selectedChildForPickup.group_name}</strong> · Inspect and verify authorized adult
               identity before authorizing release.
             </p>
@@ -830,15 +715,15 @@ export default function CaregiverTerminal() {
               {selectedChildForPickup.guardians.length === 0 ? (
                 <div
                   style={{
-                    color: "#B91C1C",
+                    color: "var(--navy)",
                     fontSize: "0.88rem",
                     padding: "1rem",
-                    background: "#FEE2E2",
+                    background: "var(--coral-soft)",
                     borderRadius: "14px",
                     fontWeight: 600,
                   }}
                 >
-                  ⚠️ No authorized adult guardians found on record for this child. Contact the daycare administrator
+                  No authorized adult guardians found on record for this child. Contact the daycare administrator
                   before releasing.
                 </div>
               ) : (
@@ -856,21 +741,21 @@ export default function CaregiverTerminal() {
                             width: "20px",
                             height: "20px",
                             borderRadius: "50%",
-                            border: isSelected ? "6px solid #061224" : "2px solid #D1D5DB",
-                            background: "#FFFFFF",
+                            border: isSelected ? "6px solid var(--navy)" : "2px solid var(--line)",
+                            background: "var(--cream-card)",
                             boxSizing: "border-box",
                           }}
                         />
                         <div>
-                          <strong style={{ display: "block", fontSize: "1rem", color: "#061224" }}>{g.name}</strong>
-                          <span style={{ fontSize: "0.82rem", color: "#6B7280" }}>
-                            {g.relationship} {g.phone ? `· 📞 ${g.phone}` : ""}
+                          <strong style={{ display: "block", fontSize: "1rem", color: "var(--navy)" }}>{g.name}</strong>
+                          <span style={{ fontSize: "0.82rem", color: "var(--muted)" }}>
+                            {g.relationship} {g.phone ? `· ${g.phone}` : ""}
                           </span>
                         </div>
                       </div>
                       <span
                         style={{
-                          background: "#EDF7ED",
+                          background: "var(--green-soft)",
                           color: "#2E7D32",
                           fontWeight: 700,
                           fontSize: "0.75rem",
@@ -893,7 +778,7 @@ export default function CaregiverTerminal() {
                 padding: "1.15rem",
                 borderRadius: "16px",
                 margin: "1.25rem 0",
-                border: "1.5px solid #E8E4DA",
+                border: "1.5px solid var(--line)",
               }}
             >
               <label
@@ -904,7 +789,7 @@ export default function CaregiverTerminal() {
                   cursor: "pointer",
                   fontSize: "0.9rem",
                   fontWeight: 700,
-                  color: "#061224",
+                  color: "var(--navy)",
                 }}
               >
                 <input
@@ -920,7 +805,7 @@ export default function CaregiverTerminal() {
               </label>
 
               <div style={{ marginTop: "0.85rem" }}>
-                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#4B5563", marginBottom: "0.35rem" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", marginBottom: "0.35rem" }}>
                   Staff Inspection Note / Reason (min 12 chars):
                 </label>
                 <input
@@ -933,7 +818,7 @@ export default function CaregiverTerminal() {
                     boxSizing: "border-box",
                     padding: "0.6rem 0.85rem",
                     borderRadius: "10px",
-                    border: "1px solid #D1D5DB",
+                    border: "1px solid var(--line)",
                     fontSize: "0.85rem",
                     fontFamily: "inherit",
                   }}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CaringBloom } from "../../components/design/Motion";
 import { View, Pressable, TextInput } from "react-native";
 import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
@@ -60,9 +60,21 @@ export function AIGuideScreen({ navigation, route }: any) {
   const [input, setInput] = useState(route?.params?.initialPrompt || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [providerStatus,setProviderStatus] = useState<'unknown'|'connected'|'prepared'>('unknown');
   const [messages, setMessages] = useState<{ mine: boolean; text: string }[]>(
     [],
   );
+  const requestRevision = useRef(0);
+  const requestBusy = useRef(false);
+  useEffect(() => {
+    requestRevision.current++;
+    requestBusy.current = false;
+    setMessages([]);
+    setError("");
+    setBusy(false);
+    setProviderStatus('unknown');
+    return () => { requestRevision.current++; };
+  }, [selectedChild?.id, token]);
 
   useEffect(() => {
     if (route?.params?.initialPrompt) {
@@ -70,7 +82,9 @@ export function AIGuideScreen({ navigation, route }: any) {
     }
   }, [route?.params?.initialPrompt]);
   const ask = async (question: string) => {
-    if (!question.trim() || busy) return;
+    if (!question.trim() || requestBusy.current) return;
+    requestBusy.current = true;
+    const revision = ++requestRevision.current;
     setInput("");
     setError("");
     setMessages((m) => [...m, { mine: true, text: question.trim() }]);
@@ -89,12 +103,17 @@ export function AIGuideScreen({ navigation, route }: any) {
           question: question.trim(),
           child_id: selectedChild?.id,
         });
+        if (revision !== requestRevision.current) return;
+        if (res.data.provider_connected !== undefined) setProviderStatus(res.data.provider_connected ? 'connected' : 'prepared');
         setMessages((m) => [...m, { mine: false, text: res.data.answer }]);
       }
     } catch {
-      setError("Ankelba is unavailable right now. Please try again.");
+      if (revision === requestRevision.current) setError("Ankelba is unavailable right now. Please try again.");
     } finally {
-      setBusy(false);
+      if (revision === requestRevision.current) {
+        requestBusy.current = false;
+        setBusy(false);
+      }
     }
   };
   return (
@@ -147,7 +166,7 @@ export function AIGuideScreen({ navigation, route }: any) {
       }
     >
       <Text color="#7D818B" size={13} style={{ marginBottom: 24 }}>
-        Prepared guidance for activities and routines. A generative AI provider is not connected.
+        {providerStatus === 'connected' ? 'AI provider responded to your latest request.' : providerStatus === 'prepared' ? 'Prepared guidance is available while the AI provider is unavailable.' : 'General guidance for activities and routines. Provider availability is checked when you ask.'}
       </Text>
       <Card tint="#FAF8F9" style={{ padding: 24 }}>
         <View style={s.row}>

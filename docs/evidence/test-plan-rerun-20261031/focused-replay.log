@@ -1,0 +1,38 @@
+20:11:28 [[32minfo[39m]: User 2 (admin) authenticated
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/auth/login HTTP/1.1" 200 629 "-" "node"
+20:11:28 [[32minfo[39m]: User 3 (caregiver) authenticated
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/auth/login HTTP/1.1" 200 646 "-" "node"
+20:11:28 [[32minfo[39m]: User 4 (parent) authenticated
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/auth/login HTTP/1.1" 200 827 "-" "node"
+20:11:28 [[31merror[39m]: Error: Use the front-desk pickup flow. Standalone biometric verification is unavailable until the device provider is configured.
+    at Object.verify (C:\Users\Mistire\Desktop\final year project\backend\src\modules\biometric\biometric.service.js:76:14)
+    at verify (C:\Users\Mistire\Desktop\final year project\backend\src\modules\biometric\biometric.controller.js:19:30)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\middleware\validator.js:36:3
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at middleware (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\rbac.js:32:3)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/biometric/verify HTTP/1.1" 503 133 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/store/products HTTP/1.1" 201 218 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/store/orders HTTP/1.1" 201 468 "-" "node"
+20:11:28 [[31merror[39m]: ValidationError: "version" is required
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "PATCH /api/store/orders/1/status HTTP/1.1" 422 96 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "PATCH /api/store/orders/1/status HTTP/1.1" 200 337 "-" "node"
+20:11:28 [[31merror[39m]: Error: This order status transition is not allowed.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:412:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:433:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "PATCH /api/store/orders/1/status HTTP/1.1" 409 56 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "PATCH /api/store/orders/1/status HTTP/1.1" 200 340 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "PATCH /api/store/orders/1/status HTTP/1.1" 200 347 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/ai/guide HTTP/1.1" 200 544 "-" "node"
+20:11:28 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:28 +0000] "POST /api/ai/guide HTTP/1.1" 200 583 "-" "node"
+20:11:34 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:34 +0000] "POST /api/ai/guide HTTP/1.1" 200 621 "-" "node"
+20:11:34 [[32minfo[39m]: User 2 logged out
+20:11:34 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:34 +0000] "POST /api/auth/logout HTTP/1.1" 200 90 "-" "node"
+20:11:34 [[32mhttp[39m]: 127.0.0.1 - - [31/Oct/2026:17:11:34 +0000] "GET /api/auth/me HTTP/1.1" 401 71 "-" "node"
+[{"id":"TC-SEC-003","expected":"Unknown origin not allowed","actual":{"http":204,"allowOrigin":"https://evil.example"},"status":"FAIL","classification":"development CORS policy remains permissive"},{"id":"TC-PICK-004","expected":"Functional biometric match/no-match","actual":{"http":503,"error":"Use the front-desk pickup flow. Standalone biometric verification is unavailable until the device provider is configured."},"status":"FAIL","classification":"hardware/provider feature gap"},{"id":"TC-STORE-006","expected":422,"actual":{"http":422},"status":"PASS","classification":"current behavior"},{"id":"TC-STORE-007-as-written","expected":"200 and ready_for_pickup directly from placed/paid","actual":{"http":409,"error":"This order status transition is not allowed."},"status":"FAIL","classification":"test omits mandatory confirmed transition"},{"id":"TC-STORE-007-corrected-sequence","expected":"200 and ready_for_pickup after confirmed","actual":{"http":200,"status":"ready_for_pickup"},"status":"PASS","classification":"current behavior"},{"id":"TC-AI-001","expected":"200 prepared guidance without provider key","actual":{"http":200,"source":"prepared_guidance"},"status":"PASS","classification":"current behavior"},{"id":"TC-AI-002","expected":"Medical redirect","actual":{"http":200,"redirect":true},"status":"PASS","classification":"current behavior"},{"id":"TC-AI-006","expected":"200 external provider response","actual":{"http":200,"source":"nvidia_nim","providerConnected":true,"model":"nvidia/nemotron-3.5-lightning-30b-a3b"},"status":"PASS","classification":"live availability observation; fallback is valid service behavior but not proof of provider success"},{"id":"TC-AUTH-016","expected":"Logout 200; previous token 401","actual":{"logout":200,"reuse":401},"status":"PASS","classification":"current behavior"}]

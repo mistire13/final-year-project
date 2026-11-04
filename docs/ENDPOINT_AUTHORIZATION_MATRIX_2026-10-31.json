@@ -1,0 +1,1362 @@
+{
+  "mode": "legacy active runtime",
+  "routes": 176,
+  "checks": 707,
+  "logoutRevocation": true,
+  "failures": [],
+  "inventory": [
+    {
+      "method": "DELETE",
+      "path": "/api/saas/super-admin/daycares/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/packages",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/saas/application-status",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/packages",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/packages/:code",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/daycares/:id/subscription",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/saas/super-admin/daycares/:id/subscription",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/subscription",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/saas/register-daycare",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/saas/applications",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/applications",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/applications/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/applications/:id/approve",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/applications/:id/reject",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/saas/super-admin/applications/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/stats",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/daycares",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/daycares/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/daycares/:id/approve",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/daycares/:id/reject",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/daycares/:id/suspend",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/daycares/:id/activate",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/saas/super-admin/daycares/:id/plan",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/users",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/audit-logs",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/super-admin/system-health",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/saas/super-admin/daycares/:id/impersonate",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/broadcast",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/saas/super-admin/broadcast",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/super-admin/daycares/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/packages",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/application-status",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/packages",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/packages/:code",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/daycares/:id/subscription",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/daycares/:id/subscription",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/subscription",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/register-daycare",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/applications",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/applications",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/applications/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/applications/:id/approve",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/applications/:id/reject",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/super-admin/applications/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/stats",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/daycares",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/daycares/:id",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/daycares/:id/approve",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/daycares/:id/reject",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/daycares/:id/suspend",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/daycares/:id/activate",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/super-admin/daycares/:id/plan",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/users",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/audit-logs",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/super-admin/system-health",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/daycares/:id/impersonate",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/broadcast",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/super-admin/broadcast",
+      "roles": [
+        "super_admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portal/snapshot",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/portal/workspace",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/portal/assignments",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/portal/assignments/:id/revoke",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/portal/attendance",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/portal/checkout",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/portal/settings",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/portal/renew-plan",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/profile/me",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/profile/me",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/users/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/users/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/users/:id/status",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/children/",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/enroll-family",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/assign-caregiver",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/children/:id",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/children/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/:id/guardians",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/children/:id/guardians",
+      "roles": [
+        "admin",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/children/:id/guardians/:gid",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/children/:id/pickup-guardians",
+      "roles": [
+        "admin",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/:id/pickup-guardians",
+      "roles": [
+        "admin",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/children/:id/pickup-guardians/:requestId",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/:id/contacts",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/children/contacts/:cid",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/children/contacts/:cid",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/children/:id/instructions",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/children/instructions/:iid",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/children/instructions/:iid",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/parent/children/:id/care-profile",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/parent/children/:id/care-profile",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/parent/children",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/parent/children/:id",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/parent/children/:id/profile",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/parent/children/:id/care",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/parent/children/:id/emergency-contacts",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/parent/profile-complete",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/attendance/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/attendance/summary",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/attendance/child/:id",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/attendance/",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/reports/daily",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/reports/daily/child/:id",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/reports/daily",
+      "roles": [
+        "caregiver",
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/reports/daily/:id",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/child/:id",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/health/",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/health/:id/notify",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/announcements/meal-plan",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/announcements",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/announcements/:id",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/communication/announcements",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/messages/oversight",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/messages",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/communication/messages",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/communication/messages/:id/read",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/contacts",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/communication/alerts",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/communication/alerts",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/announcements/meal-plan",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/announcements",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/announcements/:id",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/announcements",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages/oversight",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/messages/:id/read",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/alerts",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/alerts",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/ai/guide",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/biometric/enroll",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/biometric/verify",
+      "roles": [
+        "admin",
+        "caregiver"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/biometric/guardian/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/store/categories",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/store/categories",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/store/categories/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/store/categories/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/store/products",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/store/products",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/store/products/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/store/orders",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/store/orders/my",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/store/orders",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/store/orders/:id/status",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/capabilities",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/demo",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/initiate",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/payments/webhook",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/payments/order/:id",
+      "roles": [
+        "admin",
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/finances/overview",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/finances/invoices",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/finances/invoices/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/finances/invoices",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/finances/invoices/generate-monthly",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/finances/invoices/:id/payments",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/finances/parent/my-bills",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/events/",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/events/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/events/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/events/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/audit/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/groups/",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/groups/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/groups/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/groups/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/dashboard/",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications/preferences",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/notifications/preferences",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/search/",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "roles": [],
+      "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/favicon.ico",
+      "roles": [],
+      "public": true
+    }
+  ]
+}

@@ -1,0 +1,1635 @@
+TAP version 13
+# Subtest: account recovery uses encrypted local delivery and independent tenant credentials
+    # Subtest: recovery routers pass unrelated login and protected paths through unchanged
+    ok 1 - recovery routers pass unrelated login and protected paths through unchanged
+      ---
+      duration_ms: 30.8551
+      ...
+    # Subtest: the guarded local inbox command lists metadata and explicitly decrypts one message
+    ok 2 - the guarded local inbox command lists metadata and explicitly decrypts one message
+      ---
+      duration_ms: 972.8422
+      ...
+    # Subtest: known, unknown and suspended recovery requests return the same generic response
+    ok 3 - known, unknown and suspended recovery requests return the same generic response
+      ---
+      duration_ms: 71.9056
+      ...
+    # Subtest: local inbox listings omit recipients and secrets; encrypted messages use trusted fragment URLs
+    ok 4 - local inbox listings omit recipients and secrets; encrypted messages use trusted fragment URLs
+      ---
+      duration_ms: 23.6806
+      ...
+    # Subtest: public recovery endpoints enforce origin, strict bodies, JSON and byte length
+    ok 5 - public recovery endpoints enforce origin, strict bodies, JSON and byte length
+      ---
+      duration_ms: 28.8979
+      ...
+    # Subtest: wrong daycare, wrong principal kind and legacy reset tokens cannot consume a live link
+    ok 6 - wrong daycare, wrong principal kind and legacy reset tokens cannot consume a live link
+      ---
+      duration_ms: 20.4414
+      ...
+    # Subtest: new links invalidate older links and budgets persist through unknown account requests
+    ok 7 - new links invalidate older links and budgets persist through unknown account requests
+      ---
+      duration_ms: 46.9825
+      ...
+    # Subtest: successful tenant reset revokes only that account sessions, challenges and old reset tokens while retaining MFA
+    ok 8 - successful tenant reset revokes only that account sessions, challenges and old reset tokens while retaining MFA
+      ---
+      duration_ms: 573.17
+      ...
+    # Subtest: concurrent reset attempts consume one link exactly once
+    ok 9 - concurrent reset attempts consume one link exactly once
+      ---
+      duration_ms: 273.6492
+      ...
+    # Subtest: expired links and suspended daycares cannot change credentials
+    ok 10 - expired links and suspended daycares cannot change credentials
+      ---
+      duration_ms: 37.9097
+      ...
+    # Subtest: platform recovery stays separate and revokes platform sessions only
+    ok 11 - platform recovery stays separate and revokes platform sessions only
+      ---
+      duration_ms: 499.4154
+      ...
+    # Subtest: authenticated password change requires current credentials and invalidates all account links
+    ok 12 - authenticated password change requires current credentials and invalidates all account links
+      ---
+      duration_ms: 482.0844
+      ...
+    # Subtest: outbox and audit faults roll back token issuance or credential reset atomically
+    ok 13 - outbox and audit faults roll back token issuance or credential reset atomically
+      ---
+      duration_ms: 297.5889
+      ...
+    1..13
+ok 1 - account recovery uses encrypted local delivery and independent tenant credentials
+  ---
+  duration_ms: 6461.1953
+  ...
+# 20:09:54 [[33mwarn[39m]: AI provider unavailable
+# Subtest: AI external context honors consent and excludes child/classroom identifiers
+ok 2 - AI external context honors consent and excludes child/classroom identifiers
+  ---
+  duration_ms: 11439.5456
+  ...
+# Subtest: invalid primary model is quarantined while fallback succeeds and next request skips it
+ok 3 - invalid primary model is quarantined while fallback succeeds and next request skips it
+  ---
+  duration_ms: 3.0529
+  ...
+# Subtest: rate limit respects cooldown without retrying or fanning out; recovers after cooldown
+ok 4 - rate limit respects cooldown without retrying or fanning out; recovers after cooldown
+  ---
+  duration_ms: 0.3732
+  ...
+# Subtest: auth rejection stops all attempts and changing credentials resets the circuit
+ok 5 - auth rejection stops all attempts and changing credentials resets the circuit
+  ---
+  duration_ms: 0.2967
+  ...
+# Subtest: malformed JSON, empty content and truncated responses never become successful guidance
+ok 6 - malformed JSON, empty content and truncated responses never become successful guidance
+  ---
+  duration_ms: 0.6705
+  ...
+# Subtest: timeout budget bounds all attempts and concurrent callers cannot flood the provider
+ok 7 - timeout budget bounds all attempts and concurrent callers cannot flood the provider
+  ---
+  duration_ms: 95.1847
+  ...
+# Subtest: preview fails closed for missing, malformed or unselected encryption keys
+ok 8 - preview fails closed for missing, malformed or unselected encryption keys
+  ---
+  duration_ms: 2.0052
+  ...
+# Subtest: reset links use an exact trusted origin with no path, query, fragment or credentials
+ok 9 - reset links use an exact trusted origin with no path, query, fragment or credentials
+  ---
+  duration_ms: 0.4609
+  ...
+# Subtest: key rotation decrypts existing ciphertext only while its old key is retained
+ok 10 - key rotation decrypts existing ciphertext only while its old key is retained
+  ---
+  duration_ms: 2.1315
+  ...
+# Subtest: authenticated encryption rejects altered principals, purposes and noncanonical envelopes
+ok 11 - authenticated encryption rejects altered principals, purposes and noncanonical envelopes
+  ---
+  duration_ms: 0.6812
+  ...
+# Subtest: local inbox rejects unsafe environments and accepts only explicit metadata or message commands
+ok 12 - local inbox rejects unsafe environments and accepts only explicit metadata or message commands
+  ---
+  duration_ms: 0.9041
+  ...
+# Subtest: actual application preview wiring closes legacy bypasses and authenticates scoped sessions
+    # Subtest: CORS permits exact allowed origin and CSRF headers
+    ok 1 - CORS permits exact allowed origin and CSRF headers
+      ---
+      duration_ms: 43.257
+      ...
+    # Subtest: both daycare registration aliases and public account signup stay closed
+    ok 2 - both daycare registration aliases and public account signup stay closed
+      ---
+      duration_ms: 29.7098
+      ...
+    # Subtest: login and recovery require scoped input and reject legacy password payloads
+    ok 3 - login and recovery require scoped input and reject legacy password payloads
+      ---
+      duration_ms: 22.6146
+      ...
+    # Subtest: legacy JWT authentication cannot reach users or operational middleware
+    ok 4 - legacy JWT authentication cannot reach users or operational middleware
+      ---
+      duration_ms: 10.6738
+      ...
+    # Subtest: the runtime pool and global middleware accept daycare sessions and preserve role restrictions
+    ok 5 - the runtime pool and global middleware accept daycare sessions and preserve role restrictions
+      ---
+      duration_ms: 152.2988
+      ...
+    # Subtest: operational mutations encounter cookie CSRF checks before business validation or writes
+    ok 6 - operational mutations encounter cookie CSRF checks before business validation or writes
+      ---
+      duration_ms: 38.8399
+      ...
+    # Subtest: failed logout proof cannot clear or revoke another browser session
+    ok 7 - failed logout proof cannot clear or revoke another browser session
+      ---
+      duration_ms: 29.7802
+      ...
+    # Subtest: a password-only administrator challenge and a session without MFA cannot access protected routes
+    ok 8 - a password-only administrator challenge and a session without MFA cannot access protected routes
+      ---
+      duration_ms: 31.0417
+      ...
+    # Subtest: daycare recovery and authenticated password changes revoke access through the complete application
+    ok 9 - daycare recovery and authenticated password changes revoke access through the complete application
+      ---
+      duration_ms: 2069.625
+      ...
+    # Subtest: platform login, recovery and password changes preserve MFA and remain outside daycare access
+    ok 10 - platform login, recovery and password changes preserve MFA and remain outside daycare access
+      ---
+      duration_ms: 1674.5509
+      ...
+    # Subtest: preview disabled retains legacy validation but rejects unversioned JWTs
+    ok 11 - preview disabled retains legacy validation but rejects unversioned JWTs
+      ---
+      duration_ms: 1033.1828
+      ...
+    1..11
+ok 13 - actual application preview wiring closes legacy bypasses and authenticates scoped sessions
+  ---
+  duration_ms: 7311.9814
+  ...
+# Subtest: preview remains off without an explicit opt-in
+ok 14 - preview remains off without an explicit opt-in
+  ---
+  duration_ms: 3.1374
+  ...
+# Subtest: only explicit development and test environments may enable the preview
+ok 15 - only explicit development and test environments may enable the preview
+  ---
+  duration_ms: 1.6129
+  ...
+# Subtest: session lifetime accepts only bounded integer seconds
+ok 16 - session lifetime accepts only bounded integer seconds
+  ---
+  duration_ms: 0.5255
+  ...
+# Subtest: preview origins are canonical exact origins with no wildcard or URL credentials
+ok 17 - preview origins are canonical exact origins with no wildcard or URL credentials
+  ---
+  duration_ms: 2.1115
+  ...
+# Subtest: login and deactivation serialize so a new session cannot escape revocation
+ok 18 - login and deactivation serialize so a new session cannot escape revocation
+  ---
+  duration_ms: 2308.3274
+  ...
+# Subtest: login waiting behind deactivation cannot issue a session after the account is disabled
+ok 19 - login waiting behind deactivation cannot issue a session after the account is disabled
+  ---
+  duration_ms: 4565.4744
+  ...
+# Subtest: login audit failure rolls back its session and returns no database details
+ok 20 - login audit failure rolls back its session and returns no database details
+  ---
+  duration_ms: 1795.1154
+  ...
+# Subtest: missing preview storage fails safely without issuing a legacy session
+ok 21 - missing preview storage fails safely without issuing a legacy session
+  ---
+  duration_ms: 3307.8171
+  ...
+# Subtest: authentication database guard refuses application, maintenance and unowned database names
+ok 22 - authentication database guard refuses application, maintenance and unowned database names
+  ---
+  duration_ms: 1.5332
+  ...
+# Subtest: authentication preview defaults off and rejects unsafe activation or origin configuration
+ok 23 - authentication preview defaults off and rejects unsafe activation or origin configuration
+  ---
+  duration_ms: 0.7662
+  ...
+# Subtest: daycare authentication and provisioning isolate accounts and revoke access
+    # Subtest: login binds normalized daycare code and email to an opaque hashed session
+    ok 1 - login binds normalized daycare code and email to an opaque hashed session
+      ---
+      duration_ms: 171.0839
+      ...
+    # Subtest: unknown credentials and wrong daycare share a generic denial without new sessions
+    ok 2 - unknown credentials and wrong daycare share a generic denial without new sessions
+      ---
+      duration_ms: 1276.0643
+      ...
+    # Subtest: provisioning and recovery cannot use public legacy paths
+    ok 3 - provisioning and recovery cannot use public legacy paths
+      ---
+      duration_ms: 17.3553
+      ...
+    # Subtest: legacy JWTs, malformed credentials and conflicting transports never authenticate
+    ok 4 - legacy JWTs, malformed credentials and conflicting transports never authenticate
+      ---
+      duration_ms: 32.5389
+      ...
+    # Subtest: cookie sessions withhold raw tokens and enforce origin and CSRF for mutations
+    ok 5 - cookie sessions withhold raw tokens and enforce origin and CSRF for mutations
+      ---
+      duration_ms: 43.8263
+      ...
+    # Subtest: logout revokes server state and is safe to repeat after revocation or expiry
+    ok 6 - logout revokes server state and is safe to repeat after revocation or expiry
+      ---
+      duration_ms: 46.3277
+      ...
+    # Subtest: current account and daycare status are rechecked on every request
+    ok 7 - current account and daycare status are rechecked on every request
+      ---
+      duration_ms: 91.6915
+      ...
+    # Subtest: untrusted daycare selectors cannot switch session scope
+    ok 8 - untrusted daycare selectors cannot switch session scope
+      ---
+      duration_ms: 110.6062
+      ...
+    # Subtest: admin list, counts and direct target access remain inside one daycare
+    ok 9 - admin list, counts and direct target access remain inside one daycare
+      ---
+      duration_ms: 89.174
+      ...
+    # Subtest: only daycare admins provision caregiver and parent accounts, with no role or tenant override
+    ok 10 - only daycare admins provision caregiver and parent accounts, with no role or tenant override
+      ---
+      duration_ms: 912.0616
+      ...
+    # Subtest: daycare admins cannot edit or deactivate admin accounts
+    ok 11 - daycare admins cannot edit or deactivate admin accounts
+      ---
+      duration_ms: 61.3912
+      ...
+    # Subtest: invalid IDs, pagination and unknown mutation fields fail validation safely
+    ok 12 - invalid IDs, pagination and unknown mutation fields fail validation safely
+      ---
+      duration_ms: 91.5499
+      ...
+    # Subtest: self profiles contain only safe metadata and email changes revoke sessions and old reset tokens
+    ok 13 - self profiles contain only safe metadata and email changes revoke sessions and old reset tokens
+      ---
+      duration_ms: 63.6006
+      ...
+    # Subtest: status changes revoke sessions and recovery links permanently through reactivation
+    ok 14 - status changes revoke sessions and recovery links permanently through reactivation
+      ---
+      duration_ms: 103.6737
+      ...
+    # Subtest: direct user service calls revalidate actor role, status and daycare instead of trusting claims
+    ok 15 - direct user service calls revalidate actor role, status and daycare instead of trusting claims
+      ---
+      duration_ms: 12.9748
+      ...
+    # Subtest: tenant audit records exclude credentials and share the user mutation transaction
+    ok 16 - tenant audit records exclude credentials and share the user mutation transaction
+      ---
+      duration_ms: 31.5848
+      ...
+    1..16
+ok 24 - daycare authentication and provisioning isolate accounts and revoke access
+  ---
+  duration_ms: 4933.5726
+  ...
+# 20:10:08 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 20:10:08 [[32minfo[39m]: User 3 (admin) authenticated
+# 20:10:08 [[31merror[39m]: Error: Enter the exact daycare name to confirm deletion.
+#     at Object.deleteDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:686:65)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.routes.js:17:59
+# 20:10:08 [[31merror[39m]: Error: Daycare changed. Refresh before deleting.
+#     at Object.deleteDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:688:63)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.routes.js:17:59
+# Subtest: operator deletion retains history, denies tenant actors and prevents resurrection
+ok 25 - operator deletion retains history, denies tenant actors and prevents resurrection
+  ---
+  duration_ms: 2632.2203
+  ...
+# Subtest: failed user transaction discards a connection when rollback also fails
+ok 26 - failed user transaction discards a connection when rollback also fails
+  ---
+  duration_ms: 1.4246
+  ...
+# Subtest: successful user transaction commits and releases a reusable connection
+ok 27 - successful user transaction commits and releases a reusable connection
+  ---
+  duration_ms: 0.2357
+  ...
+# Subtest: failed user transaction preserves the work error after successful rollback
+ok 28 - failed user transaction preserves the work error after successful rollback
+  ---
+  duration_ms: 0.2725
+  ...
+# Subtest: failed commit discards the connection when its cleanup rollback fails
+ok 29 - failed commit discards the connection when its cleanup rollback fails
+  ---
+  duration_ms: 0.2337
+  ...
+# 20:10:11 [[32minfo[39m]: User 2 (super_admin) authenticated
+# 20:10:11 [[32minfo[39m]: User 3 (admin) authenticated
+# 20:10:11 [[32minfo[39m]: User 4 (caregiver) authenticated
+# 20:10:11 [[32minfo[39m]: User 5 (parent) authenticated
+# 20:10:13 [[32minfo[39m]: User 5 logged out
+# 20:10:13 [[32minfo[39m]: User 5 (parent) authenticated
+# Enumerated 176 mounted endpoints; 707 authentication/role denial checks; 0 failures.
+# Subtest: every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+ok 30 - every mounted legacy API route rejects missing/invalid sessions and forbidden roles
+  ---
+  duration_ms: 6325.2988
+  ...
+# Subtest: essential security with separate restricted PostgreSQL logins
+    # Subtest: flow migration can roll back and reapply without dropping stored columns
+    ok 1 - flow migration can roll back and reapply without dropping stored columns
+      ---
+      duration_ms: 73.6844
+      ...
+    # Subtest: startup rejects privileged logins and verifies restricted roles
+    ok 2 - startup rejects privileged logins and verifies restricted roles
+      ---
+      duration_ms: 324.9706
+      ...
+    # Subtest: unscoped reads fail closed and concurrent tenants stay isolated
+    ok 3 - unscoped reads fail closed and concurrent tenants stay isolated
+      ---
+      duration_ms: 87.3233
+      ...
+    # Subtest: one physical connection clears scope after commits, failures and background jobs
+    ok 4 - one physical connection clears scope after commits, failures and background jobs
+      ---
+      duration_ms: 87.4789
+      ...
+    # Subtest: startup catches policy and control-grant regressions beyond core tables
+    ok 5 - startup catches policy and control-grant regressions beyond core tables
+      ---
+      duration_ms: 226.9725
+      ...
+    # Subtest: evidence migration refuses inconsistent history and can roll back and reapply
+    ok 6 - evidence migration refuses inconsistent history and can roll back and reapply
+      ---
+      duration_ms: 135.7639
+      ...
+    # Subtest: database constrains biometric, pickup and audit actors even for maintenance SQL
+    ok 7 - database constrains biometric, pickup and audit actors even for maintenance SQL
+      ---
+      duration_ms: 33.5056
+      ...
+    # Subtest: control can update and audit package terms without accessing child evidence
+    ok 8 - control can update and audit package terms without accessing child evidence
+      ---
+      duration_ms: 120.6756
+      ...
+# 20:10:12 [[32minfo[39m]: User 4 (parent) authenticated
+# 20:10:12 [[32minfo[39m]: User 5 (parent) authenticated
+# 20:10:12 [[32minfo[39m]: User 2 (admin) authenticated
+# 20:10:12 [[32minfo[39m]: User 3 (caregiver) authenticated
+# 20:10:12 [[32minfo[39m]: User 6 (super_admin) authenticated
+# 20:10:12 [[31merror[39m]: Error: Child not linked to this account.
+#     at assertParentOwnsChild (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.parent.service.js:30:17)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async getMyChild (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.parent.service.js:70:5)
+    # Subtest: restricted HTTP login and parent profile loading work
+    ok 9 - restricted HTTP login and parent profile loading work
+      ---
+      duration_ms: 206.9538
+      ...
+# 20:10:12 [[31merror[39m]: Error: Child profile not found
+#     at Object.createReport (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\reports\\reports.service.js:25:17)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async createReport (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\reports\\reports.controller.js:10:20)
+    # Subtest: staff can operate within their daycare and parents cannot open staff APIs
+    ok 10 - staff can operate within their daycare and parents cannot open staff APIs
+      ---
+      duration_ms: 109.9851
+      ...
+# 20:10:13 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+#     at conflict (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:3:38)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:21:100
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async run (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\utils\\auditedWrite.js:28:22)
+#     at async addContact (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.controller.js:13:79)
+# 20:10:13 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+#     at conflict (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:3:38)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.care.service.js:21:100
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async run (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\utils\\auditedWrite.js:28:22)
+#     at async addContact (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.controller.js:13:79)
+# 20:10:13 [[31merror[39m]: Error: Profile changed. Reload it before saving.
+#     at fail (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.profile-save.js:7:53)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.profile-save.js:71:49
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\auth\\legacy-security.js:62:20)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\children\\children.profile-save.js:102:18
+    # Subtest: parent and admin care writers invalidate each other and serialize concurrent edits
+    ok 11 - parent and admin care writers invalidate each other and serialize concurrent edits
+      ---
+      duration_ms: 222.7653
+      ...
+# 20:10:13 [[31merror[39m]: Error: No active front-desk assignment for this child and action.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at assertScope (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:33:24)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:77:16
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+# 20:10:13 [[31merror[39m]: Error: Child must be checked in before pickup.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:84:78
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+    # Subtest: assigned caregiver check-in and verified manual pickup commit with scoped evidence
+    ok 12 - assigned caregiver check-in and verified manual pickup commit with scoped evidence
+      ---
+      duration_ms: 127.2669
+      ...
+    # Subtest: announcement details enforce audience, expiry and tenant boundaries
+    ok 13 - announcement details enforce audience, expiry and tenant boundaries
+      ---
+      duration_ms: 176.4541
+      ...
+# 20:10:13 [[31merror[39m]: Error: This checkout was already submitted with different items. Start a new checkout.
+#     at Object.placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:191:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:37:20)
+# 20:10:13 [[31merror[39m]: Error: Product ID 1 is not available
+#     at Object.placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:220:21)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async placeOrder (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:37:20)
+# 20:10:13 [[31merror[39m]: Error: Product changed. Reload before saving.
+#     at Object.updateProduct (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:155:25)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateProduct (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:28:20)
+    # Subtest: checkout retries preserve one order, notes and inventory; changed payload conflicts
+    ok 14 - checkout retries preserve one order, notes and inventory; changed payload conflicts
+      ---
+      duration_ms: 151.9104
+      ...
+# 20:10:13 [[31merror[39m]: Error: Event changed. Reload before saving.
+#     at Object.updateEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.service.js:142:25)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.controller.js:28:20)
+# 20:10:13 [[31merror[39m]: Error: Center settings changed. Reload before saving.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:182:25
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+    # Subtest: event and center settings edits reject stale versions
+    ok 15 - event and center settings edits reject stale versions
+      ---
+      duration_ms: 36.3085
+      ...
+# 20:10:13 [[31merror[39m]: Error: Order changed. Reload before saving.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:418:15)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 20:10:13 [[31merror[39m]: Error: This order status transition is not allowed.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:433:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 20:10:13 [[31merror[39m]: Error: A cancelled order cannot accept payment.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:438:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 20:10:13 [[31merror[39m]: ValidationError: "version" is required
+# 20:10:13 [[31merror[39m]: Error: Resolve payment or refund before cancelling this order.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:446:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 20:10:13 [[31merror[39m]: Error: Recorded payments cannot be reversed here. A refund workflow is required.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:440:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+# 20:10:13 [[31merror[39m]: Error: This order status transition is not allowed.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:412:21)
+#     at Object.updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.service.js:433:13)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async updateOrderStatus (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\store\\store.controller.js:64:20)
+    # Subtest: order edits reject stale writes and cancellation returns stock once
+    ok 16 - order edits reject stale writes and cancellation returns stock once
+      ---
+      duration_ms: 225.9356
+      ...
+# 20:10:13 [[31merror[39m]: Error: Event changed. Reload before cancelling.
+#     at Object.cancelEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.service.js:179:25)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async cancelEvent (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\events\\events.controller.js:37:20)
+# 20:10:13 [[31merror[39m]: ValidationError: "version" is required
+    # Subtest: event cancellation conflicts with stale edits and stays tenant scoped
+    ok 17 - event cancellation conflicts with stale edits and stays tenant scoped
+      ---
+      duration_ms: 37.0377
+      ...
+# 20:10:14 [[31merror[39m]: Error: Event unavailable
+#     at Object.save (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\notifications\\preferences.js:66:29)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\notifications\\notifications.routes.js:13:72
+    # Subtest: preferences and reminders persist per account; health notify sends one parent message
+    ok 18 - preferences and reminders persist per account; health notify sends one parent message
+      ---
+      duration_ms: 233.3148
+      ...
+# 20:10:14 [[31merror[39m]: Error: Subscription changes require platform approval. Contact platform support.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at Object.renewPlan (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:189:9)
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:20:65
+#     at C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:57
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at middleware (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\middleware\\rbac.js:32:3)
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at Route.dispatch (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)
+# 20:10:14 [[31merror[39m]: Error: Platform operators cannot impersonate daycare accounts.
+#     at Object.impersonateDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.service.js:703:23)
+#     at impersonateDaycare (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\saas\\saas.controller.js:132:39)
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at middleware (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\middleware\\rbac.js:32:3)
+#     at Layer.handle [as handle_request] (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)
+#     at next (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)
+#     at auth (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\middleware\\auth.js:68:5)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    # Subtest: self-renewal and impersonation fail without changing subscription
+    ok 19 - self-renewal and impersonation fail without changing subscription
+      ---
+      duration_ms: 18.7817
+      ...
+    # Subtest: platform governance works using aggregates while private APIs stay denied
+    ok 20 - platform governance works using aggregates while private APIs stay denied
+      ---
+      duration_ms: 1108.7779
+      ...
+    1..20
+ok 31 - essential security with separate restricted PostgreSQL logins
+  ---
+  duration_ms: 6397.1691
+  ...
+# 20:10:18 [[32minfo[39m]: Child invoice created: ID 1 for child 1 (ETB 100) by 2
+# Subtest: private invoices require child-linked parents and cannot cross daycare/database boundaries
+ok 32 - private invoices require child-linked parents and cannot cross daycare/database boundaries
+  ---
+  duration_ms: 2343.1226
+  ...
+# Subtest: database guard rejects application, maintenance and unowned targets
+ok 33 - database guard rejects application, maintenance and unowned targets
+  ---
+  duration_ms: 1.4083
+  ...
+# migration file "013_multi_tenant_saas.js" failed
+# migration failed with error: insert into "users" ("daycare_id", "email", "name", "password_hash", "profile_complete", "role_id", "status") values ($1, $2, $3, $4, $5, $6, $7) - column "profile_complete" of relation "users" does not exist
+# Subtest: historical chain without the repair reproduces the original clean-install failure
+ok 34 - historical chain without the repair reproduces the original clean-install failure
+  ---
+  duration_ms: 2332.373
+  ...
+# Subtest: fresh standard setup installs onboarding and scoped security storage without manual preparation
+    # Subtest: security tables start empty and legacy owner stays in users
+    ok 1 - security tables start empty and legacy owner stays in users
+      ---
+      duration_ms: 67.3113
+      ...
+    # Subtest: daycare metadata is transitional and primary-admin references cannot cross tenants
+    ok 2 - daycare metadata is transitional and primary-admin references cannot cross tenants
+      ---
+      duration_ms: 9.0674
+      ...
+    # Subtest: legacy global email constraint remains and tenant-normalized duplicates are rejected
+    ok 3 - legacy global email constraint remains and tenant-normalized duplicates are rejected
+      ---
+      duration_ms: 5.3526
+      ...
+    # Subtest: security records reject every partial-null or mixed principal
+    ok 4 - security records reject every partial-null or mixed principal
+      ---
+      duration_ms: 16.8072
+      ...
+    # Subtest: recovery and local mail storage reject tenant mismatches, mixed principals and malformed budgets
+    ok 5 - recovery and local mail storage reject tenant mismatches, mixed principals and malformed budgets
+      ---
+      duration_ms: 16.9899
+      ...
+    # Subtest: session and challenge MFA factors must match the daycare or platform principal
+    ok 6 - session and challenge MFA factors must match the daycare or platform principal
+      ---
+      duration_ms: 15.0166
+      ...
+    # Subtest: confirmed-factor uniqueness permits a pending replacement and later rotation
+    ok 7 - confirmed-factor uniqueness permits a pending replacement and later rotation
+      ---
+      duration_ms: 5.8087
+      ...
+    # Subtest: token stores enforce hash shape and expiry and challenge attempts stay bounded
+    ok 8 - token stores enforce hash shape and expiry and challenge attempts stay bounded
+      ---
+      duration_ms: 10.3292
+      ...
+    # Subtest: invitations constrain grant authority, recipient scope and acceptance state
+    ok 9 - invitations constrain grant authority, recipient scope and acceptance state
+      ---
+      duration_ms: 17.0608
+      ...
+    # Subtest: invitation reissue requires revoking the previous pending link
+    ok 10 - invitation reissue requires revoking the previous pending link
+      ---
+      duration_ms: 3.2359
+      ...
+    # Subtest: audit actor checks and restrictive FKs preserve platform history
+    ok 11 - audit actor checks and restrictive FKs preserve platform history
+      ---
+      duration_ms: 30.731
+      ...
+    # Subtest: repeated standard setup has no pending migrations and preserves stored data
+    ok 12 - repeated standard setup has no pending migrations and preserves stored data
+      ---
+      duration_ms: 76.9418
+      ...
+    1..12
+ok 35 - fresh standard setup installs onboarding and scoped security storage without manual preparation
+  ---
+  duration_ms: 2864.1601
+  ...
+# Subtest: upgrade and rollback preserve all legacy rows, credentials, ownership and migration history
+ok 36 - upgrade and rollback preserve all legacy rows, credentials, ownership and migration history
+  ---
+  duration_ms: 3033.6594
+  ...
+# Subtest: repair and security storage preserve an existing 016 database and append only new history
+ok 37 - repair and security storage preserve an existing 016 database and append only new history
+  ---
+  duration_ms: 2984.5084
+  ...
+# Subtest: repair fills a missing onboarding column and its targeted rollback retains the values
+ok 38 - repair fills a missing onboarding column and its targeted rollback retains the values
+  ---
+  duration_ms: 1367.5582
+  ...
+# migration file "012a_profile_complete_prerequisite.js" failed
+# migration failed with error: Existing users.profile_complete must be a non-nullable boolean; review the legacy schema before migrating.
+# Subtest: incompatible legacy onboarding columns stop the repair without rewriting data
+    # Subtest: nullable_boolean
+    ok 1 - nullable_boolean
+      ---
+      duration_ms: 1500.8305
+      ...
+# migration file "012a_profile_complete_prerequisite.js" failed
+# migration failed with error: Existing users.profile_complete must be a non-nullable boolean; review the legacy schema before migrating.
+    # Subtest: text
+    ok 2 - text
+      ---
+      duration_ms: 997.553
+      ...
+    1..2
+ok 39 - incompatible legacy onboarding columns stop the repair without rewriting data
+  ---
+  duration_ms: 2498.9788
+  ...
+# migration file "014_tenant_account_foundation.js" failed
+# migration failed with error: Resolve duplicate normalized emails within a daycare before migration 014; accounts will not be merged.
+# Subtest: normalized-email conflicts stop upgrades atomically without rewriting accounts
+ok 40 - normalized-email conflicts stop upgrades atomically without rewriting accounts
+  ---
+  duration_ms: 1419.3138
+  ...
+# Subtest: TOTP follows RFC 6238 SHA1 vectors with six digits and accepts delta zero
+ok 41 - TOTP follows RFC 6238 SHA1 vectors with six digits and accepts delta zero
+  ---
+  duration_ms: 3.0436
+  ...
+# Subtest: MFA encryption authenticates the factor, principal, tenant, purpose, key and ciphertext
+ok 42 - MFA encryption authenticates the factor, principal, tenant, purpose, key and ciphertext
+  ---
+  duration_ms: 2.6941
+  ...
+# Subtest: MFA enrollment, challenges, proof limits and sessions use isolated databases
+    # Subtest: password challenge grants no session, setup rotates it, and enrollment creates hash-only recovery codes once
+    ok 1 - password challenge grants no session, setup rotates it, and enrollment creates hash-only recovery codes once
+      ---
+      duration_ms: 136.2334
+      ...
+    # Subtest: platform enrollment requires its namespace, activates a pending account, and never asserts email verification
+    ok 2 - platform enrollment requires its namespace, activates a pending account, and never asserts email verification
+      ---
+      duration_ms: 35.3933
+      ...
+    # Subtest: fresh password challenges revoke older challenges and pending factors without replacing a confirmed factor
+    ok 3 - fresh password challenges revoke older challenges and pending factors without replacing a confirmed factor
+      ---
+      duration_ms: 43.1179
+      ...
+    # Subtest: normal TOTP consumes one challenge, enforces a monotonic absolute time step, and returns no new backups
+    ok 4 - normal TOTP consumes one challenge, enforces a monotonic absolute time step, and returns no new backups
+      ---
+      duration_ms: 43.6776
+      ...
+    # Subtest: concurrent valid TOTP verification creates at most one session
+    ok 5 - concurrent valid TOTP verification creates at most one session
+      ---
+      duration_ms: 99.2487
+      ...
+    # Subtest: recovery codes are single-use under concurrency and preserve the enrolled factor
+    ok 6 - recovery codes are single-use under concurrency and preserve the enrolled factor
+      ---
+      duration_ms: 91.0467
+      ...
+    # Subtest: backup codes cannot enroll a factor, cross principals, or combine with a TOTP proof
+    ok 7 - backup codes cannot enroll a factor, cross principals, or combine with a TOTP proof
+      ---
+      duration_ms: 86.5712
+      ...
+    # Subtest: five failed proofs persist, revoke the challenge, and survive new password challenges
+    ok 8 - five failed proofs persist, revoke the challenge, and survive new password challenges
+      ---
+      duration_ms: 59.2495
+      ...
+    # Subtest: principal failure budget cannot be bypassed by acquiring a new password challenge after every failed code
+    ok 9 - principal failure budget cannot be bypassed by acquiring a new password challenge after every failed code
+      ---
+      duration_ms: 108.4218
+      ...
+    # Subtest: expired, revoked and unknown challenges fail without disclosing their state
+    ok 10 - expired, revoked and unknown challenges fail without disclosing their state
+      ---
+      duration_ms: 37.2432
+      ...
+    # Subtest: time spent acquiring locks cannot extend challenges or old TOTP codes
+    ok 11 - time spent acquiring locks cannot extend challenges or old TOTP codes
+      ---
+      duration_ms: 72.0354
+      ...
+    # Subtest: live daycare, administrator role and account state are checked again before proof acceptance
+    ok 12 - live daycare, administrator role and account state are checked again before proof acceptance
+      ---
+      duration_ms: 109.1298
+      ...
+    # Subtest: suspended platform accounts cannot complete existing password challenges
+    ok 13 - suspended platform accounts cannot complete existing password challenges
+      ---
+      duration_ms: 30.3588
+      ...
+    # Subtest: ciphertext swapping or corruption never issues a session or exposes internal errors
+    ok 14 - ciphertext swapping or corruption never issues a session or exposes internal errors
+      ---
+      duration_ms: 48.8353
+      ...
+    # Subtest: session and audit failures roll back confirmation, codes, challenge consumption and session creation together
+    ok 15 - session and audit failures roll back confirmation, codes, challenge consumption and session creation together
+      ---
+      duration_ms: 32.0759
+      ...
+    1..15
+ok 43 - MFA enrollment, challenges, proof limits and sessions use isolated databases
+  ---
+  duration_ms: 2354.7251
+  ...
+# Subtest: native report draft survives validation, database save and parent/admin read with all care entries
+ok 44 - native report draft survives validation, database save and parent/admin read with all care entries
+  ---
+  duration_ms: 2298.9442
+  ...
+# Subtest: phase one legacy authentication closes public bypasses and revokes stale access at migration013
+    # Subtest: fresh JWTs carry bound state and support bearer and cookie requests
+    ok 1 - fresh JWTs carry bound state and support bearer and cookie requests
+      ---
+      duration_ms: 120.0764
+      ...
+    # Subtest: unversioned, wrong-audience and wrong-algorithm tokens are rejected
+    ok 2 - unversioned, wrong-audience and wrong-algorithm tokens are rejected
+      ---
+      duration_ms: 25.0673
+      ...
+    # Subtest: tenant accounts require an active daycare and account before login
+    ok 3 - tenant accounts require an active daycare and account before login
+      ---
+      duration_ms: 44.2205
+      ...
+    # Subtest: public parent signup is denied in HTTP and service without provisioning records
+    ok 4 - public parent signup is denied in HTTP and service without provisioning records
+      ---
+      duration_ms: 17.0316
+      ...
+    # Subtest: daycare suspension revokes existing JWTs permanently through reactivation
+    ok 5 - daycare suspension revokes existing JWTs permanently through reactivation
+      ---
+      duration_ms: 54.9841
+      ...
+    # Subtest: user deactivation revokes existing JWTs permanently through reactivation
+    ok 6 - user deactivation revokes existing JWTs permanently through reactivation
+      ---
+      duration_ms: 83.703
+      ...
+    # Subtest: sub-millisecond user and daycare revision changes invalidate issued JWTs
+    ok 7 - sub-millisecond user and daycare revision changes invalidate issued JWTs
+      ---
+      duration_ms: 34.9687
+      ...
+    # Subtest: password changes reject wrong current passwords and revoke all previously issued JWTs
+    ok 8 - password changes reject wrong current passwords and revoke all previously issued JWTs
+      ---
+      duration_ms: 1046.0055
+      ...
+    # Subtest: concurrent changes using the same old password have only one winner
+    ok 9 - concurrent changes using the same old password have only one winner
+      ---
+      duration_ms: 751.8775
+      ...
+    # Subtest: previously leaked 64-character reset tokens cannot be redeemed
+    ok 10 - previously leaked 64-character reset tokens cannot be redeemed
+      ---
+      duration_ms: 21.5483
+      ...
+    # Subtest: recovery responses are identical for eligible, unknown and ineligible accounts
+    ok 11 - recovery responses are identical for eligible, unknown and ineligible accounts
+      ---
+      duration_ms: 44.3725
+      ...
+    # Subtest: local inbox encrypts token and recipient while its listing exposes metadata only
+    ok 12 - local inbox encrypts token and recipient while its listing exposes metadata only
+      ---
+      duration_ms: 35.8217
+      ...
+    # Subtest: same reset token can succeed only once under concurrent HTTP requests
+    ok 13 - same reset token can succeed only once under concurrent HTTP requests
+      ---
+      duration_ms: 1007.8985
+      ...
+    # Subtest: requesting a replacement reset link invalidates the earlier link
+    ok 14 - requesting a replacement reset link invalidates the earlier link
+      ---
+      duration_ms: 772.6495
+      ...
+    # Subtest: expired reset links cannot change credentials
+    ok 15 - expired reset links cannot change credentials
+      ---
+      duration_ms: 285.9275
+      ...
+    # Subtest: password changes invalidate all outstanding recovery links
+    ok 16 - password changes invalidate all outstanding recovery links
+      ---
+      duration_ms: 520.8392
+      ...
+    # Subtest: recovery links remain revoked after daycare suspension and reactivation
+    ok 17 - recovery links remain revoked after daycare suspension and reactivation
+      ---
+      duration_ms: 558.6943
+      ...
+    # Subtest: recovery links remain revoked after account deactivation and reactivation
+    ok 18 - recovery links remain revoked after account deactivation and reactivation
+      ---
+      duration_ms: 565.6093
+      ...
+    # Subtest: racing a reset and password change admits only one credential update
+    ok 19 - racing a reset and password change admits only one credential update
+      ---
+      duration_ms: 807.3724
+      ...
+    # Subtest: production recovery is uniformly unavailable without issuing a token
+    ok 20 - production recovery is uniformly unavailable without issuing a token
+      ---
+      duration_ms: 16.6083
+      ...
+    1..20
+ok 45 - phase one legacy authentication closes public bypasses and revokes stale access at migration013
+  ---
+  duration_ms: 12578.8812
+  ...
+# Subtest: webhook rejects {"tx_ref":"synthetic-existing-reference"} before accessing payment data
+ok 46 - webhook rejects {"tx_ref":"synthetic-existing-reference"} before accessing payment data
+  ---
+  duration_ms: 1.5771
+  ...
+# Subtest: webhook rejects {"tx_ref":"synthetic-existing-reference","status":"success"} before accessing payment data
+ok 47 - webhook rejects {"tx_ref":"synthetic-existing-reference","status":"success"} before accessing payment data
+  ---
+  duration_ms: 0.162
+  ...
+# Subtest: webhook rejects {"gateway_ref":"synthetic-existing-reference","status":"failed"} before accessing payment data
+ok 48 - webhook rejects {"gateway_ref":"synthetic-existing-reference","status":"failed"} before accessing payment data
+  ---
+  duration_ms: 0.1228
+  ...
+# Subtest: webhook rejects {} before accessing payment data
+ok 49 - webhook rejects {} before accessing payment data
+  ---
+  duration_ms: 0.1784
+  ...
+# Subtest: webhook rejects null before accessing payment data
+ok 50 - webhook rejects null before accessing payment data
+  ---
+  duration_ms: 0.3842
+  ...
+# Subtest: digital initiation cannot create a checkout or reset a paid order
+ok 51 - digital initiation cannot create a checkout or reset a paid order
+  ---
+  duration_ms: 0.2986
+  ...
+# Subtest: pay_at_daycare initiation cannot create a checkout or reset a paid order
+ok 52 - pay_at_daycare initiation cannot create a checkout or reset a paid order
+  ---
+  duration_ms: 0.1708
+  ...
+# Subtest: existing payment status remains readable by its parent
+ok 53 - existing payment status remains readable by its parent
+  ---
+  duration_ms: 0.4653
+  ...
+# Subtest: reading a payment still rejects another parent
+ok 54 - reading a payment still rejects another parent
+  ---
+  duration_ms: 0.443
+  ...
+# Subtest: mounted endpoints return unavailable instead of acknowledging a payment
+ok 55 - mounted endpoints return unavailable instead of acknowledging a payment
+  ---
+  duration_ms: 109.8997
+  ...
+# Subtest: phase two: daycare isolation and permission enforcement
+    # Subtest: admin A only sees users from daycare A and never super_admin
+    ok 1 - admin A only sees users from daycare A and never super_admin
+      ---
+      duration_ms: 27.5854
+      ...
+    # Subtest: admin A cannot get, update, or deactivate user from daycare B
+    ok 2 - admin A cannot get, update, or deactivate user from daycare B
+      ---
+      duration_ms: 10.5079
+      ...
+    # Subtest: owner-only admin appointment: tenant admin cannot create another admin (B07)
+    ok 3 - owner-only admin appointment: tenant admin cannot create another admin (B07)
+      ---
+      duration_ms: 0.3796
+      ...
+    # Subtest: tenant admin creating caregiver stamps actor daycare_id (B04)
+    ok 4 - tenant admin creating caregiver stamps actor daycare_id (B04)
+      ---
+      duration_ms: 71.3993
+      ...
+    # Subtest: admin A only lists children from daycare A
+    ok 5 - admin A only lists children from daycare A
+      ---
+      duration_ms: 8.2153
+      ...
+    # Subtest: admin A cannot get or update child from daycare B
+    ok 6 - admin A cannot get or update child from daycare B
+      ---
+      duration_ms: 3.251
+      ...
+    # Subtest: admin A cannot assign caregiver or group from daycare B to child A
+    ok 7 - admin A cannot assign caregiver or group from daycare B to child A
+      ---
+      duration_ms: 2.7032
+      ...
+    # Subtest: admin A cannot link parent B to child A
+    ok 8 - admin A cannot link parent B to child A
+      ---
+      duration_ms: 2.582
+      ...
+    # Subtest: admin A cannot add, update or delete emergency contacts or care instructions on child B
+    ok 9 - admin A cannot add, update or delete emergency contacts or care instructions on child B
+      ---
+      duration_ms: 2.4167
+      ...
+    # Subtest: parent A cannot self-authorize pickup or change classroom group (B08)
+    ok 10 - parent A cannot self-authorize pickup or change classroom group (B08)
+      ---
+      duration_ms: 134.7217
+      ...
+    # Subtest: admin A only sees daycare A groups and cannot modify group B
+    ok 11 - admin A only sees daycare A groups and cannot modify group B
+      ---
+      duration_ms: 2.8715
+      ...
+    # Subtest: health records stamp daycare_id and reject cross-daycare access and unassigned caregivers
+    ok 12 - health records stamp daycare_id and reject cross-daycare access and unassigned caregivers
+      ---
+      duration_ms: 18.7435
+      ...
+    # Subtest: announcements stamp daycare_id and isolate across tenants
+    ok 13 - announcements stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 13.336
+      ...
+    # Subtest: direct messages reject cross-daycare recipients
+    ok 14 - direct messages reject cross-daycare recipients
+      ---
+      duration_ms: 0.9507
+      ...
+    # Subtest: alerts reject targeting users from another daycare
+    ok 15 - alerts reject targeting users from another daycare
+      ---
+      duration_ms: 0.8774
+      ...
+    # Subtest: daily reports stamp daycare_id and isolate across tenants
+    ok 16 - daily reports stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 12.1174
+      ...
+    # Subtest: store products and orders enforce strict daycare isolation
+    ok 17 - store products and orders enforce strict daycare isolation
+      ---
+      duration_ms: 30.5425
+      ...
+    # Subtest: calendar events stamp daycare_id and isolate across tenants
+    ok 18 - calendar events stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 11.0023
+      ...
+    # Subtest: global search results never leak records from another daycare
+    ok 19 - global search results never leak records from another daycare
+      ---
+      duration_ms: 10.1475
+      ...
+    # Subtest: admin dashboard statistics only aggregate for own daycare
+    ok 20 - admin dashboard statistics only aggregate for own daycare
+      ---
+      duration_ms: 60.2302
+      ...
+    # Subtest: audit logs stamp daycare_id and isolate across tenants
+    ok 21 - audit logs stamp daycare_id and isolate across tenants
+      ---
+      duration_ms: 15.1113
+      ...
+    # Subtest: restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+        # Subtest: un-contexted queries fail closed and return 0 rows under RLS
+        ok 1 - un-contexted queries fail closed and return 0 rows under RLS
+          ---
+          duration_ms: 22.9864
+          ...
+        # Subtest: queries with Daycare A context return only Daycare A rows without WHERE clause
+        ok 2 - queries with Daycare A context return only Daycare A rows without WHERE clause
+          ---
+          duration_ms: 1.9243
+          ...
+        # Subtest: direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy
+        ok 3 - direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy
+          ---
+          duration_ms: 2.1115
+          ...
+        # Subtest: direct SQL insert into dependent table for cross-tenant child is rejected by RLS
+        ok 4 - direct SQL insert into dependent table for cross-tenant child is rejected by RLS
+          ---
+          duration_ms: 1.85
+          ...
+        # Subtest: direct SQL update targeting Daycare B record under Daycare A context affects 0 rows
+        ok 5 - direct SQL update targeting Daycare B record under Daycare A context affects 0 rows
+          ---
+          duration_ms: 1.5429
+          ...
+        # Subtest: queries with Daycare B context return only Daycare B rows
+        ok 6 - queries with Daycare B context return only Daycare B rows
+          ---
+          duration_ms: 1.2229
+          ...
+        # Subtest: tenant connection pool isolates context, prevents leakage across checkouts, and fails closed
+        ok 7 - tenant connection pool isolates context, prevents leakage across checkouts, and fails closed
+          ---
+          duration_ms: 100.5847
+          ...
+        1..7
+    ok 22 - restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+      ---
+      duration_ms: 406.8987
+      ...
+    1..22
+ok 56 - phase two: daycare isolation and permission enforcement
+  ---
+  duration_ms: 3861.8848
+  ...
+# Subtest: Phase 3: Child Profile Protection & Safety Record Integrity
+    # Subtest: B09: Care instructions replacement transaction rolls back on invalid input
+    ok 1 - B09: Care instructions replacement transaction rolls back on invalid input
+      ---
+      duration_ms: 121.389
+      ...
+    # Subtest: B09: Emergency contacts replacement transaction rolls back on invalid input
+    ok 2 - B09: Emergency contacts replacement transaction rolls back on invalid input
+      ---
+      duration_ms: 11.8589
+      ...
+    # Subtest: B15: Report access follows child current caregiver assignment
+    ok 3 - B15: Report access follows child current caregiver assignment
+      ---
+      duration_ms: 33.9863
+      ...
+    # Subtest: Biometric enrollment enforces pickup authorization, active status, and daycare tenant
+    ok 4 - Biometric enrollment enforces pickup authorization, active status, and daycare tenant
+      ---
+      duration_ms: 24.6021
+      ...
+    # Subtest: Child deactivation updates status without destroying historical attendance and reports
+    ok 5 - Child deactivation updates status without destroying historical attendance and reports
+      ---
+      duration_ms: 24.0666
+      ...
+    1..5
+ok 57 - Phase 3: Child Profile Protection & Safety Record Integrity
+  ---
+  duration_ms: 3128.2507
+  ...
+# 20:10:40 [[31merror[39m]: Error: Invalid credentials
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\auth\\auth.service.js:13:56)
+#     at Object.login (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\auth\\auth.service.js:57:11)
+#     at async login (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\auth\\auth.controller.js:14:20)
+# 20:10:40 [[32minfo[39m]: User 3 (caregiver) authenticated
+# 20:10:40 [[31merror[39m]: Error: No active front-desk assignment for this child and action.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at assertScope (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:33:24)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:67:16
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+# 20:10:40 [[31merror[39m]: Error: Child does not belong to your daycare center.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at assertScope (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:28:10)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:67:16
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+# 20:10:40 [[31merror[39m]: Error: No active front-desk assignment for this child and action.
+#     at failure (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\policy.js:1:55)
+#     at assertScope (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:33:24)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:77:16
+#     at async transaction (C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.service.js:8:49)
+#     at async C:\\Users\\Mistire\\Desktop\\final year project\\backend\\src\\modules\\portal\\portal.routes.js:7:51
+# Subtest: Phase 4: Attendance, Front-Desk Shifts & Verified Pickup Transitions
+    # Subtest: Portal HTTP: assigned caregiver can log in and check in without a shift
+    ok 1 - Portal HTTP: assigned caregiver can log in and check in without a shift
+      ---
+      duration_ms: 831.7681
+      ...
+    # Subtest: B10: Admin assigns front-desk duty, prevents invalid shifts, overlaps, and revokes duty
+    ok 2 - B10: Admin assigns front-desk duty, prevents invalid shifts, overlaps, and revokes duty
+      ---
+      duration_ms: 27.8118
+      ...
+    # Subtest: FR-ATT-06: Attendance state machine prevents invalid and conflicting states
+    ok 3 - FR-ATT-06: Attendance state machine prevents invalid and conflicting states
+      ---
+      duration_ms: 10.4754
+      ...
+    # Subtest: FR-DESK-03: Staff requires active duty or classroom assignment to record attendance/pickup
+    ok 4 - FR-DESK-03: Staff requires active duty or classroom assignment to record attendance/pickup
+      ---
+      duration_ms: 13.8596
+      ...
+    # Subtest: UC-12: Front-desk pickup enforces authorized guardian, active account, and logs audit
+    ok 5 - UC-12: Front-desk pickup enforces authorized guardian, active account, and logs audit
+      ---
+      duration_ms: 17.1115
+      ...
+    # Subtest: Admin attendance grid and summary counts isolate by daycare tenant
+    ok 6 - Admin attendance grid and summary counts isolate by daycare tenant
+      ---
+      duration_ms: 4.5592
+      ...
+    1..6
+ok 58 - Phase 4: Attendance, Front-Desk Shifts & Verified Pickup Transitions
+  ---
+  duration_ms: 3244.0437
+  ...
+# Subtest: Phase 5: Daily Reporting, Health Observations & Metrics Reconciliation
+    # Subtest: B11: Caregiver can only create and notify health records for assigned children within own daycare
+    ok 1 - B11: Caregiver can only create and notify health records for assigned children within own daycare
+      ---
+      duration_ms: 48.1702
+      ...
+    # Subtest: B14: Caregiver report completion monitor does not multiply counts across assigned children
+    ok 2 - B14: Caregiver report completion monitor does not multiply counts across assigned children
+      ---
+      duration_ms: 50.4889
+      ...
+    # Subtest: B17: Dashboard presence metrics deduct checked-out children and synchronize with daily dates
+    ok 3 - B17: Dashboard presence metrics deduct checked-out children and synchronize with daily dates
+      ---
+      duration_ms: 71.3243
+      ...
+    1..3
+ok 59 - Phase 5: Daily Reporting, Health Observations & Metrics Reconciliation
+  ---
+  duration_ms: 3051.1572
+  ...
+# Subtest: Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F13)
+    # Subtest: Daycare message oversight is tenant/admin scoped, audited and preserves recipient receipts
+    ok 1 - Daycare message oversight is tenant/admin scoped, audited and preserves recipient receipts
+      ---
+      duration_ms: 181.6963
+      ...
+    # Subtest: Alternate inbox and meal routes preserve tenant and audience boundaries
+    ok 2 - Alternate inbox and meal routes preserve tenant and audience boundaries
+      ---
+      duration_ms: 55.6809
+      ...
+    # Subtest: Unowned products are rejected and foreign products cannot be listed, searched, purchased or edited
+    ok 3 - Unowned products are rejected and foreign products cannot be listed, searched, purchased or edited
+      ---
+      duration_ms: 41.8721
+      ...
+# 20:10:44 [[32minfo[39m]: User 10 (super_admin) authenticated
+# 20:10:44 [[32minfo[39m]: User 2 (admin) authenticated
+# 20:10:44 [[32minfo[39m]: User 5 (parent) authenticated
+# 20:10:44 [[32minfo[39m]: User 3 (caregiver) authenticated
+    # Subtest: Mounted operational APIs reject the platform owner while governance stays available
+    ok 4 - Mounted operational APIs reject the platform owner while governance stays available
+      ---
+      duration_ms: 685.0364
+      ...
+    # Subtest: 1. Announcement audience and group isolation
+    ok 5 - 1. Announcement audience and group isolation
+      ---
+      duration_ms: 26.0109
+      ...
+    # Subtest: 2. Meal plans group scoping and optional caller filter protection
+    ok 6 - 2. Meal plans group scoping and optional caller filter protection
+      ---
+      duration_ms: 13.2435
+      ...
+    # Subtest: 3. Direct messages permissions, tenant isolation, and read status
+    ok 7 - 3. Direct messages permissions, tenant isolation, and read status
+      ---
+      duration_ms: 8.539
+      ...
+    # Subtest: 4. Urgent alerts tenant ownership and audience scoping
+    ok 8 - 4. Urgent alerts tenant ownership and audience scoping
+      ---
+      duration_ms: 11.3091
+      ...
+    # Subtest: 5. Global search respects announcement audience, groups and daycare boundaries
+    ok 9 - 5. Global search respects announcement audience, groups and daycare boundaries
+      ---
+      duration_ms: 5.899
+      ...
+    # Subtest: 6. Contacts API returns actual daycare staff contacts for parent (F07 fix)
+    ok 10 - 6. Contacts API returns actual daycare staff contacts for parent (F07 fix)
+      ---
+      duration_ms: 2.3315
+      ...
+    1..10
+ok 60 - Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F13)
+  ---
+  duration_ms: 2925.2056
+  ...
+# Subtest: platform credential parsing rejects legacy/daycare namespaces and conflicting cookies
+ok 61 - platform credential parsing rejects legacy/daycare namespaces and conflicting cookies
+  ---
+  duration_ms: 1.822
+  ...
+# Subtest: bootstrap input is explicit and rejects unsafe credential lengths
+ok 62 - bootstrap input is explicit and rejects unsafe credential lengths
+  ---
+  duration_ms: 3.4668
+  ...
+# Subtest: first platform owner bootstrap is serialized, audited and never overwrites existing accounts
+ok 63 - first platform owner bootstrap is serialized, audited and never overwrites existing accounts
+  ---
+  duration_ms: 2998.9666
+  ...
+# Subtest: owner bootstrap rolls back the account if mandatory audit persistence fails
+ok 64 - owner bootstrap rolls back the account if mandatory audit persistence fails
+  ---
+  duration_ms: 3580.653
+  ...
+# Subtest: platform HTTP authentication requires MFA, isolates its namespace and rechecks live status
+    # Subtest: password-only first-owner login creates a challenge and activates only after TOTP enrollment
+    ok 1 - password-only first-owner login creates a challenge and activates only after TOTP enrollment
+      ---
+      duration_ms: 139.8355
+      ...
+    # Subtest: normal owner sign-in requires a new MFA challenge and cannot reuse an enrollment TOTP step
+    ok 2 - normal owner sign-in requires a new MFA challenge and cannot reuse an enrollment TOTP step
+      ---
+      duration_ms: 57.9087
+      ...
+    # Subtest: cookie sessions use their own proof and logout revokes only the platform session
+    ok 3 - cookie sessions use their own proof and logout revokes only the platform session
+      ---
+      duration_ms: 63.9931
+      ...
+    # Subtest: platform tokens cannot enter daycare authentication and no token namespaces fall back
+    ok 4 - platform tokens cannot enter daycare authentication and no token namespaces fall back
+      ---
+      duration_ms: 30.9048
+      ...
+    # Subtest: daycare MFA challenges cannot reveal a secret or create a platform session
+    ok 5 - daycare MFA challenges cannot reveal a secret or create a platform session
+      ---
+      duration_ms: 25.2127
+      ...
+    # Subtest: revoked factors, suspended accounts, revoked/expired sessions and missing MFA proof all deny access
+    ok 6 - revoked factors, suspended accounts, revoked/expired sessions and missing MFA proof all deny access
+      ---
+      duration_ms: 49.1539
+      ...
+    # Subtest: unknown and disabled credentials share a denial; request validation and origin checks precede mutations
+    ok 7 - unknown and disabled credentials share a denial; request validation and origin checks precede mutations
+      ---
+      duration_ms: 262.5069
+      ...
+    # Subtest: canonical account attempt budget persists across failed password transactions
+    ok 8 - canonical account attempt budget persists across failed password transactions
+      ---
+      duration_ms: 102.6531
+      ...
+    1..8
+ok 65 - platform HTTP authentication requires MFA, isolates its namespace and rechecks live status
+  ---
+  duration_ms: 2337.1242
+  ...
+# Subtest: subscription phase derives expiry independently of package and preserves cancellation
+ok 66 - subscription phase derives expiry independently of package and preserves cancellation
+  ---
+  duration_ms: 0.7856
+  ...
+# 20:10:48 [[32minfo[39m]: New daycare application staged: "Synthetic package daycare" (Application ID: 1)
+# Subtest: real subscription and application lifecycle, retries, boundaries and scoped history
+    # Subtest: public catalog, package selection, application status and pending access
+    not ok 1 - public catalog, package selection, application status and pending access
+      ---
+      duration_ms: 141.5743
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:34:12'
+      failureType: 'testCodeFailure'
+      error: 'Missing expected rejection.'
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      stack: |-
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:36:5)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:34:4
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:17:2)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+      ...
+    # Subtest: operator roles, tenant-owned summary and protected application status
+    not ok 2 - operator roles, tenant-owned summary and protected application status
+      ---
+      duration_ms: 6.5878
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:48:12'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        401 !== 403
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 403
+      actual: 401
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:49:12)
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:48:4
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:17:2)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+      ...
+    # Subtest: catalog version checks and accepted price snapshots
+    not ok 3 - catalog version checks and accepted price snapshots
+      ---
+      duration_ms: 13.7231
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:56:12'
+      failureType: 'testCodeFailure'
+      error: "Cannot read properties of undefined (reading 'id')"
+      code: 'ERR_TEST_FAILURE'
+      name: 'TypeError'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:61:40)
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:56:4
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:17:2)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+      ...
+    # Subtest: manual renewal commits once under simultaneous retries and rejects mismatches
+    not ok 4 - manual renewal commits once under simultaneous retries and rejects mismatches
+      ---
+      duration_ms: 0.5584
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:66:12'
+      failureType: 'testCodeFailure'
+      error: "Cannot read properties of undefined (reading 'id')"
+      code: 'ERR_TEST_FAILURE'
+      name: 'TypeError'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:67:44)
+        Test.runInAsyncScope (node:async_hooks:211:14)
+        Test.run (node:internal/test_runner/test:934:25)
+        Test.start (node:internal/test_runner/test:833:17)
+        TestContext.test (node:internal/test_runner/test:317:20)
+        C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:66:12
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:17:2)
+        async Test.run (node:internal/test_runner/test:935:9)
+      ...
+    # Subtest: cancellation, resume and trial-only extension have durable history
+    not ok 5 - cancellation, resume and trial-only extension have durable history
+      ---
+      duration_ms: 0.2428
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:76:12'
+      failureType: 'testCodeFailure'
+      error: "Cannot read properties of undefined (reading 'id')"
+      code: 'ERR_TEST_FAILURE'
+      name: 'TypeError'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:77:42)
+        Test.runInAsyncScope (node:async_hooks:211:14)
+        Test.run (node:internal/test_runner/test:934:25)
+        Test.start (node:internal/test_runner/test:833:17)
+        TestContext.test (node:internal/test_runner/test:317:20)
+        C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:76:12
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:17:2)
+        async Test.run (node:internal/test_runner/test:935:9)
+      ...
+# 20:10:48 [[32minfo[39m]: New daycare application staged: "Synthetic second daycare" (Application ID: 2)
+# 20:10:48 [[32minfo[39m]: Daycare application 2 approved by 2. Created daycare 2 and admin 3
+    # Subtest: second tenant, payment reference uniqueness, expired trial and rejected status
+    not ok 6 - second tenant, payment reference uniqueness, expired trial and rejected status
+      ---
+      duration_ms: 98.7221
+      location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:84:12'
+      failureType: 'testCodeFailure'
+      error: |-
+        The validation function is expected to return "true". Received false
+        
+        Caught error:
+        
+        Error: Agree a priced package before recording a renewal.
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      stack: |-
+        process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:88:5)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:84:4
+        async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+        async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\practical-subscriptions.test.cjs:17:2)
+        async Test.run (node:internal/test_runner/test:935:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:633:7)
+      ...
+    1..6
+not ok 67 - real subscription and application lifecycle, retries, boundaries and scoped history
+  ---
+  duration_ms: 3043.7286
+  location: 'C:\\Users\\Mistire\\Desktop\\final year project\\backend\\scripts\\practical-subscriptions.test.cjs:16:1'
+  failureType: 'subtestsFailed'
+  error: '6 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: Backend phase 1: security revisions and atomic profile saves
+    # Subtest: upgrade preserves fingerprints and normal profile changes preserve login
+    ok 1 - upgrade preserves fingerprints and normal profile changes preserve login
+      ---
+      duration_ms: 11.1672
+      ...
+    # Subtest: atomic save preserves omitted data and requires fresh version
+    ok 2 - atomic save preserves omitted data and requires fresh version
+      ---
+      duration_ms: 66.9624
+      ...
+    # Subtest: failure rolls back identity, care, contacts and completion together
+    ok 3 - failure rolls back identity, care, contacts and completion together
+      ---
+      duration_ms: 23.8695
+      ...
+    # Subtest: forbidden fields, malformed data, wrong tenant and unlinked parent fail
+    ok 4 - forbidden fields, malformed data, wrong tenant and unlinked parent fail
+      ---
+      duration_ms: 18.4915
+      ...
+    # Subtest: two simultaneous saves cannot overwrite one another
+    ok 5 - two simultaneous saves cannot overwrite one another
+      ---
+      duration_ms: 176.6233
+      ...
+# 20:10:51 [[32minfo[39m]: User 2 (parent) authenticated
+    # Subtest: HTTP login survives legacy wizard saves and atomic endpoint saves
+    ok 6 - HTTP login survives legacy wizard saves and atomic endpoint saves
+      ---
+      duration_ms: 573.0119
+      ...
+    # Subtest: suspend/reactivate and password changes cannot revive old sessions
+    ok 7 - suspend/reactivate and password changes cannot revive old sessions
+      ---
+      duration_ms: 16.8324
+      ...
+    # Subtest: migration rollback and reapply work
+    ok 8 - migration rollback and reapply work
+      ---
+      duration_ms: 76.8669
+      ...
+    1..8
+ok 68 - Backend phase 1: security revisions and atomic profile saves
+  ---
+  duration_ms: 2972.0856
+  ...
+# Subtest: Tenant relationship constraints reject direct SQL cross-tenant writes
+    # Subtest: preflight refuses unresolved ownership without guessing
+    ok 1 - preflight refuses unresolved ownership without guessing
+      ---
+      duration_ms: 73.3733
+      ...
+    # Subtest: ownership required and child references constrained
+    ok 2 - ownership required and child references constrained
+      ---
+      duration_ms: 14.3639
+      ...
+    # Subtest: guardians and orders cannot bridge tenants
+    ok 3 - guardians and orders cannot bridge tenants
+      ---
+      duration_ms: 31.2297
+      ...
+    # Subtest: categories have tenant-owned CRUD, scoped counts and immutable shared templates
+    ok 4 - categories have tenant-owned CRUD, scoped counts and immutable shared templates
+      ---
+      duration_ms: 79.3116
+      ...
+    # Subtest: rollback and reapply retain valid records
+    ok 5 - rollback and reapply retain valid records
+      ---
+      duration_ms: 177.0714
+      ...
+    1..5
+ok 69 - Tenant relationship constraints reject direct SQL cross-tenant writes
+  ---
+  duration_ms: 1901.1132
+  ...
+# Subtest: automatic transactions on one checked-out client cannot interleave
+ok 70 - automatic transactions on one checked-out client cannot interleave
+  ---
+  duration_ms: 5.0537
+  ...
+# Subtest: failed rollback destroys the pooled connection
+ok 71 - failed rollback destroys the pooled connection
+  ---
+  duration_ms: 1.1108
+  ...
+# Subtest: context failure rolls back before returning the connection
+ok 72 - context failure rolls back before returning the connection
+  ---
+  duration_ms: 0.5719
+  ...
+# Subtest: open transactions and premature release destroy connections
+ok 73 - open transactions and premature release destroy connections
+  ---
+  duration_ms: 0.5211
+  ...
+# Subtest: work without tenant context explicitly clears both database settings
+ok 74 - work without tenant context explicitly clears both database settings
+  ---
+  duration_ms: 1.0769
+  ...
+1..74
+# tests 263
+# suites 0
+# pass 256
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 70935.8597

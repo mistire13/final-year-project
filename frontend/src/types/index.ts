@@ -1,5 +1,5 @@
 // Domain Enums matching Ankelba Backend SRS
-export type Role = 'admin' | 'caregiver' | 'parent';
+export type Role = 'super_admin' | 'admin' | 'caregiver' | 'parent';
 export type UserStatus = 'active' | 'inactive';
 export type Gender = 'male' | 'female';
 export type EnrollmentStatus = 'active' | 'inactive' | 'graduated';

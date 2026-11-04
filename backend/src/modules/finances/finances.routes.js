@@ -12,6 +12,15 @@ const router = express.Router();
 const auth = require('../../middleware/auth');
 const { allowRoles } = require('../../middleware/rbac');
 const financesController = require('./finances.controller');
+const {validate,Joi} = require('../../middleware/validator');
+const period = Joi.string().pattern(/^\d{4}-(0[1-9]|1[0-2])$/);
+const invoiceSchema = Joi.object({child_id:Joi.number().integer().positive().required(),parent_id:Joi.number().integer().positive().allow(null),
+  title:Joi.string().trim().min(1).max(200).required(),amount:Joi.number().positive().max(99999999).precision(2).required(),
+  billing_period:period,invoice_type:Joi.string().valid('care_fee','registration_fee','store_supplies','late_pickup','custom'),
+  due_date:Joi.date().iso().raw().required(),notes:Joi.string().trim().max(2000).allow('',null)});
+const paymentSchema = Joi.object({amount_paid:Joi.number().positive().max(99999999).precision(2).required(),
+  payment_method:Joi.string().valid('cash_at_daycare','telebirr_transfer','cbe_transfer','digital_gateway').required(),
+  reference_code:Joi.string().trim().max(100).allow('',null),notes:Joi.string().trim().max(2000).allow('',null)});
 
 // Daycare Admin: Overview statistics & KPIs
 router.get(
@@ -42,6 +51,7 @@ router.post(
   '/invoices',
   auth,
   allowRoles('admin'),
+  validate(invoiceSchema),
   financesController.createInvoice
 );
 
@@ -50,6 +60,7 @@ router.post(
   '/invoices/generate-monthly',
   auth,
   allowRoles('admin'),
+  validate(Joi.object({billingPeriod:period.required(),dueDate:Joi.date().iso().raw(),defaultFee:Joi.number().positive().max(99999999).precision(2)})),
   financesController.generateMonthlyInvoices
 );
 
@@ -58,6 +69,7 @@ router.post(
   '/invoices/:id/payments',
   auth,
   allowRoles('admin'),
+  validate(paymentSchema),
   financesController.recordPayment
 );
 

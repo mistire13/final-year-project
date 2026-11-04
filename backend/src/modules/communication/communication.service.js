@@ -246,6 +246,38 @@ const listMessages = async (query = {}, user) => {
   return { data: rows };
 };
 
+// Explicit oversight permission; ordinary inboxes remain participant-only.
+const reviewMessages = async (query = {}, user) => {
+  if (user.role !== 'admin' || !user.daycare_id) {
+    throw Object.assign(new Error('Daycare administrator required'), { statusCode: 403 });
+  }
+  const { value, error } = require('joi').object({
+    search: require('joi').string().trim().max(200).allow('').default(''),
+    limit: require('joi').number().integer().min(1).max(100).default(25),
+    offset: require('joi').number().integer().min(0).max(1000000).default(0),
+  }).validate(query);
+  if (error) throw Object.assign(new Error(error.details[0].message), { statusCode: 422 });
+  return transaction(db, async client => {
+    const from = `FROM messages m
+      JOIN users s ON s.id=m.sender_id AND s.daycare_id=m.daycare_id
+      JOIN roles sr ON sr.id=s.role_id
+      JOIN users r ON r.id=m.recipient_id AND r.daycare_id=m.daycare_id
+      JOIN roles rr ON rr.id=r.role_id
+      WHERE m.daycare_id=$1
+        AND ((sr.name='parent' AND rr.name='caregiver') OR (sr.name='caregiver' AND rr.name='parent'))
+        AND ($2='' OR s.name ILIKE '%' || $2 || '%' OR r.name ILIKE '%' || $2 || '%'
+          OR m.subject ILIKE '%' || $2 || '%' OR m.body ILIKE '%' || $2 || '%')`;
+    const params = [user.daycare_id, value.search];
+    const total = (await client.query(`SELECT COUNT(*)::int AS total ${from}`, params)).rows[0].total;
+    const { rows } = await client.query(`SELECT m.id,m.sender_id,m.recipient_id,m.subject,m.body,m.read_at,m.created_at,
+      s.name AS sender_name,sr.name AS sender_role,r.name AS recipient_name,rr.name AS recipient_role
+      ${from} ORDER BY m.created_at DESC,m.id DESC LIMIT $3 OFFSET $4`, [...params,value.limit,value.offset]);
+    await writeAudit(client,user,'MESSAGE_OVERSIGHT_VIEWED','messages',null,
+      {message_ids:rows.map(row=>row.id),limit:value.limit,offset:value.offset,result_count:rows.length});
+    return { data:rows,total,limit:value.limit,offset:value.offset };
+  });
+};
+
 const markMessageRead = async (messageIdParam, user) => {
   const msgId = parseInt(messageIdParam, 10);
   const isSuper = user.role === 'super_admin';
@@ -433,6 +465,7 @@ module.exports = {
   listMealPlans,
   sendMessage,
   listMessages,
+  reviewMessages,
   markMessageRead,
   createAlert,
   listAlerts,

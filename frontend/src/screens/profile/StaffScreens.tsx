@@ -11,6 +11,10 @@ import {
 } from "../../components/design/System";
 import { apiClient } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
+import {
+  NativeDailyReportScreen,
+  NativeReportHistory,
+} from "./NativeDailyReport";
 import { ClipboardText } from "phosphor-react-native/src/icons/ClipboardText";
 import { Heart } from "phosphor-react-native/src/icons/Heart";
 import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
@@ -246,68 +250,37 @@ export function StaffReportsScreen({ navigation }: any) {
         onPress={() => navigation.navigate("StaffCompose", { kind: "health" })}
         style={{ marginTop: 12 }}
       />
-      <StaffHistory />
+      <StaffHistory navigation={navigation} />
     </Page>
   );
 }
-function StaffHistory() {
+function StaffHistory({ navigation }: any) {
   const { kids, error } = useAssigned();
-  const [rows, setRows] = useState<any[]>([]);
-  const [message, setMessage] = useState("");
   return (
     <>
-      <Text size={18} weight="bold" style={{ marginTop: 24 }}>
-        Report history
-      </Text>
       {error && <Notice>{error}</Notice>}
-      {kids.map((c) => (
-        <Button
-          key={c.id}
-          title={c.full_name}
-          variant="outline"
-          style={{ marginTop: 10 }}
-          onPress={async () => {
-            try {
-              setRows(
-                (await apiClient.get(`/reports/daily/child/${c.id}`)).data
-                  .data || [],
-              );
-              setMessage("");
-            } catch {
-              setMessage("Could not load report history.");
-            }
-          }}
-        />
-      ))}
-      {message && <Notice>{message}</Notice>}
-      {rows.map((r) => (
-        <Card key={r.id} style={{ marginTop: 12 }}>
-          <Text weight="bold">{r.report_date}</Text>
-          <Text>
-            Mood: {r.mood || "Not recorded"} · Rest:{" "}
-            {r.sleep_duration_min ?? "—"} minutes
-          </Text>
-        </Card>
-      ))}
+      <NativeReportHistory childrenList={kids} navigation={navigation} />
     </>
   );
 }
-export function StaffComposeScreen({ route, navigation }: any) {
-  const health = route.params?.kind === "health";
+export function StaffComposeScreen(props: any) {
+  return props.route.params?.kind === "health" ? (
+    <StaffHealthComposeScreen {...props} />
+  ) : (
+    <NativeDailyReportScreen {...props} />
+  );
+}
+function StaffHealthComposeScreen({ route, navigation }: any) {
   const { kids, error, loading, load } = useAssigned();
   const [child, setChild] = useState<number | undefined>(route.params?.childId);
   const [text, setText] = useState("");
-  const [sleep, setSleep] = useState("");
-  const [meal, setMeal] = useState("");
-  const [activity, setActivity] = useState("");
-  const [mood, setMood] = useState("happy");
   const [type, setType] = useState("health");
   const [severity, setSeverity] = useState("low");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [record, setRecord] = useState<number | null>(null);
   return (
-    <Page title={health ? "Health & incidents" : "Write daily report"} back>
+    <Page title="Health & incidents" back>
       {loading ? (
         <ActivityIndicator />
       ) : error ? (
@@ -335,60 +308,31 @@ export function StaffComposeScreen({ route, navigation }: any) {
           </View>
           {!kids.length && <Notice>No assigned children are available.</Notice>}
           <Card>
-            {health ? (
-              <>
-                <Text weight="bold">Record type</Text>
-                {["health", "incident"].map((t) => (
-                  <Button
-                    key={t}
-                    title={t === "health" ? "Health observation" : "Incident"}
-                    variant={type === t ? "primary" : "outline"}
-                    onPress={() => setType(t)}
-                  />
-                ))}
-                <Text weight="bold" style={{ marginTop: 16 }}>
-                  Severity
-                </Text>
-                {["low", "moderate", "high"].map((t) => (
-                  <Button
-                    key={t}
-                    title={t}
-                    variant={severity === t ? "primary" : "outline"}
-                    onPress={() => setSeverity(t)}
-                  />
-                ))}
-              </>
-            ) : (
-              <>
-                <Text weight="bold">Mood</Text>
-                {["happy", "calm", "fussy", "tired", "excited"].map((t) => (
-                  <Button
-                    key={t}
-                    title={t}
-                    variant={mood === t ? "primary" : "outline"}
-                    onPress={() => setMood(t)}
-                  />
-                ))}
-                <Field
-                  label="Rest (minutes)"
-                  value={sleep}
-                  onChangeText={setSleep}
-                  keyboardType="numeric"
+            <>
+              <Text weight="bold">Record type</Text>
+              {["health", "incident"].map((t) => (
+                <Button
+                  key={t}
+                  title={t === "health" ? "Health observation" : "Incident"}
+                  variant={type === t ? "primary" : "outline"}
+                  onPress={() => setType(t)}
                 />
-                <Field
-                  label="Lunch / meal"
-                  value={meal}
-                  onChangeText={setMeal}
+              ))}
+              <Text weight="bold" style={{ marginTop: 16 }}>
+                Severity
+              </Text>
+              {["low", "moderate", "high"].map((t) => (
+                <Button
+                  key={t}
+                  title={t}
+                  variant={severity === t ? "primary" : "outline"}
+                  onPress={() => setSeverity(t)}
                 />
-                <Field
-                  label="Learning or play"
-                  value={activity}
-                  onChangeText={setActivity}
-                />
-              </>
-            )}
+              ))}
+            </>
+
             <Field
-              label={health ? "What happened?" : "Care notes"}
+              label="What happened?"
               value={text}
               onChangeText={setText}
               multiline
@@ -401,47 +345,18 @@ export function StaffComposeScreen({ route, navigation }: any) {
             disabled={!child || !!record}
             onPress={async () => {
               if (!child || busy) return;
-              if (health && !text.trim()) {
+              if (!text.trim()) {
                 setMessage("Describe the observation or incident.");
-                return;
-              }
-              if (
-                !health &&
-                sleep &&
-                (!Number.isInteger(Number(sleep)) || Number(sleep) < 0)
-              ) {
-                setMessage("Enter a whole number of rest minutes.");
                 return;
               }
               setBusy(true);
               try {
-                const { data } = await apiClient.post(
-                  health ? "/health" : "/reports/daily",
-                  health
-                    ? {
-                        child_id: child,
-                        record_type: type,
-                        severity,
-                        description: text.trim(),
-                      }
-                    : {
-                        child_id: child,
-                        mood,
-                        sleep_duration_min: sleep ? Number(sleep) : null,
-                        general_observations: text.trim(),
-                        meals: meal.trim()
-                          ? [{ meal_type: "lunch", description: meal.trim() }]
-                          : [],
-                        activities: activity.trim()
-                          ? [
-                              {
-                                activity_type: "learning",
-                                description: activity.trim(),
-                              },
-                            ]
-                          : [],
-                      },
-                );
+                const { data } = await apiClient.post("/health", {
+                  child_id: child,
+                  record_type: type,
+                  severity,
+                  description: text.trim(),
+                });
                 setRecord(data.id || data.record?.id || -1);
                 setMessage("Record saved.");
               } catch (e: any) {
@@ -454,7 +369,7 @@ export function StaffComposeScreen({ route, navigation }: any) {
             }}
             style={{ marginTop: 16 }}
           />
-          {health && record && record > 0 && (
+          {record && record > 0 && (
             <Button
               title="Notify parent in the app"
               onPress={async () => {

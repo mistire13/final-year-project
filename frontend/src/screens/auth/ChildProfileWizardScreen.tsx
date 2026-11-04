@@ -734,7 +734,8 @@ function StepChildInfo({
 
         {/* Pickup Authorization Card */}
         <Pressable
-          onPress={() => setPickupAuthorized(!pickupAuthorized)}
+          disabled
+          accessibilityLabel="Pickup approval is managed by daycare administration"
           style={{
             backgroundColor: pickupAuthorized ? "#F0FDF4" : "#FFFBEB",
             borderRadius: 12,
@@ -771,8 +772,7 @@ function StepChildInfo({
               </Text>
             </View>
             <Text size={12} color={pickupAuthorized ? "#15803D" : "#B45309"} style={{ marginTop: 4, lineHeight: 17 }}>
-              Authorizes you to collect {fullName ? fullName : "your child"} during checkout. Recorded in
-              the database for front desk identity and pickup checks.
+              This is the daycare's recorded approval status. Contact administration to request a change; this care form cannot grant pickup permission.
             </Text>
           </View>
         </Pressable>
@@ -1519,7 +1519,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   // Parent data state
   const [parentName, setParentName] = useState(user?.name || "");
@@ -1532,7 +1532,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
   const [groupId, setGroupId] = useState<number | null>(null);
   const [groups, setGroups] = useState<GroupRecord[]>([]);
   const [relationship, setRelationship] = useState("Mother");
-  const [pickupAuthorized, setPickupAuthorized] = useState(true);
+  const [pickupAuthorized, setPickupAuthorized] = useState(false);
 
   // Step 2 — Allergies
   const [allergies, setAllergies] = useState<AllergyEntry[]>([]);
@@ -1576,7 +1576,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
           const c=snapshot.child;
           setAllergies(c.care_instructions.filter((r:any)=>r.category==='allergy').map((r:any)=>({id:uid(),text:r.instruction_text})));
           setDietNotes(c.care_instructions.filter((r:any)=>r.category==='dietary').map((r:any)=>r.instruction_text).join('\n'));
-          setConditions(c.care_instructions.filter((r:any)=>r.category==='medical_note').map((r:any)=>r.instruction_text).join('\n'));
+          setConditions(c.care_instructions.filter((r:any)=>r.category==='medical_note').map((r:any)=>r.instruction_text.replace(/^Conditions:\s*/, '')).join('\n'));
           setExtraNotes(c.care_instructions.filter((r:any)=>r.category==='general').map((r:any)=>r.instruction_text).join('\n'));
           setContacts(c.emergency_contacts.length?c.emergency_contacts.map((r:any)=>({...r,id:uid()})):[{id:uid(),name:'',relationship:'',phone:''}]);
           setChildId(c.id);
