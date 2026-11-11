@@ -8,6 +8,8 @@ import { DaycareSubscription, SubscriptionNotice } from './SubscriptionViews.web
 
 import { CaregiverPage } from "./CaregiverPages.web";
 import { DaycareFinances } from "./DaycareFinances.web";
+import DaycarePaymentManagement from "./DaycarePaymentManagement.web";
+import DashboardAttention from "./DashboardAttention.web";
 import { PageTransition } from "./WebMotion.web";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./portal.css";
@@ -108,44 +110,44 @@ export function DaycareTermsModal({ close, onAccept }: { close: () => void; onAc
   return (
     <Modal title="Ankelba Daycare Terms, Policies & Safety Guidelines" onClose={close}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14, maxHeight: "68vh", overflowY: "auto", paddingRight: 6 }}>
-        <div style={{ background: "#F0FDF4", padding: "12px 14px", borderRadius: 8, border: "1px solid #BBF7D0", fontSize: 13, color: "#166534" }}>
+        <div style={{ background: "#F0FDF4", padding: "12px 14px", borderRadius: 8, border: "1px solid #BBF7D0", fontSize: 14, color: "#166534" }}>
           <strong>Parent Agreement &amp; Regulatory Compliance Baseline (FDRE Proclamation 1321/2024)</strong>
-          <p style={{ margin: "4px 0 0", fontSize: 12 }}>
+          <p style={{ margin: "4px 0 0", fontSize: 14 }}>
             This agreement outlines child safety, daily drop-off/pickup authentication, emergency medical care consent, and operational responsibilities for all enrolled families.
           </p>
         </div>
 
         <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
           <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>1. Authorized Guardian Pickup &amp; Safety Verification</h4>
-          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
             Children are released strictly to registered parents, legal guardians, and pre-authorized adult pickup contacts. All pickups require verified staff check-out, and adults may be verified using authorized biometric or photo credentials. Changes to pickup authorization must be registered in writing or via the verified parent app.
           </p>
         </section>
 
         <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
           <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>2. Emergency Medical Treatment Authorization</h4>
-          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
             In the event of an acute illness or medical emergency, daycare staff will immediately attempt to contact registered parents/guardians and emergency contacts. The parent authorizes the daycare to administer first aid and, if urgent hospital care is needed, transport the child to an accredited medical facility.
           </p>
         </section>
 
         <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
           <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>3. Attendance, Check-in / Check-out &amp; Illness Policy</h4>
-          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
             Parents agree to log child check-in and pickup during designated center operational hours. Children exhibiting communicable symptoms (fever exceeding 38°C, vomiting, contagious rash) must remain home until cleared by a physician or 24 hours symptom-free to protect classroom health.
           </p>
         </section>
 
         <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
           <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>4. Monthly Care Fees &amp; Payment Terms</h4>
-          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
             Daycare stay and care fees are payable on a monthly recurring basis according to the agreed plan. Invoices and payment receipts are available in the Ankelba parent mobile app.
           </p>
         </section>
 
         <section style={{ paddingBottom: 10 }}>
           <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>5. Privacy, Records &amp; Data Protection</h4>
-          <p style={{ fontSize: 13, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
             Child developmental notes, daily activity reports, photos, and health records are held strictly private within the daycare tenant. Access is restricted exclusively to assigned educators and registered parents/guardians in accordance with the Ethiopian Data Protection Proclamation No. 1321/2024.
           </p>
         </section>
@@ -162,90 +164,75 @@ export function DaycareTermsModal({ close, onAccept }: { close: () => void; onAc
 }
 const nav = [
   {
-    group: "YOUR DAYCARE",
+    group: "Daily operations",
     items: [
-      ["dashboard", "Overview", "home"],
-      ["analytics", "Analytics", "chart"],
-      ["business", "Business reports · Plus", "chart"],
-      ["finances", "Finances & Fees", "file"],
-      ["billing-automation", "Billing automation · Plus", "file"],
-      ["subscription", "Platform subscription", "file"],
-      ["children", "Children & Families", "child"],
-      ["caregivers", "Caregivers & Staff", "people"],
+      ["attendance", "Attendance & pickups", "check"],
+      ["biometric", "Guardian verification", "shield"],
+      ["front-desk", "Front-desk duties", "desk"],
       ["staff-scheduling", "Front-desk shifts · Plus", "clock"],
+      ["reports", "Daily reports", "file"],
+      ["health", "Health & incidents", "heart"],
+    ],
+  },
+  {
+    group: "People & classrooms",
+    items: [
+      ["children", "Children & families", "child"],
+      ["caregivers", "Caregivers & staff", "people"],
       ["groups", "Groups & classrooms", "leaf"],
     ],
   },
   {
-    group: "DAILY CARE",
+    group: "Communications",
     items: [
-      ["front-desk", "Front-desk duties", "desk"],
-      ["attendance", "Attendance & pickups", "check"],
-      ["reports", "Daily reports", "file"],
-      ["health", "Health & incidents", "heart"],
-      ["biometric", "Guardian verification", "shield"],
+      ["communication", "Messages & announcements", "message"],
+      ["events", "Events & calendar", "calendar"],
     ],
   },
   {
-    group: "COMMUNITY",
+    group: "Finance",
     items: [
-      ["communication", "Communication", "message"],
-      ["events", "Events & calendar", "calendar"],
+      ["finances", "Care fees & invoices", "file"],
+      ["bank-receipts", "Bank receipts", "file"],
+      ["billing-automation", "Billing automation · Plus", "clock"],
+    ],
+  },
+  {
+    group: "Shop",
+    items: [
       ["store", "Shop & stock · Plus", "store"],
       ["orders", "Orders & payments", "file"],
+    ],
+  },
+  {
+    group: "Analytics & reports",
+    items: [
+      ["analytics", "Care analytics", "chart"],
+      ["business", "Business reports · Plus", "chart"],
+    ],
+  },
+  {
+    group: "Settings",
+    items: [
+      ["settings", "Center profile", "leaf"],
+      ["subscription", "Platform subscription", "file"],
       ["audit", "Audit history", "audit"],
-      ["settings", "Center profile & info", "leaf"],
     ],
   },
 ];
-const subtitles: Record<string, string> = {
-  dashboard: "A thoughtful overview of your daycare, all in one place.",
-  analytics: "Understand the patterns behind each day of care.",
-  finances: "Child care fees, monthly invoices, cash/mobile payment reconciliation and digital receipts.",
-  subscription: "Review your package, payment history and renewal date.",
-  settings: "Manage daycare center profile, contact details, operating hours and address.",
-  children: "Enrolled children, their linked families, emergency contacts, and care plans.",
-  caregivers: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
-  users: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
-  groups: "A little organization. More room to grow.",
-  "front-desk":
-    "Plan coverage and give each caregiver the right responsibilities.",
-  attendance: "Know who is here, who is expected and who has gone home.",
-  reports: "Keep every family connected to their child’s day.",
-  health: "Stay informed and follow up with care.",
-  biometric: "Approved adults. Clear verification. Thoughtful pickup.",
-  communication: "Small updates that bring your community together.",
-  events: "Make space for the moments that matter.",
-  store: "Keep everyday essentials ready for little learners.",
-  orders: "Follow each order from placement to daycare collection.",
-  audit: "A clear record of who did what, and when.",
-  workspace: "Your assigned children and front-desk responsibilities.",
-};
 const num = (value: any) => (value ? Number(value) : null);
 const options = (rows: Row[], key = "name") =>
   rows.map((r) => ({ value: String(r.id), label: r[key] }));
-function Brand({ daycareName, plan }: { daycareName?: string; plan?: string }) {
+function Brand({ daycareName }: { daycareName?: string }) {
   return (
-    <div className="p-brand" style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <img src={typeof logo === "string" ? logo : logo.uri} alt="Ankelba" />
-        <span>
-          Ankelba<small>GROWING TOGETHER</small>
-        </span>
+    <div className="p-brand p-workspace-brand">
+      <div className="p-workspace-wordmark">
+        <img src={typeof logo === "string" ? logo : logo.uri} alt="" />
+        <span>Ankelba</span>
       </div>
       {daycareName && (
-        <div style={{
-          width: "100%",
-          padding: "8px 10px",
-          background: "#fff",
-          borderRadius: 10,
-          border: "1px solid #e8e5dc",
-          boxSizing: "border-box",
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--navy)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>
-            <Icon name="building" size={14} /> <span>{daycareName}</span>
-          </div>
-          
+        <div className="p-workspace-center">
+          <Icon name="building" size={16} /> <span>{daycareName}</span>
         </div>
       )}
     </div>
@@ -267,12 +254,16 @@ export default function Portal() {
   const [checking, setChecking] = useState(!preview);
   const [loginError, setLoginError] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
-  const [page, setPage] = useState(
-    path.split("/").filter(Boolean).at(-1) || "dashboard",
-  );
+  const [location, setLocation] = useState(() => ({
+    page: path.split("/").filter(Boolean).at(-1) || "dashboard",
+    fragment: window.location.hash?.slice(1) || "",
+  }));
+  const { page, fragment } = location;
   const [date, setDate] = useState(today());
   const [query, setQuery] = useState("");
   const [menu, setMenu] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>();
+  const workspace = useRef<HTMLElement>(null);
   const [data, setData] = useState<Dataset>(() => preview ? makePreview() : emptyDataset());
   const [loading, setLoading] = useState(!preview);
   const [loadError, setLoadError] = useState("");
@@ -294,12 +285,12 @@ export default function Portal() {
   const navigation = staff
     ? [
         {
-          group: "YOUR SHIFT",
+          group: "Your shift",
           items: [["workspace", "Attendance & pickup", "desk"], ["reports", "Daily reports", "file"], ["health", "Health & incidents", "heart"], ["communication", "Messages & announcements", "message"], ["events", "Calendar", "calendar"], ["staff-scheduling","My front-desk shifts · Plus","clock"]],
         },
       ]
     : nav;
-  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["users", "caregivers"])];
+  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users"])];
   const normalizedPage = page === "users" ? "caregivers" : page;
   const selected = available.includes(normalizedPage)
     ? normalizedPage
@@ -309,18 +300,25 @@ export default function Portal() {
   const title =
     navigation.flatMap((g) => g.items).find((i) => i[0] === selected)?.[1] ||
     "Overview";
-  const go = (next: string) => {
-    window.history.pushState({}, "", base + "/" + next);
-    setPage(next);
+  const usesDate = ["dashboard", "analytics", "groups", "front-desk", "attendance", "reports", "workspace"].includes(selected);
+  const usesPageSearch = ["children", "caregivers", "groups", "front-desk", "attendance", "reports", "health", "biometric", "communication", "events", "store", "orders", "audit", "workspace"].includes(selected);
+  const activeGroup = navigation.find(group => group.items.some(([key]) => key === selected))?.group;
+  const expandedGroup = openGroup === undefined ? activeGroup : openGroup;
+  const go = (next: string, anchor = "") => {
+    window.history.pushState({}, "", base + "/" + next + (anchor ? "#" + anchor : ""));
+    setLocation({ page: next, fragment: anchor });
+    setOpenGroup(undefined);
     setQuery("");
     setMenu(false);
+    workspace.current?.closest(".web-surface")?.scrollTo({ top: 0 });
   };
   useEffect(() => {
     const change = () => {
-      setPage(
-        window.location.pathname.split("/").filter(Boolean).at(-1) ||
-          "dashboard",
-      );
+      setLocation({
+        page: window.location.pathname.split("/").filter(Boolean).at(-1) || "dashboard",
+        fragment: window.location.hash?.slice(1) || "",
+      });
+      setOpenGroup(undefined);
       setQuery("");
       setMenu(false);
     };
@@ -413,7 +411,7 @@ export default function Portal() {
       let resumeRenewal = false;
       try { resumeRenewal = user.role === 'admin' && !!window.sessionStorage.getItem('ankelba_renewal_resume'); } catch {}
       const destination = user.role === 'caregiver' ? 'workspace' : resumeRenewal ? 'subscription' : 'dashboard';
-      setPage(destination);
+      setLocation({ page: destination, fragment: "" });
       window.history.replaceState(
         {},
         "",
@@ -1097,34 +1095,11 @@ export default function Portal() {
       <div className="ankelba-portal p-login">
         <div className="p-login-story">
           <Brand />
-          <span className="p-eyebrow">A LITTLE CLOSER. EVERY DAY.</span>
-          <h1>Thoughtful care starts with a connected team.</h1>
-          <p>
-            Your children, families and caregivers. One calm place to keep
-            everything together.
-          </p>
-          <div className="p-legend">
-            <span>
-              <i className="p-dot" />
-              Care with confidence
-            </span>
-            <span>
-              <i className="p-dot gold" />
-              Grow together
-            </span>
-          </div>
+          <h1>Daycare workspace</h1>
         </div>
         <div className="p-login-card">
           <div>
-            <span className="p-eyebrow" style={{ letterSpacing: "1.2px", color: "#BD4264", fontWeight: 700 }}>
-              DAYCARE WORKSPACE
-            </span>
-            <h1 style={{ fontSize: "28px", fontWeight: 800, color: "#10263D", margin: "8px 0 6px" }}>
-              Welcome back.
-            </h1>
-            <p style={{ color: "#626872", fontSize: "14px", marginBottom: "18px" }}>
-              Sign in to manage daycare operations, classrooms, and staff.
-            </p>
+            <h1>Staff sign in</h1>
             <form onSubmit={login}>
               <label>
                 Email address
@@ -1167,21 +1142,28 @@ export default function Portal() {
       </div>
     );
   const plusPageFeature:Record<string,string>={business:'business_analytics','billing-automation':'billing_automation','staff-scheduling':'staff_scheduling',store:'shop'};
-  const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...new Set([...nav.flatMap(group=>group.items.map(item=>item[0])),'workspace','users','caregivers'])],available);
+  const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...nav.flatMap(group=>group.items.map(item=>item[0])),'dashboard','workspace','users'],available);
   const plusFeature=plusPageFeature[selected];
   const pageComponent = plusFeature&&(preview||!visibleData.daycare?.features?.[plusFeature]) ? <Card title="Included with Plus"><p>{preview?'Open a live Plus daycare to manage these tools.':'Your current subscription does not include this feature. Essential care and existing records remain available.'}</p>{!staff&&!preview&&<Button onClick={()=>go('subscription')}>Review subscription</Button>}</Card> : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
     staff && ["reports","health","communication","events"].includes(selected) ? <CaregiverPage ctx={ctx} page={selected}/> : selected === "dashboard" ? (
-      <> {!staff && !preview && <SetupChecklist data={visibleData}/>}<Overview {...ctx} /></>
+      <>
+        <DashboardAttention data={visibleData} date={date} preview={preview} go={go} />
+        {!preview && <SetupChecklist data={visibleData} />}
+        <Overview {...ctx} />
+      </>
     ) : selected === "analytics" ? (
       <Analytics {...ctx} />
     ) : selected === "finances" ? (
       <DaycareFinances ctx={ctx} />
+    ) : selected === "bank-receipts" ? (
+      preview ? <Card title="Bank receipts"><p>Sign in to review your daycare’s bank receipts.</p></Card> :
+        <DaycarePaymentManagement key={fragment} initialStatus={fragment} />
     ) : selected === "subscription" ? (
       <DaycareSubscription />
     ) : ["caregivers", "users"].includes(selected) ? (
       <Caregivers {...ctx} />
     ) : selected === "children" ? (
-      <Children {...ctx} />
+      <Children key={fragment} {...ctx} initialGroup={/^classroom-(\d+)$/.exec(fragment)?.[1]} />
     ) : selected === "groups" ? (
       <Groups {...ctx} />
     ) : selected === "front-desk" ? (
@@ -1195,18 +1177,42 @@ export default function Portal() {
     );
   return (
     <div className="ankelba-portal">
+      {menu && <button type="button" className="p-nav-scrim" aria-label="Close navigation" onClick={() => setMenu(false)} />}
       <aside
         className={"p-sidebar " + (menu ? "open" : "")}
         aria-label="Workspace navigation"
+        onKeyDown={event => { if (event.key === "Escape") setMenu(false); }}
       >
+        <button type="button" className="p-icon-button p-sidebar-close" aria-label="Close workspace navigation" onClick={() => setMenu(false)}>
+          <Icon name="close" />
+        </button>
         <Brand
           daycareName={actor?.daycare_name}
           
         />
-        {navigation.map((group) => (
-          <div key={group.group}>
-            <div className="p-nav-group">{group.group}</div>
-            <nav aria-label={group.group}>
+        {!staff && (
+          <a href={base + "/dashboard"} className={"p-nav-link p-nav-overview " + (selected === "dashboard" ? "active" : "")}
+            aria-current={selected === "dashboard" ? "page" : undefined}
+            onClick={event => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              go("dashboard");
+            }}>
+            <Icon name="home" size={18} /> Overview
+          </a>
+        )}
+        {navigation.map((group, index) => {
+          const expanded = staff || expandedGroup === group.group;
+          const groupId = "workspace-nav-" + index;
+          return (
+          <div className="p-nav-section" key={group.group}>
+            {staff ? <div className="p-nav-group">{group.group}</div> :
+              <button type="button" className="p-nav-section-toggle" aria-expanded={expanded}
+                aria-controls={groupId} onClick={() => setOpenGroup(expanded ? null : group.group)}>
+                {group.group}
+                <span className="p-nav-chevron" aria-hidden="true" />
+              </button>}
+            <nav id={groupId} aria-label={group.group} hidden={!expanded}>
               {group.items.map(([key, name, icon]) => (
                 <a
                   href={base + "/" + key}
@@ -1214,6 +1220,7 @@ export default function Portal() {
                   className={"p-nav-link " + (selected === key ? "active" : "")}
                   aria-current={selected === key ? "page" : undefined}
                   onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                     e.preventDefault();
                     go(key);
                   }}
@@ -1224,16 +1231,13 @@ export default function Portal() {
               ))}
             </nav>
           </div>
-        ))}
+          );
+        })}
         <div className="p-sidebar-foot">
-          <div className="p-care-note">
-            <Icon name="leaf" />
-            <div>
-              Little moments.
-              <br />
-              <strong>Lasting connections.</strong>
-            </div>
-          </div>
+          <nav className="p-mobile-surface-links" aria-label="Other Ankelba pages">
+            <a className="p-nav-link" href="/"><Icon name="globe" size={17} /> Ankelba website</a>
+            <a className="p-nav-link" href="/app"><Icon name="smartphone" size={17} /> Parent app</a>
+          </nav>
           <button
             className="p-nav-link"
             style={{ border: 0, width: "100%", background: "transparent" }}
@@ -1244,7 +1248,7 @@ export default function Portal() {
           </button>
         </div>
       </aside>
-      <main className="p-workspace">
+      <main className="p-workspace" ref={workspace}>
         <header className="p-topbar">
           <button
             className="p-icon-button p-menu-toggle"
@@ -1266,7 +1270,7 @@ export default function Portal() {
                 window.history.pushState({}, "", "/");
                 window.dispatchEvent(new PopStateEvent("popstate"));
               }}
-              style={{ fontSize: 12, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+              style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <Icon name="globe" size={13} /> Ankelba website
             </a>
@@ -1277,13 +1281,13 @@ export default function Portal() {
                 window.history.pushState({}, "", "/app");
                 window.dispatchEvent(new PopStateEvent("popstate"));
               }}
-              style={{ fontSize: 12, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+              style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
               <Icon name="smartphone" size={13} /> Parent App
             </a>
           </div>
           <div className="p-top-actions">
-            {!["dashboard","analytics"].includes(selected) && <label className="p-search">
+            {usesPageSearch && <label className="p-search">
               <Icon name="search" size={17} />
               <input
                 aria-label="Search this page"
@@ -1345,10 +1349,10 @@ export default function Portal() {
                 {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
               </span>
               <div style={{ flex: 1 }}>
-                <strong style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <strong style={{ display: "block", fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Platform Notice ({broadcast.level})
                 </strong>
-                <span style={{ fontSize: 13.5, fontWeight: 500 }}>{broadcast.message}</span>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{broadcast.message}</span>
               </div>
             </div>
           )}
@@ -1385,23 +1389,23 @@ export default function Portal() {
               <span style={{ fontSize: 24 }}>📢</span>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, color: "#92400E" }}>
+                  <strong style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 0.6, color: "#92400E" }}>
                     Daycare Bulletin & Directive
                   </strong>
-                  <span style={{ background: "#BD4264", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>
+                  <span style={{ background: "#BD4264", color: "#fff", fontSize: 14, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>
                     NEW
                   </span>
                 </div>
                 <strong style={{ display: "block", fontSize: 14, color: "#1E293B", marginBottom: 2 }}>
                   {data.announcements[0].title}
                 </strong>
-                <span style={{ fontSize: 13, color: "#475569" }}>{data.announcements[0].body}</span>
+                <span style={{ fontSize: 14, color: "#475569" }}>{data.announcements[0].body}</span>
               </div>
               <button
                 onClick={() => go("communication")}
                 style={{
                   padding: "6px 14px",
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 700,
                   color: "#92400E",
                   background: "#FEF3C7",
@@ -1417,20 +1421,10 @@ export default function Portal() {
           )}
           <div className="p-page-head">
             <div>
-              <span className="p-eyebrow">
-                {selected === "dashboard"
-                  ? "WELCOME TO YOUR DAYCARE"
-                  : staff
-                    ? "FRONT-DESK WORKSPACE"
-                    : "CARE, CONNECTED"}
-              </span>
-              <h1>
-                {selected === "dashboard" ? "A good day starts here." : title}
-              </h1>
-              <p>{subtitles[selected]}</p>
+              <h1>{title}</h1>
             </div>
             <div className="p-head-actions">
-              <input
+              {usesDate && <input
                 aria-label="Selected date"
                 type="date"
                 value={date}
@@ -1439,7 +1433,7 @@ export default function Portal() {
                 onChange={(e) => {
                   if (e.target.value) setDate(e.target.value);
                 }}
-              />
+              />}
               {selected === "dashboard" && (
                 <Button variant="secondary" icon="download" onClick={download}>
                   Export summary
@@ -1468,7 +1462,6 @@ export default function Portal() {
             <PageTransition page={routeFailure||selected}>{routeFailure?<SurfaceRecovery kind={routeFailure} embedded workspaceHref={staff?'/staff/workspace':'/admin/dashboard'}/>:pageComponent}</PageTransition>
           )}
           <p className="p-kpi-note">
-            Ankelba · Connect, share, nurture.{" "}
             <span style={{ float: "right" }}>Times in Africa/Addis_Ababa</span>
           </p>
         </div>
@@ -1790,7 +1783,7 @@ function PortalModal({
                 <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--navy)" }}>{row.full_name}</h2>
                 <Badge value={row.enrollment_status || "active"} tone="green" />
               </div>
-              <div style={{ fontSize: 13, color: "#64748b", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 14, color: "#64748b", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span>Born {dayOf(row.dob)}</span>
                 <span>•</span>
                 <span style={{ fontWeight: 600, color: "var(--navy)" }}>{ageInfo.text}</span>
@@ -1807,7 +1800,7 @@ function PortalModal({
           {/* Section: Classroom & Educator */}
           <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Classroom &amp; Primary Educator
               </span>
               {!ctx.staff && (
@@ -1830,7 +1823,7 @@ function PortalModal({
 
           {/* Section: Documents & Compliance Verification */}
           <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
               Documents &amp; Enrollment Compliance
             </span>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -1838,14 +1831,14 @@ function PortalModal({
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <Icon name="file" size={16} />
-                    <strong style={{ fontSize: 12.5, color: hasBirthCert ? "#166534" : "#991b1b" }}>
+                    <strong style={{ fontSize: 14, color: hasBirthCert ? "#166534" : "#991b1b" }}>
                       {hasBirthCert ? "Birth Certificate Attached" : "No Birth Certificate"}
                     </strong>
                   </div>
                   {hasBirthCert && (
                     <button
                       type="button"
-                      style={{ background: "none", border: "none", color: "#008794", fontSize: 11, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+                      style={{ background: "none", border: "none", color: "#008794", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
                       onClick={() => openDataUrlSafe(row.birth_certificate_url, (row.full_name || "child") + "_birth_certificate")}
                     >
                       View
@@ -1857,7 +1850,7 @@ function PortalModal({
               <div style={{ padding: "8px 12px", background: row.agreement_signed ? "#f0fdf4" : "#fffbeb", borderRadius: 8, border: `1px solid ${row.agreement_signed ? "#bbf7d0" : "#fef3c7"}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Icon name="shield" size={16} />
-                  <strong style={{ fontSize: 12.5, color: row.agreement_signed ? "#166534" : "#92400e" }}>
+                  <strong style={{ fontSize: 14, color: row.agreement_signed ? "#166534" : "#92400e" }}>
                     {row.agreement_signed ? "Agreement Signed & On File" : "Agreement Form Pending"}
                   </strong>
                 </div>
@@ -1866,7 +1859,7 @@ function PortalModal({
               <div style={{ padding: "8px 12px", background: row.terms_accepted ? "#f0fdf4" : "#f8fafc", borderRadius: 8, border: `1px solid ${row.terms_accepted ? "#bbf7d0" : "#e2e8f0"}`, gridColumn: "1 / -1" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Icon name="checkCircle" size={16} />
-                  <strong style={{ fontSize: 12.5, color: row.terms_accepted ? "#166534" : "#64748b" }}>
+                  <strong style={{ fontSize: 14, color: row.terms_accepted ? "#166534" : "#64748b" }}>
                     {row.terms_accepted ? "Daycare Terms of Service & Child Safety Policies Accepted" : "Policies Pending Acceptance"}
                   </strong>
                 </div>
@@ -1876,7 +1869,7 @@ function PortalModal({
 
           {/* Section: Parents & Pickup */}
           <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
               Registered Parents &amp; Authorized Pickup
             </span>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1887,14 +1880,14 @@ function PortalModal({
                 </div>
               ))}
               {!data.guardians.some((g) => g.child_id === row.id) && (
-                <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>No linked parent accounts.</p>
+                <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>No linked parent accounts.</p>
               )}
             </div>
 
             {/* Additional Pickup Contacts */}
             {(data.guardianRequests || []).filter((g) => g.child_id === row.id).length > 0 && (
               <div style={{ marginTop: 10 }}>
-                <small style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: 4 }}>
+                <small style={{ fontSize: 14, color: "#64748b", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: 4 }}>
                   Additional Pickup Contacts
                 </small>
                 {(data.guardianRequests || []).filter((g) => g.child_id === row.id).map((g) => (
@@ -1917,7 +1910,7 @@ function PortalModal({
           {/* Section: Emergency Contacts */}
           <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Emergency Contacts
               </span>
               {!ctx.staff && (
@@ -1930,20 +1923,20 @@ function PortalModal({
               emergencyContacts.map((c: any) => (
                 <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                   <div>
-                    <strong>{c.name}</strong> <span style={{ fontSize: 12, color: "#64748b" }}>({c.relationship})</span>
+                    <strong>{c.name}</strong> <span style={{ fontSize: 14, color: "#64748b" }}>({c.relationship})</span>
                   </div>
-                  <span style={{ fontWeight: 600, fontSize: 13, color: "#2563eb" }}>{c.phone}</span>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: "#2563eb" }}>{c.phone}</span>
                 </div>
               ))
             ) : (
-              <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>No emergency contacts recorded.</p>
+              <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>No emergency contacts recorded.</p>
             )}
           </div>
 
           {/* Section: Allergies & Care Instructions */}
           <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Allergies &amp; Care Instructions
               </span>
               {!ctx.staff && (
@@ -1956,17 +1949,17 @@ function PortalModal({
               allergies.map((a: any, i: number) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                   <Badge value="Allergy" tone="gold" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#92400e" }}>{a.instruction_text}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#92400e" }}>{a.instruction_text}</span>
                 </div>
               ))
             ) : (
-              <p style={{ fontSize: 13, color: "#166534", margin: "0 0 6px", fontWeight: 500 }}>✓ No known allergies recorded.</p>
+              <p style={{ fontSize: 14, color: "#166534", margin: "0 0 6px", fontWeight: 500 }}>✓ No known allergies recorded.</p>
             )}
             {dietary.map((item: any) => <div key={item.id} className="p-notice"><Badge value="Dietary" /> {item.instruction_text}</div>)}
             {generalInstructions.map((gi: any, i: number) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                 <Badge value={gi.category} tone="quiet" />
-                <span style={{ fontSize: 13, color: "#334155" }}>{gi.instruction_text}</span>
+                <span style={{ fontSize: 14, color: "#334155" }}>{gi.instruction_text}</span>
               </div>
             ))}
           </div>
@@ -2274,7 +2267,7 @@ function FamilyEnrollmentModal({
                   onChange={(e) => handleChange("child_dob", e.target.value)}
                 />
                 {formData.child_dob && (
-                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 8px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 6, color: "#1E40AF", fontSize: 11.5, fontWeight: 600, marginTop: 4 }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 8px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 6, color: "#1E40AF", fontSize: 14, fontWeight: 600, marginTop: 4 }}>
                     <Icon name="clock" size={12} />
                     <span>Calculated Age: <strong>{ageInfo.text}</strong></span>
                   </div>
@@ -2380,7 +2373,7 @@ function FamilyEnrollmentModal({
                   </select>
                 )}
                 {selectedGroupObj && groupLeadName && (
-                  <small style={{ color: "#008794", marginTop: 4, display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 600 }}>
+                  <small style={{ color: "#008794", marginTop: 4, display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 600 }}>
                     <Icon name="checkCircle" size={13} /> Group Lead Teacher: {groupLeadName}
                   </small>
                 )}
@@ -2403,7 +2396,7 @@ function FamilyEnrollmentModal({
                       </option>
                     ))}
                 </select>
-                <small style={{ color: "#6B7280", marginTop: 4, display: "block", fontSize: 11.5 }}>
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block", fontSize: 14 }}>
                   This educator records daily activities, meals, napping, and check-ins for the child.
                 </small>
               </label>
@@ -2631,7 +2624,7 @@ function AssignCaregiverModal({
 
         {/* Quick Group Bulk-Assign */}
         <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-          <strong style={{ fontSize: 13, color: "var(--navy)", display: "block", marginBottom: 6 }}>
+          <strong style={{ fontSize: 14, color: "var(--navy)", display: "block", marginBottom: 6 }}>
             Quick Assign Entire Classroom Group
           </strong>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -2656,7 +2649,7 @@ function AssignCaregiverModal({
         {/* Individual Student Selection */}
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <strong style={{ fontSize: 13, color: "var(--navy)" }}>
+            <strong style={{ fontSize: 14, color: "var(--navy)" }}>
               Assigned Students ({selectedChildren.size} selected)
             </strong>
             <div style={{ display: "flex", gap: 8 }}>
@@ -2675,7 +2668,7 @@ function AssignCaregiverModal({
 
           <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {filteredChildren.length === 0 ? (
-              <div style={{ padding: 12, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>No active students found</div>
+              <div style={{ padding: 12, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>No active students found</div>
             ) : (
               filteredChildren.map((c) => {
                 const checked = selectedChildren.has(c.id);
@@ -2701,8 +2694,8 @@ function AssignCaregiverModal({
                       onChange={() => toggleChild(c.id)}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: "var(--navy)" }}>{c.full_name}</div>
-                      <div style={{ fontSize: 11, color: "#64748b" }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: "var(--navy)" }}>{c.full_name}</div>
+                      <div style={{ fontSize: 14, color: "#64748b" }}>
                         {group?.name || "No classroom"} · {currentCaregiver ? (currentCaregiver.id === caregiver.id ? "✓ Currently assigned to this caregiver" : `Assigned to: ${currentCaregiver.name}`) : "Unassigned"}
                       </div>
                     </div>
@@ -2761,7 +2754,7 @@ function AssignChildModal({
           Set the assigned educator and classroom for <strong>{child.full_name}</strong>.
         </p>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--navy)" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 600, color: "var(--navy)" }}>
           Primary Caregiver / Educator
           <select
             value={caregiverId}
@@ -2778,7 +2771,7 @@ function AssignChildModal({
           </select>
         </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--navy)" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 600, color: "var(--navy)" }}>
           Classroom Group
           <select
             value={groupId}
@@ -2846,7 +2839,7 @@ function AssignGroupCaregiverModal({
           Select the lead teacher or educator responsible for the <strong>{group.name}</strong> classroom.
         </p>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--navy)" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 600, color: "var(--navy)" }}>
           Lead Teacher / Primary Caregiver
           <select
             value={caregiverId}
@@ -2863,7 +2856,7 @@ function AssignGroupCaregiverModal({
           </select>
         </label>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14 }}>
           <input
             type="checkbox"
             checked={assignChildren}

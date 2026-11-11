@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
-import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
-import { Clock } from "phosphor-react-native/src/icons/Clock";
-import { User } from "phosphor-react-native/src/icons/User";
+import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
+import { colors } from "../../theme/tokens";
 import {
   Page,
   Text,
@@ -30,7 +29,6 @@ interface ChatThreadSummary {
   recipientId: number;
   name: string;
   role: string;
-  roleCategory: "admin" | "caregiver" | "staff";
   message: string;
   time: string;
   unread: number;
@@ -62,7 +60,7 @@ export function MessagesScreen({ navigation, route }: any) {
       setAnnouncements(annData);
       setContacts(contactsData);
     } catch {
-      setLoadError("Could not load your daycare contacts and messages. Please retry.");
+      setLoadError("Could not load messages and notices.");
       setContacts([]);
     } finally {
       setLoading(false);
@@ -94,22 +92,14 @@ export function MessagesScreen({ navigation, route }: any) {
 
       const latest = contactMsgs[0];
       const isCaregiver = contact.role === "caregiver";
-      const isAdmin = contact.role === "admin" || contact.role === "super_admin";
 
       threads.push({
         id: idx + 1,
         recipientId: contact.id,
         name: contact.name,
-        role:
-          contact.title ||
-          (isCaregiver ? "Classroom Educator" : "Center Administration & Director"),
-        roleCategory: isAdmin ? "admin" : isCaregiver ? "caregiver" : "staff",
-        message: latest
-          ? latest.body
-          : isCaregiver
-          ? (contact.child_names?.length ? `Assigned caregiver for ${contact.child_names.join(", ")}` : "Direct messages with classroom caregiver")
-          : "Questions about enrollment, schedules, or payments",
-        time: latest ? formatTime(latest.created_at) : "Active",
+        role: contact.title || (isCaregiver ? "Caregiver" : "Daycare office"),
+        message: latest?.body || "",
+        time: latest ? formatTime(latest.created_at) : "",
         unread: contactMsgs.filter((m) => !m.read_at && m.sender_id === contact.id).length,
         photo: isCaregiver ? artwork.caregiver : undefined,
       });
@@ -126,268 +116,143 @@ export function MessagesScreen({ navigation, route }: any) {
     (a.title + " " + a.body + " " + (a.author_name || "")).toLowerCase().includes(query)
   );
 
-  const empty = (
-    <Card>
-      <Text size={18} weight="semibold">
-        {loadError ? "Unable to load messages" : query ? "No matches" : "No updates yet"}
-      </Text>
-      <Text color="#747B84" style={{ marginTop: 8, marginBottom: 18 }}>
-        {loadError || (tab === "Messages"
-          ? (query ? "No messages matching your search." : "No staff contacts are available. Contact your daycare administrator.")
-          : "No announcements available.")}
-      </Text>
-      <Button
-        title={query ? "Clear Search" : "Retry"}
-        variant="secondary"
-        onPress={() => query ? setSearch("") : loadData()}
-      />
-    </Card>
-  );
+  const visibleNotices = tab === "Meal Plans"
+    ? visibleAnnouncements.filter((item) =>
+        item.announcement_type === "meal_plan" || /meal|menu|lunch|snack/i.test(item.title + " " + item.body),
+      )
+    : visibleAnnouncements;
 
   return (
-    <Page title="Messages & Notices" subtitle="Stay connected with your child's educators and daycare office.">
-      <Field
-        icon={MagnifyingGlass}
-        placeholder={
-          tab === "Messages" ? "Search conversations…" : "Search announcements…"
-        }
-        value={search}
-        onChangeText={setSearch}
-      />
-
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
-        {(["Messages", "Announcements", "Meal Plans"] as const).map((t) => (
+    <Page title="Messages">
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+        {([
+          ["Messages", "Chats"],
+          ["Announcements", "Notices"],
+          ["Meal Plans", "Meals"],
+        ] as const).map(([key, label]) => (
           <Pressable
-            key={t}
+            key={key}
             accessibilityRole="button"
-            aria-pressed={tab === t}
-            onPress={() => setTab(t)}
+            accessibilityLabel={key}
+            accessibilityState={{ selected: tab === key }}
+            onPress={() => setTab(key)}
             style={{
               flex: 1,
+              minWidth: 64,
+              minHeight: 44,
               alignItems: "center",
-              paddingVertical: 10,
+              justifyContent: "center",
               paddingHorizontal: 6,
+              paddingVertical: 8,
               borderRadius: 20,
-              backgroundColor: tab === t ? "#061224" : "#EEEDF0",
+              backgroundColor: tab === key ? colors.bgNavy : colors.bgMuted,
             }}
           >
-            <Text size={13} color={tab === t ? "white" : "#6C7380"} weight={tab === t ? "semibold" : "regular"}>
-              {t}
-              {t === "Announcements" && announcements.length > 0 ? ` (${announcements.length})` : ""}
-              {t === "Meal Plans" && announcements.filter(a => a.announcement_type === "meal_plan").length > 0 ? ` (${announcements.filter(a => a.announcement_type === "meal_plan").length})` : ""}
+            <Text size={13} color={tab === key ? colors.textWhite : colors.textSecondary} weight="semibold" style={{ textAlign: "center" }}>
+              {label}
             </Text>
           </Pressable>
         ))}
       </View>
 
+      <Field
+        icon={MagnifyingGlass}
+        placeholder={tab === "Messages" ? "Search chats" : tab === "Meal Plans" ? "Search meals" : "Search notices"}
+        value={search}
+        onChangeText={setSearch}
+      />
+
       {loading ? (
-        <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <ActivityIndicator size="small" color="#061224" />
-          <Text size={13} color="#8A919B" style={{ marginTop: 12 }}>
-            Loading updates from daycare…
-          </Text>
-        </View>
+        <ActivityIndicator accessibilityLabel="Loading messages and notices" color={colors.bgNavy} />
+      ) : loadError ? (
+        <>
+          <Notice tone="error">{loadError}</Notice>
+          <Button title="Retry" variant="secondary" onPress={loadData} />
+        </>
       ) : tab === "Messages" ? (
-        visibleThreads.length ? (
-          visibleThreads.map((t) => (
-            <Card
-              key={t.id}
-              onPress={() =>
-                navigation.navigate("CaregiverChat", {
-                  threadId: t.id,
-                  recipientId: t.recipientId,
-                  recipientName: t.name,
-                  recipientRole: contacts.find(contact => contact.id === t.recipientId)?.role,
-                })
-              }
-              style={{ marginBottom: 14, padding: 18 }}
-            >
-              <View style={[s.row, { alignItems: "flex-start" }]}>
-                <Avatar source={t.photo} initials={t.name.slice(0, 2).toUpperCase()} size={50} />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <View style={[s.between, { flexWrap: "wrap", gap: 6, alignItems: "center" }]}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <Text size={16.5} weight="semibold">
-                        {t.name}
-                      </Text>
-                      <View
-                        style={{
-                          backgroundColor: t.roleCategory === "admin" ? "#DBEAFE" : "#DCFCE7",
-                          paddingHorizontal: 7,
-                          paddingVertical: 2,
-                          borderRadius: 6,
-                        }}
-                      >
-                        <Text
-                          size={10.5}
-                          weight="bold"
-                          color={t.roleCategory === "admin" ? "#1E40AF" : "#166534"}
-                        >
-                          {t.roleCategory === "admin" ? "Administration" : "Educator"}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text size={11} color="#9397A0">
-                      {t.time}
-                    </Text>
-                  </View>
-                  <Text size={12} color="#64748B" style={{ marginTop: 2, marginBottom: 4 }}>
-                    {t.role}
+        visibleThreads.length ? visibleThreads.map((thread) => (
+          <Card
+            key={thread.id}
+            onPress={() => navigation.navigate("CaregiverChat", {
+              threadId: thread.id,
+              recipientId: thread.recipientId,
+              recipientName: thread.name,
+              recipientRole: contacts.find(contact => contact.id === thread.recipientId)?.role,
+            })}
+            style={{ marginBottom: 10, padding: 14 }}
+          >
+            <View style={[s.row, { alignItems: "flex-start" }]}>
+              <Avatar source={thread.photo} initials={thread.name.slice(0, 2).toUpperCase()} size={40} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text size={16} weight="semibold" numberOfLines={2}>{thread.name}</Text>
+                <Text size={12} color={colors.textSecondary} numberOfLines={2}>
+                  {[thread.role, thread.time].filter(Boolean).join(" · ")}
+                </Text>
+                {!!thread.message && (
+                  <Text size={13} color={colors.textSecondary} numberOfLines={2} style={{ marginTop: 4 }}>
+                    {thread.message}
                   </Text>
-                  <Text
-                    size={13}
-                    color="#4D5663"
-                    numberOfLines={2}
-                    style={{ marginTop: 2 }}
-                  >
-                    {t.message}
-                  </Text>
-                </View>
-                {t.unread > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: "#FFCA32",
-                      width: 22,
-                      height: 22,
-                      borderRadius: 11,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginLeft: 8,
-                      alignSelf: "center",
-                    }}
-                  >
-                    <Text size={11} weight="bold">
-                      {t.unread}
-                    </Text>
-                  </View>
                 )}
               </View>
-            </Card>
-          ))
-        ) : (
-          empty
-        )
-      ) : tab === "Meal Plans" ? (
-        <>
-          <Card
-            style={{
-              backgroundColor: "#FFF9E6",
-              borderColor: "#F2D8A7",
-              borderWidth: 1,
-              marginBottom: 16,
-              padding: 14,
-            }}
-          >
-            <Text size={13} weight="bold" color="#8C5300">
-              WEEKLY DAYCARE MENUS
-            </Text>
-            <Text size={12} color="#7A4B06" style={{ marginTop: 4, lineHeight: 18 }}>
-              Daycare administrators publish planned meals and snacks here to keep families informed of daily nutrition.
-            </Text>
-            <Button
-              title="💡 Ask AI for complementary home dinner ideas →"
-              variant="secondary"
-              onPress={() =>
-                navigation.navigate("AIGuide", {
-                  initialPrompt: "Based on our daycare's weekly menu, can you suggest easy, balanced dinner ideas to balance what my child eats during the day?",
-                })
-              }
-              style={{ marginTop: 10, minHeight: 36, paddingVertical: 6 }}
-            />
+              {thread.unread > 0 && (
+                <View
+                  accessibilityLabel={`${thread.unread} unread messages`}
+                  style={{
+                    backgroundColor: colors.statusReadyBg,
+                    paddingHorizontal: 7,
+                    paddingVertical: 3,
+                    borderRadius: 12,
+                  }}
+                >
+                  <Text size={11} weight="bold">{thread.unread > 99 ? "99+" : thread.unread}</Text>
+                </View>
+              )}
+            </View>
           </Card>
-
-          {visibleAnnouncements.filter((a) =>
-            a.announcement_type === "meal_plan" ||
-            (a.title + " " + a.body).toLowerCase().includes("meal") ||
-            (a.title + " " + a.body).toLowerCase().includes("menu") ||
-            (a.title + " " + a.body).toLowerCase().includes("lunch") ||
-            (a.title + " " + a.body).toLowerCase().includes("snack")
-          ).length > 0 ? (
-            visibleAnnouncements
-              .filter((a) =>
-                a.announcement_type === "meal_plan" ||
-                (a.title + " " + a.body).toLowerCase().includes("meal") ||
-                (a.title + " " + a.body).toLowerCase().includes("menu") ||
-                (a.title + " " + a.body).toLowerCase().includes("lunch") ||
-                (a.title + " " + a.body).toLowerCase().includes("snack")
-              )
-              .map((a) => (
-                <Card key={a.id} tint="#F5F8F4" style={{ marginBottom: 14, padding: 18 }}>
-                  <View style={[s.row, { marginBottom: 8 }]}>
-                    <SpeakerHigh size={22} color="#3B7A57" />
-                    <Text size={17} weight="semibold" style={{ flex: 1, marginLeft: 6 }}>
-                      {a.title}
+        )) : (
+          <Notice>{query ? "No matching chats." : "No staff contacts yet. Contact your daycare for access."}</Notice>
+        )
+      ) : (
+        <>
+          {tab === "Meal Plans" && (
+            <Button
+              title="Ask for dinner ideas"
+              variant="secondary"
+              onPress={() => navigation.navigate("AIGuide", {
+                initialPrompt: "Based on our daycare's weekly menu, can you suggest easy, balanced dinner ideas to balance what my child eats during the day?",
+              })}
+              style={{ marginBottom: 12 }}
+            />
+          )}
+          {visibleNotices.length ? visibleNotices.map((item) => {
+            const mealPlan = item.announcement_type === "meal_plan";
+            return (
+              <Card
+                key={item.id}
+                onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: item.id })}
+                tint={mealPlan ? colors.pastelGreen : colors.pastelYellow}
+                style={{ marginBottom: 10, padding: 14, borderColor: colors.borderCard }}
+              >
+                <View style={s.row}>
+                  <SpeakerHigh size={20} color={mealPlan ? colors.pastelGreenText : colors.pastelYellowText} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text size={15} weight="semibold" numberOfLines={2}>{item.title}</Text>
+                    <Text size={12} color={colors.textSecondary}>
+                      {item.announcement_type === "alert" ? "Important · " : ""}
+                      {new Date(item.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                     </Text>
                   </View>
-                  <Text color="#4D5663" size={14} style={{ marginBottom: 12, lineHeight: 20 }}>
-                    {a.body}
-                  </Text>
-                  <View style={[s.between, { borderTopWidth: 1, borderTopColor: "#ECEAE3", paddingTop: 10 }]}>
-                    <Text size={11} color="#828995">
-                      Daycare Nutrition Plan · {a.author_name || "Administration"}
-                    </Text>
-                    <Text size={11} color="#828995">
-                      {new Date(a.created_at).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </Text>
-                  </View>
-                </Card>
-              ))
-          ) : (
-            <Card style={{ padding: 24, alignItems: "center" }}>
-              <Text size={16} weight="semibold">
-                No Special Meal Plan Announcements Posted
-              </Text>
-              <Text size={13} color="#747B84" style={{ textAlign: "center", marginTop: 6 }}>
-                Caregivers log individual daily meals in your child's Daily Reports. General nutrition updates from administrators will appear here.
-              </Text>
-            </Card>
+                  <CaretRight size={16} color={colors.textSecondary} />
+                </View>
+              </Card>
+            );
+          }) : (
+            <Notice>{query ? "No matching notices." : tab === "Meal Plans" ? "No meal plans yet." : "No notices yet."}</Notice>
           )}
         </>
-      ) : visibleAnnouncements.length > 0 ? (
-        visibleAnnouncements.map((a) => (
-          <Card
-            key={a.id}
-            onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: a.id })}
-            tint={a.announcement_type === "meal_plan" ? "#F5F8F4" : "#FFFAE5"}
-            style={{ marginBottom: 14, padding: 18 }}
-          >
-            <View style={[s.row, { marginBottom: 8 }]}>
-              <SpeakerHigh
-                size={22}
-                color={a.announcement_type === "meal_plan" ? "#3B7A57" : "#B68C20"}
-              />
-              <Text size={17} weight="semibold" style={{ flex: 1 }}>
-                {a.title}
-              </Text>
-            </View>
-            <Text color="#4D5663" size={14} style={{ marginBottom: 12, lineHeight: 20 }}>
-              {a.body}
-            </Text>
-            <View style={[s.between, { borderTopWidth: 1, borderTopColor: "#ECEAE3", paddingTop: 10 }]}>
-              <Text size={11} color="#828995">
-                Posted by {a.author_name || "Administration"}
-              </Text>
-              <Text size={11} color="#828995">
-                {new Date(a.created_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </Text>
-            </View>
-          </Card>
-        ))
-      ) : (
-        <Card>
-          <Text size={17} weight="semibold">
-            No Announcements Found
-          </Text>
-          <Text color="#747B84" style={{ marginTop: 8 }}>
-            There are currently no active announcements from the daycare center.
-          </Text>
-        </Card>
+      )}
+      {query && !loading && !loadError && !(tab === "Messages" ? visibleThreads.length : visibleNotices.length) && (
+        <Button title="Clear search" variant="secondary" onPress={() => setSearch("")} />
       )}
     </Page>
   );

@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Dataset } from './model';
 import './journey.css';
 
-export default function SetupChecklist({ data }: { data: Dataset }) {
-  const [collapsed, setCollapsed] = useState(false);
+export interface SetupStep {
+  title: string;
+  hint: string;
+  done: boolean;
+  path: string;
+}
+
+/** Derives center setup progress directly from live daycare records (SRS FR-SUB-08). */
+export function getSetupSteps(data: Dataset): SetupStep[] {
   const active = (data.children || []).filter((c) => c.enrollment_status === 'active');
   const activeDuties = (data.duties || []).filter((d) => d.status !== 'revoked' && d.active !== false);
   const hasAttendanceDuty = activeDuties.some((d) => d.can_attendance);
   const hasPickupDuty = activeDuties.some((d) => d.can_pickup);
   const dutiesConfigured = activeDuties.length > 0 && (hasAttendanceDuty || hasPickupDuty);
 
-  const steps = [
+  return [
     {
       title: 'Confirm your center details',
       hint: 'Add the contact phone and address families will use.',
@@ -48,76 +55,20 @@ export default function SetupChecklist({ data }: { data: Dataset }) {
       path: 'front-desk',
     },
   ];
+}
 
+export default function SetupChecklist({ data }: { data: Dataset }) {
+  const steps = getSetupSteps(data);
   const count = steps.filter((s) => s.done).length;
-  const allDone = count === steps.length;
-
-  if (collapsed && allDone) {
-    return (
-      <section
-        className="journey j-panel"
-        style={{
-          padding: '12px 18px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: '#F0FDF4',
-          borderColor: '#BBF7D0',
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: '#166534', fontSize: 18, fontWeight: 700 }}>✓</span>
-          <strong style={{ color: '#166534', fontSize: 14 }}>
-            Center Setup Complete ({count}/{steps.length} milestones verified)
-          </strong>
-        </div>
-        <button
-          type="button"
-          onClick={() => setCollapsed(false)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#008794',
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: 'pointer',
-            textDecoration: 'underline',
-          }}
-        >
-          View Checklist
-        </button>
-      </section>
-    );
-  }
+  // Hide the onboarding checklist automatically once all center setup milestones are satisfied.
+  if (count === steps.length) return null;
 
   return (
     <section className="journey j-panel" style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <span className="j-tag">YOUR CENTER SETUP · {count} OF {steps.length}</span>
-        {allDone && (
-          <button
-            type="button"
-            onClick={() => setCollapsed(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#64748B',
-              fontSize: 12,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
-          >
-            Collapse Checklist
-          </button>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <h2>Center setup</h2>
+        <span className="j-tag">{count} of {steps.length} complete</span>
       </div>
-      <h2>{allDone ? 'Your center is fully set up and ready for care.' : 'Prepare your center for its first day.'}</h2>
-      <p style={{ margin: '4px 0 12px' }}>
-        {allDone
-          ? 'All core records, classrooms, caregiver assignments and front-desk shifts are on file.'
-          : 'Progress comes from saved records. You can leave and return without losing completed setup.'}
-      </p>
       <progress
         aria-label="Daycare setup progress"
         value={count}

@@ -37,7 +37,7 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
   return (
     <Page
       title="Authorized Guardians"
-      subtitle={`Pickup contacts and approval requests for ${childName}.`}
+      subtitle={childName}
       back
       tabs
       activeTab="Profile"

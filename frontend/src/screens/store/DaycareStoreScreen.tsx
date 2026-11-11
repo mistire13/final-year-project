@@ -300,9 +300,6 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
       ) : (
         <Card style={{ padding: 24, alignItems: "center" }}>
           <Text size={15} weight="medium">No products found</Text>
-          <Text size={13} color="#7E828A" style={{ marginTop: 6 }}>
-            {search ? "Try searching with a different term." : "No store items are available at this time."}
-          </Text>
         </Card>
       )}
     </Page>

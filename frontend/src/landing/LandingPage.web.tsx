@@ -185,9 +185,6 @@ export default function LandingPage() {
         <motion.div className="section-head" {...fadeIn}>
 
           <h2 className="section-title">Keep records in one place</h2>
-          <p className="section-desc">
-            Compare paper-based routines with attendance, guardian, payment and reporting records in Ankelba.
-          </p>
         </motion.div>
 
         <motion.div className="care-comparison" {...fadeIn}>
@@ -206,7 +203,7 @@ export default function LandingPage() {
 
       <section className="ankelba-home-faq" id="questions">
         <NurseryBackdrop />
-        <motion.div {...fadeIn}><h2 className="section-title">Common questions</h2><p className="section-desc">Getting connected starts with your daycare.</p></motion.div>
+        <motion.div {...fadeIn}><h2 className="section-title">Common questions</h2></motion.div>
         <div className="faq-list">{[
           { question: "Who is Ankelba for?", answer: "Ankelba connects parents and guardians with caregivers and daycare administrators. Families use the parent app, while staff manage their responsibilities through the daycare portal." },
           { question: "How do parents get connected?", answer: "Your daycare needs to be registered with Ankelba. Ask the daycare team about getting your parent account connected to your child’s profile, then sign in through the parent app." },

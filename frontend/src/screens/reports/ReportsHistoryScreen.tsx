@@ -81,7 +81,7 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
   return (
     <Page
       title="Report Archive"
-      subtitle={`Past daily activity logs and memories for ${childName}.`}
+      subtitle={childName}
       back
       tabs
       activeTab="Reports"

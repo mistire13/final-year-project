@@ -5,7 +5,6 @@ import { Eye } from "phosphor-react-native/src/icons/Eye";
 import { EyeSlash } from "phosphor-react-native/src/icons/EyeSlash";
 import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
 import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
-import { House } from "phosphor-react-native/src/icons/House";
 import { EnvelopeSimple } from "phosphor-react-native/src/icons/EnvelopeSimple";
 import { ShieldCheck } from "phosphor-react-native/src/icons/ShieldCheck";
 import {
@@ -101,7 +100,7 @@ export function LoginScreen({ navigation, route }: any) {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back to First Page / Welcome"
+          accessibilityLabel="Back to welcome"
           onPress={() => navigation.navigate("Splash")}
           style={{
             flexDirection: "row",
@@ -114,29 +113,7 @@ export function LoginScreen({ navigation, route }: any) {
           }}
         >
           <ArrowLeft size={15} color="#061224" weight="bold" />
-          <Text size={12} weight="bold" color="#061224">
-            First Page
-          </Text>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go to Home Feed"
-          onPress={() => setError("Sign in below to open your home feed.")}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: 16,
-            backgroundColor: "#EBF3FF",
-          }}
-        >
-          <House size={15} color="#061224" weight="bold" />
-          <Text size={12} weight="bold" color="#061224">
-            Home Feed
-          </Text>
+          <Text size={12} weight="bold" color="#061224">Back</Text>
         </Pressable>
 
         <BrandMark size={32} />
@@ -144,10 +121,7 @@ export function LoginScreen({ navigation, route }: any) {
 
       <View style={{ marginTop: 40, marginBottom: 24, alignItems: "center" }}>
         <Text size={32} weight="bold" style={{ textAlign: "center", color: "#10263D" }}>
-          Welcome Back
-        </Text>
-        <Text color="#626872" size={14} style={{ textAlign: "center", marginTop: 8, maxWidth: 300 }}>
-          Sign in to stay connected with your child’s daily daycare updates.
+          Sign in
         </Text>
       </View>
 
@@ -220,9 +194,6 @@ export function LoginScreen({ navigation, route }: any) {
       />
 
       <View style={{ marginTop: 28, alignItems: "center" }}>
-        <Text size={13} color="#6D727D" style={{ textAlign: "center" }}>
-          Parent accounts are created by your daycare administrator.
-        </Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => navigation.navigate("Register")}

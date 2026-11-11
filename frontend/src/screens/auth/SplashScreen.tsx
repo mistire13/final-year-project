@@ -56,34 +56,7 @@ export function SplashScreen({ navigation, route }: any) {
           resizeMode="contain"
         />
       </View>
-      <Text
-        size={19}
-        weight="medium"
-        style={{ textAlign: "center", marginTop: 8 }}
-      >
-        Stay connected to their day.
-      </Text>
-      <View style={{ flex: 1, minHeight: 90 }} />
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          gap: 10,
-          marginBottom: 32,
-        }}
-      >
-        {["#FFD9D2", "#FFC42B", "#B4CAEB"].map((c) => (
-          <View
-            key={c}
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: c,
-            }}
-          />
-        ))}
-      </View>
+      <View style={{ flex: 1, minHeight: 32 }} />
       {user ? (
         <View style={{ gap: 10 }}>
           <Button
@@ -99,7 +72,7 @@ export function SplashScreen({ navigation, route }: any) {
             style={{ marginTop: 8, alignItems: "center", paddingVertical: 8 }}
           >
             <Text size={13} color="#C53030" weight="semibold">
-              Sign Out ({user.name})
+              Sign out
             </Text>
           </Pressable>
         </View>
@@ -116,7 +89,7 @@ export function SplashScreen({ navigation, route }: any) {
             style={{ marginTop: 14, alignItems: "center", paddingVertical: 8 }}
           >
             <Text size={14} color="#061224" weight="semibold">
-              Already have an account? Sign In
+              Sign in
             </Text>
           </Pressable>
         </>
@@ -142,22 +115,10 @@ export function SplashScreen({ navigation, route }: any) {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <ShieldCheck size={16} color="#008794" weight="bold" />
           <Text size={13} color="#008794" weight="bold">
-            Open Daycare Admin Portal →
+            Daycare admin portal
           </Text>
         </View>
       </Pressable>
-      <Text
-        size={11}
-        color="#787D87"
-        style={{
-          textAlign: "center",
-          letterSpacing: 1.4,
-          marginTop: 24,
-          marginBottom: 20,
-        }}
-      >
-        CONNECTING FAMILIES AND DAYCARE
-      </Text>
     </Page>
   );
 }

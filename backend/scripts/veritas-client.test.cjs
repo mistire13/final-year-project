@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {lookupVeritas}=require('../src/modules/saas/veritas-client');
+const {lookupVeritas,extractVeritasReceipt}=require('../src/modules/saas/veritas-client');
 const input={provider:'cbe',reference:'https://mbreciept.cbe.com.et/SYNTHETIC0'};
 
 test('HTTP failures are classified before parsing HTML and never expose secrets',async()=>{
@@ -40,4 +40,19 @@ test('timeouts and connection errors are distinct, safe failures',async()=>{
     assert.equal(result.available,false);assert.equal(result.code,code);assert.equal(result.retryable,true);
     assert.ok(!JSON.stringify(result).includes('private transport details'));
   }
+});
+
+test('receipt images go to Veritas multipart extraction and return a candidate only',async()=>{
+  const bytes=Buffer.from('89504e470d0a1a0a','hex');
+  const result=await extractVeritasReceipt({bytes,type:'image/png'},{apiKey:'synthetic',fetch:async(url,init)=>{
+    assert.equal(url.pathname,'/verify-image');
+    assert.equal(url.searchParams.get('autoVerify'),'false');
+    assert.equal(init.headers['x-api-key'],'synthetic');
+    assert.equal(init.headers['content-type'],undefined);
+    const file=init.body.get('file');
+    assert.equal(file.type,'image/png');
+    assert.deepEqual(Buffer.from(await file.arrayBuffer()),bytes);
+    return Response.json({type:'telebirr',reference:'SyntheticReceipt',verified:true,amount:100});
+  }});
+  assert.deepEqual(result,{available:true,provider:'telebirr',reference:'SyntheticReceipt',suffix:undefined});
 });

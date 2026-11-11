@@ -70,7 +70,6 @@ export function CalendarScreen({ navigation, route }: any) {
     <Page
       title="Calendar"
       back={route?.name === "CalendarPage"}
-      subtitle="Daycare activities and schedule."
     >
       {error ? (
         <>
@@ -107,7 +106,7 @@ export function CalendarScreen({ navigation, route }: any) {
             label="Previous month"
             onPress={() => change(-1)}
           />
-          <Text weight="semibold">
+          <Text weight="semibold" style={{ flexShrink: 1, textAlign: "center" }}>
             {new Date(year, month).toLocaleDateString("en-US", {
               month: "long",
               year: "numeric",
@@ -206,7 +205,7 @@ export function CalendarScreen({ navigation, route }: any) {
             style={{ marginBottom: 12, padding: 16 }}
           >
             <View style={s.between}>
-              <Text size={16} weight="semibold" style={{ flex: 1 }}>
+              <Text size={16} weight="semibold" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
                 {e.title}
               </Text>
               <Badge title={e.event_type.replace("_", " ")} tone="neutral" />
@@ -236,9 +235,6 @@ export function CalendarScreen({ navigation, route }: any) {
           <CalendarBlank size={32} color="#8A909B" />
           <Text size={15} weight="medium" style={{ marginTop: 8 }}>
             No events scheduled
-          </Text>
-          <Text size={13} color="#7E828A" style={{ marginTop: 4 }}>
-            Check back later for newly scheduled daycare programs.
           </Text>
         </Card>
       )}

@@ -2,8 +2,9 @@
 const crypto=require('node:crypto');
 const Joi=require('joi');
 const {banks,bankCodes,receiptInput,cbeReceipt}=require('../saas/subscription-banks');
-const {lookupVeritas,messageFor}=require('../saas/veritas-client');
+const {lookupVeritas,extractVeritasReceipt,messageFor}=require('../saas/veritas-client');
 const {matchesVerifiedPayment,canonicalReference,telebirrPhone}=require('../saas/subscription-payments.service');
+const {MAX_IMAGE_BASE64,readReceiptImage,extractedReceipt,providerReceipt}=require('./receipt-evidence');
 const fail=(message,statusCode=422)=>Object.assign(new Error(message),{statusCode});
 const money=value=>{const s=String(value??'');const m=/^(\d+)(?:\.(\d{1,2}))?$/.exec(s);return m?BigInt(m[1])*100n+BigInt((m[2]||'').padEnd(2,'0')):null;};
 const decimal=n=>`${n/100n}.${String(n%100n).padStart(2,'0')}`;
@@ -13,7 +14,12 @@ const disabled=()=>Object.fromEntries(bankCodes.map(code=>[code,{enabled:false,a
 const bankSchema=Joi.object({enabled:Joi.boolean().required(),account_holder:Joi.string().trim().max(150).allow('').required(),account_number:Joi.string().trim().max(30).allow('').required()});
 const settingsSchema=Joi.object({version:Joi.number().integer().min(0).required(),accounts:Joi.object(Object.fromEntries(bankCodes.map(code=>[code,bankSchema.required()]))).required(),reason:Joi.string().trim().min(12).max(1000).required()});
 const createSchema=Joi.object({purpose:Joi.string().valid('invoice','order').required(),target_id:Joi.number().integer().positive().required(),provider:Joi.string().valid(...bankCodes).required(),request_key:Joi.string().pattern(/^[A-Za-z0-9_-]{16,100}$/).required()});
-const proofSchema=Joi.object({version:Joi.number().integer().positive().required(),reference:Joi.string().trim().min(4).max(2048).required(),suffix:Joi.string().pattern(/^\d{5}$/)});
+const proofSchema=Joi.object({
+  version:Joi.number().integer().positive().required(),
+  reference:Joi.string().trim().min(4).max(2048),
+  image:Joi.string().max(MAX_IMAGE_BASE64),
+  suffix:Joi.string().pattern(/^\d{5}$/),
+}).xor('reference','image');
 const reviewSchema=Joi.object({version:Joi.number().integer().positive().required(),decision:Joi.string().valid('approve','reject').required(),reason:Joi.string().trim().min(12).max(1000).required(),evidence_reference:Joi.string().trim().min(4).max(200).required(),
   verified_reference:Joi.string().trim().min(4).max(2048).pattern(/^[\x21-\x7e]+$/).when('decision',{is:'approve',then:Joi.required(),otherwise:Joi.forbidden()}),
   confirmed_amount:Joi.number().strict().positive().max(99999999.99).precision(2).when('decision',{is:'approve',then:Joi.required(),otherwise:Joi.forbidden()}),
@@ -29,7 +35,6 @@ function uuid(id){if(Joi.string().guid({version:'uuidv4'}).validate(id).error)th
 function safe(row){return {id:row.id,purpose:row.purpose,target_id:row.invoice_id??row.order_id,amount:row.amount,currency:row.currency,provider:row.provider,status:row.status,version:row.version,expected:row.expected,payer_name:row.payer_name,valid_from:row.valid_from,expires_at:row.expires_at,created_at:row.created_at,
   submitted_reference:row.submitted_reference,verification_source:row.verification_source,verified_at:row.verified_at,payment_date:row.payment_date,review_reason:row.review_reason,applied_payment_id:row.applied_payment_id,resolution:row.resolution,
   verification:row.verification?{code:row.verification.code,message:row.verification.message}:null,message:row.status==='resolved'?'Independent resolution recorded. No money was moved by the app; reference claims remain permanent.':row.verification?.message||({awaiting_proof:'Transfer the exact amount to this daycare, then submit the bank receipt. Do not pay again if you already transferred.',applied:'Payment verified and applied.',verified_unapplied:'Receipt confirmed; the bill or order changed. Contact your daycare for reconciliation. Do not pay again.',rejected:'This proof was reviewed and rejected. Contact your daycare if money was transferred.'}[row.status]||'Payment requires review.')};}
-function payload(result){let d=result;for(let i=0;i<3&&d?.data&&typeof d.data==='object'&&!Array.isArray(d.data);i++){if(d.success===false)return null;d=d.data;}return d?.success===false?null:d;}
 function aliasesFor(reference,provider,authoritative){const receipt=provider==='cbe'?cbeReceipt(reference):null;return [...new Set([reference,receipt?.identifier,receipt?.reference,authoritative].filter(v=>typeof v==='string'&&v.trim()).map(v=>canonicalReference(v,provider)))];}
 
 function createDaycarePayments(pool,options={}){
@@ -89,6 +94,10 @@ function createDaycarePayments(pool,options={}){
     const items=[];for(const row of rows)items.push(await decorated(pool,row));return {items,total:count.total,limit:input.limit,offset:input.offset};}
   async function available(c,row,aliases){for(const reference of aliases){const found=(await c.query('SELECT public.daycare_payment_reference_available($1,$2) AS available',[row.id,reference])).rows[0];if(!found?.available)throw fail('This payment reference has already been registered. Contact your daycare; do not pay again.',409);}}
   async function claim(c,row,aliases){for(const reference of aliases){const result=(await c.query('SELECT public.claim_daycare_payment_reference($1,$2) AS claimed',[row.id,reference])).rows[0];if(!result?.claimed)throw fail('This payment reference has already been registered. Contact your daycare; do not pay again.',409);}}
+  async function pending(c,id,verification){
+    const {rows}=await c.query("UPDATE daycare_payment_requests SET status='review_pending',verification=$2,lease_until=NULL,version=version+1,updated_at=NOW() WHERE id=$1 RETURNING *",[id,JSON.stringify(verification)]);
+    return safe(rows[0]);
+  }
   async function settle(c,row,user){
     const bill=await target(c,row,true);const balance=bill&&(row.purpose==='invoice'?money(bill.amount)-money(bill.amount_paid):money(bill.total));
     const active=(await c.query("SELECT u.id FROM users u JOIN daycares d ON d.id=u.daycare_id WHERE u.id=$1 AND u.daycare_id=$2 AND u.role_id=3 AND u.status='active' AND d.status='active' AND d.deleted_at IS NULL",[row.parent_id,row.daycare_id])).rowCount===1;
@@ -111,27 +120,59 @@ function createDaycarePayments(pool,options={}){
     await audit(c,user,'DAYCARE_BANK_PAYMENT_APPLIED',row.id,{purpose:row.purpose,target_id:row.invoice_id??row.order_id,amount:row.amount,provider:row.provider,verification_source:row.verification_source,payment_id:paymentId,money_moved_by_application:false});
     return (await c.query("UPDATE daycare_payment_requests SET status='applied',applied_payment_id=$2,verification=$3,version=version+1,lease_until=NULL,updated_at=NOW() WHERE id=$1 RETURNING *",[row.id,paymentId,JSON.stringify({code:'applied',message:'Payment confirmed and applied. The receipt is available in your history.'})])).rows[0];
   }
-  async function verify(id,body,user){const input=validate(proofSchema,body);let reference;
-    const row=await tx(user,async c=>{
+  async function verify(id,body,user){
+    const input=validate(proofSchema,body);
+    const image=input.image?readReceiptImage(input.image):null;
+    if(input.image&&!image)throw fail('Choose a JPEG or PNG receipt screenshot up to 4 MB.');
+    let reference;
+    let row=await tx(user,async c=>{
       const request=await own(c,id,user,true);if(user.role!=='parent')throw fail('The billing parent must submit receipt proof.',403);
       if(request.status==='applied')return request;if(['rejected','verified_unapplied','resolved'].includes(request.status))throw fail('This payment requires independent daycare reconciliation.',409);
       if(request.status==='checking'&&Date.parse(request.lease_until)>now().getTime())throw fail('Receipt verification is already running. Wait for the result.',409);
       if(request.version!==input.version)throw fail('Payment request changed. Refresh its latest status.',409);
       if(request.attempt_count>=20||request.last_attempt_at&&now().getTime()-Date.parse(request.last_attempt_at)<10000)throw fail('Please wait before checking another receipt. Contact your daycare if verification remains unavailable.',429);
-      reference=canonicalReference(input.reference,request.provider);try{receiptInput(request.provider,reference,input.suffix);}catch(error){throw fail(error.message);}
-      await available(c,request,aliasesFor(reference,request.provider));
-      if(request.status==='expired'||now().getTime()>Date.parse(request.expires_at)){
+      if(input.reference){
+        reference=canonicalReference(input.reference,request.provider);
+        try{receiptInput(request.provider,reference,input.suffix);}catch(error){throw fail(error.message);}
+        await available(c,request,aliasesFor(reference,request.provider));
+      }
+      if(!image&&(request.status==='expired'||now().getTime()>Date.parse(request.expires_at))){
         return (await c.query("UPDATE daycare_payment_requests SET status='review_pending',submitted_reference=$2,suffix=$3,attempt_count=attempt_count+1,last_attempt_at=$4,verification=$5,lease_until=NULL,version=version+1,updated_at=NOW() WHERE id=$1 RETURNING *",[request.id,reference,input.suffix||null,now(),JSON.stringify({code:'timing_review',message:'Your saved receipt is outside this request window. The original receiving details are preserved for independent daycare review. Do not pay again.'})])).rows[0];
       }
-      return (await c.query("UPDATE daycare_payment_requests SET status='checking',submitted_reference=$2,suffix=$3,attempt_count=attempt_count+1,last_attempt_at=$4,lease_until=$5,version=version+1,updated_at=NOW() WHERE id=$1 RETURNING *",[request.id,reference,input.suffix||null,now(),new Date(now().getTime()+60000)])).rows[0];
+      return (await c.query("UPDATE daycare_payment_requests SET status='checking',submitted_reference=$2,suffix=$3,attempt_count=attempt_count+1,last_attempt_at=$4,lease_until=$5,version=version+1,updated_at=NOW() WHERE id=$1 RETURNING *",[request.id,reference??request.submitted_reference,image?request.suffix:input.suffix||null,now(),new Date(now().getTime()+60000)])).rows[0];
     });
     if(row.status==='applied'||row.status==='review_pending'&&row.verification?.code==='timing_review')return safe(row);
-    let check;try{check=await (options.lookup??lookupVeritas)({provider:row.provider,reference,suffix:row.suffix||undefined});}catch{check={available:false,code:'transport'};}
-    const d=payload(check.result),actual=d?.transactionReference??d?.reference??d?.receiptNumber??d?.receiptNo??d?.transactionId;
+    let check;
+    if(image){
+      let extraction;
+      try{extraction=await (options.extract??extractVeritasReceipt)(image);}catch{extraction={available:false,code:'transport'};}
+      const proof=extractedReceipt(extraction,row.provider,input.suffix);
+      if(proof){
+        reference=canonicalReference(proof.reference,row.provider);
+        const saved=await tx(user,async c=>{
+          await lockTarget(c,row);
+          const current=(await c.query('SELECT * FROM daycare_payment_requests WHERE id=$1 AND daycare_id=$2 AND parent_id=$3 FOR UPDATE',[row.id,row.daycare_id,row.parent_id])).rows[0];
+          if(!current||current.version!==row.version||current.status!=='checking')return current;
+          try{await available(c,current,aliasesFor(reference,row.provider));}
+          catch(error){if(error.statusCode!==409)throw error;check={available:false,code:'duplicate_reference'};}
+          return (await c.query('UPDATE daycare_payment_requests SET submitted_reference=$2,suffix=$3,updated_at=NOW() WHERE id=$1 RETURNING *',[row.id,reference,proof.suffix??null])).rows[0];
+        });
+        if(!saved)throw fail('Payment request not found.',404);
+        if(saved.version!==row.version||saved.status!=='checking')return safe(saved);
+        row=saved;
+      }else{
+        check=extraction.available?{available:false,code:'image_unreadable'}:extraction;
+      }
+    }
+    if(!check){
+      if(now().getTime()>Date.parse(row.expires_at))check={available:false,code:'timing_review'};
+      else try{check=await (options.lookup??lookupVeritas)({provider:row.provider,reference,suffix:row.suffix||undefined});}catch{check={available:false,code:'transport'};}
+    }
+    const d=providerReceipt(check.result,row.provider),actual=d?.transactionReference??d?.reference??d?.receiptNumber??d?.receiptNo??d?.transactionId;
     const date=d?.transactionDate??d?.paymentDate??d?.paidAt??d?.date??d?.timestamp??d?.dateTime;
     const payer=d?.payerName??d?.senderName??d?.debitedPartyName??d?.sender??d?.payer;
     const expectedIntent={provider:row.provider,amount:row.amount,currency:row.currency,recipient:row.expected.account_number,terms:{recipient_name:row.expected.account_holder},created_at:new Date(Date.parse(row.valid_from)+300000)};
-    const evidence=!!check.available&&matchesVerifiedPayment(check.result,expectedIntent,reference,{environment:'production',nameAmountOnly:false});
+    const evidence=!!check.available&&!!d&&matchesVerifiedPayment({success:true,data:d},expectedIntent,reference,{environment:'production',nameAmountOnly:false});
     const payerMatch=name(payer)!==''&&name(payer)===name(row.payer_name);
     const timing=evidence&&Number.isFinite(Date.parse(date))&&Date.parse(date)<=Date.parse(row.expires_at)&&now().getTime()<=Date.parse(row.expires_at);
     return tx(user,async c=>{
@@ -142,13 +183,19 @@ function createDaycarePayments(pool,options={}){
       if(!current)throw fail('Payment request not found.',404);if(current.version!==row.version||current.status!=='checking')return safe(current);
       if(!evidence||!payerMatch||!timing){
         const code=!check.available?(check.code||'upstream'):!evidence?'mismatch':!payerMatch?'payer_review':'timing_review';
-        const message=!check.available?messageFor(code):code==='payer_review'?'Receipt needs independent confirmation of the payer. Your daycare can review it; do not pay again.':code==='timing_review'?'This receipt needs independent timing review. Your daycare can reconcile it; do not pay again.':'Receipt amount, destination, date, identity or successful status could not be matched. Check the proof or ask your daycare; do not pay again.';
-        const pending=(await c.query("UPDATE daycare_payment_requests SET status='review_pending',verification=$2,lease_until=NULL,version=version+1,updated_at=NOW() WHERE id=$1 RETURNING *",[id,JSON.stringify({code,message,http_status:check.httpStatus||null,payer_match:payerMatch,timing_match:!!timing})])).rows[0];
-        return safe(pending);
+        const message=code==='duplicate_reference'?'This receipt is already registered. Contact your daycare; do not pay again.':code==='payer_review'?'Receipt needs independent confirmation of the payer. Your daycare can review it; do not pay again.':code==='timing_review'?'This receipt needs independent timing review. Your daycare can reconcile it; do not pay again.':!check.available?messageFor(code):'Receipt amount, destination, date, identity or successful status could not be matched. Check the proof or ask your daycare; do not pay again.';
+        return pending(c,id,{code,message,http_status:check.httpStatus||null,payer_match:payerMatch,timing_match:!!timing});
       }
       const aliases=aliasesFor(reference,row.provider,actual);
+      await c.query('SAVEPOINT receipt_claim');
       const verified=(await c.query("UPDATE daycare_payment_requests SET authoritative_reference=$2,verified_aliases=$3,verification_source='provider_verified',verified_at=$4,payment_date=$5 WHERE id=$1 RETURNING *",[id,canonicalReference(actual,row.provider),JSON.stringify(aliases),now(),new Date(date)])).rows[0];
-      await claim(c,verified,aliases);return safe(await settle(c,verified,user));
+      try{await claim(c,verified,aliases);}
+      catch(error){
+        if(error.statusCode!==409)throw error;
+        await c.query('ROLLBACK TO SAVEPOINT receipt_claim');
+        return pending(c,id,{code:'duplicate_reference',message:error.message});
+      }
+      return safe(await settle(c,verified,user));
     });
   }
   async function review(id,body,user){const input=validate(reviewSchema,body);return tx(user,async c=>{

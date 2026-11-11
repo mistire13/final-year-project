@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import { View, Pressable, ActivityIndicator } from "react-native";
 import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
 import { Clock } from "phosphor-react-native/src/icons/Clock";
 import { Info } from "phosphor-react-native/src/icons/Info";
@@ -82,14 +82,14 @@ export function ReportsScreen({ navigation }: any) {
   };
 
   return (
-    <Page title="Reports" subtitle={`A look back at ${childName}’s daycare days.`}>
+    <Page title="Reports">
       {!childId && <Notice>No child is linked to this account yet. Contact your daycare administrator.</Notice>}
       {!!loadError&&<><Notice>{loadError}</Notice><Button title="Retry" onPress={loadReports}/></>}
       <Card tint="#F1F0F5" style={{ padding: 16 }}>
         <View style={s.row}>
           <Avatar source={artwork.reportsChild} />
-          <View>
-            <Text size={23} weight="semibold">
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text size={20} weight="semibold" numberOfLines={2}>
               {selectedChild?.full_name || childName}
             </Text>
             <Text size={13} color="#767C86">
@@ -102,6 +102,7 @@ export function ReportsScreen({ navigation }: any) {
       {/* Quick Navigation into Related Child Care History Domains */}
       <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
         <Pressable
+          accessibilityRole="button"
           onPress={() => navigation.navigate("AttendanceHistory")}
           style={{
             flex: 1,
@@ -121,10 +122,10 @@ export function ReportsScreen({ navigation }: any) {
             <Clock size={20} color="#1E56A0" />
           </View>
           <Text size={12} weight="bold" color="#1E56A0">Attendance</Text>
-          <Text size={10} color="#7E828A" style={{ marginTop: 2 }}>Stay Hours</Text>
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
           onPress={() => navigation.navigate("ReportsHistory")}
           style={{
             flex: 1,
@@ -144,10 +145,10 @@ export function ReportsScreen({ navigation }: any) {
             <CalendarBlank size={20} color="#B45309" />
           </View>
           <Text size={12} weight="bold" color="#B45309">Archive</Text>
-          <Text size={10} color="#7E828A" style={{ marginTop: 2 }}>Past Reports</Text>
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
           onPress={() => navigation.navigate("HealthNotices")}
           style={{
             flex: 1,
@@ -167,17 +168,11 @@ export function ReportsScreen({ navigation }: any) {
             <Heart size={20} color="#B91C1C" />
           </View>
           <Text size={12} weight="bold" color="#B91C1C">Health</Text>
-          <Text size={10} color="#7E828A" style={{ marginTop: 2 }}>& Incidents</Text>
         </Pressable>
       </View>
 
       {/* Filter Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginVertical: 24, flexGrow: 0 }}
-        contentContainerStyle={{ gap: 10 }}
-      >
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 16, gap: 8 }}>
         {["Today", "This Week", "This Month", "All"].map((f) => (
           <Pressable
             key={f}
@@ -187,7 +182,9 @@ export function ReportsScreen({ navigation }: any) {
             onPress={() => setFilter(f)}
             style={{
               paddingVertical: 10,
-              paddingHorizontal: 16,
+              paddingHorizontal: 12,
+              minHeight: 44,
+              justifyContent: "center",
               borderRadius: 22,
               backgroundColor: filter === f ? "#FFCA32" : "#EFEDF0",
             }}
@@ -197,12 +194,11 @@ export function ReportsScreen({ navigation }: any) {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       {loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
-          <Text size={13} color="#7E828A" style={{ marginTop: 10 }}>Loading daily reports…</Text>
         </Card>
       ) : filtered.length > 0 ? (
         filtered.map((r, i) => (
@@ -216,31 +212,21 @@ export function ReportsScreen({ navigation }: any) {
             }}
           >
             <View style={s.between}>
-              <Text size={19}>{formatDate(r.report_date)}</Text>
-              <Badge
-                title="● Recorded"
-                tone="green"
-              />
+              <Text size={18} weight="semibold" style={{ flexShrink: 1 }}>{formatDate(r.report_date)}</Text>
             </View>
 
-            <View style={[s.row, { marginVertical: 16, gap: 8 }]}>
+            <View style={[s.row, { flexWrap: "wrap", marginVertical: 12, gap: 6 }]}>
               {r.mood ? <Badge title={r.mood.charAt(0).toUpperCase() + r.mood.slice(1)} tone="neutral" /> : null}
               {r.sleep_duration_min ? (
                 <Badge
-                  title={`◷ Nap ${r.sleep_duration_min}m`}
-                  tone="neutral"
-                />
-              ) : null}
-              {r.caregiver_name ? (
-                <Badge
-                  title={`By ${r.caregiver_name}`}
+                  title={`Nap ${r.sleep_duration_min}m`}
                   tone="neutral"
                 />
               ) : null}
             </View>
 
             <Button
-              title="View Full Report"
+              title="View report"
               variant={i === 0 ? "primary" : "secondary"}
               icon={i === 0 ? ArrowRight : undefined}
               onPress={() =>
@@ -253,10 +239,7 @@ export function ReportsScreen({ navigation }: any) {
         <Card style={{ padding: 24, alignItems: "center" }}>
           <CalendarBlank size={36} color="#8A909B" />
           <Text size={16} weight="semibold" style={{ marginTop: 12 }}>
-            No reports for {filter.toLowerCase()}
-          </Text>
-          <Text size={13} color="#7E828A" style={{ textAlign: "center", marginTop: 6, lineHeight: 18 }}>
-            Daily activity reports will be posted here as caregivers log attendance, meals, and naps.
+            {filter === "All" ? "No reports yet" : `No reports ${filter.toLowerCase()}`}
           </Text>
         </Card>
       )}

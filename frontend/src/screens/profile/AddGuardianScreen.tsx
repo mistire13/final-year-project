@@ -45,7 +45,7 @@ export function AddGuardianScreen({ navigation }: any) {
   return (
     <Page
       title="Add Guardian"
-      subtitle={`Add a trusted adult for ${childFirst}.`}
+      subtitle={childFirst}
       back
       tabs
       activeTab="Profile"

@@ -1,21 +1,49 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {portalClient,apiError} from './api';
 import {Button,Card,Badge} from './ui.web';
-import type {DaycareReceiptRequest,ReceiptProvider} from '../types/daycarePayments';
+import type {DaycareReceiptRequest,ReceiptProvider,ReceiptPurpose} from '../types/daycarePayments';
 import {receiptStatusLabel} from '../types/daycarePayments';
 type BankConfig={enabled:boolean;account_holder:string;account_number:string};
 const banks:Record<ReceiptProvider,string>={cbe:'Commercial Bank of Ethiopia',abyssinia:'Bank of Abyssinia',telebirr:'Telebirr'};
 const emptyBanks=()=>Object.fromEntries(Object.keys(banks).map(code=>[code,{enabled:false,account_holder:'',account_number:''}])) as Record<ReceiptProvider,BankConfig>;
 const emptyReview=()=>({reason:'',evidence_reference:'',verified_reference:'',confirmed_amount:'',confirmed_recipient_name:'',confirmed_recipient_account:'',payment_date:'',payer_confirmed:false,amount_and_receiver_confirmed:false,timing_confirmed:false});
-export default function DaycarePaymentManagement({onSettled}:{onSettled?:()=>void}){
+type ReceiptFilter = '' | 'review_pending' | 'verified_unapplied' | 'applied';
+
+export default function DaycarePaymentManagement({onSettled, initialStatus}:{onSettled?:()=>void; initialStatus?:string}){
   const [accounts,setAccounts]=useState(emptyBanks),[version,setVersion]=useState(0),[reason,setReason]=useState('');
   const [items,setItems]=useState<DaycareReceiptRequest[]>([]),[selected,setSelected]=useState<DaycareReceiptRequest|null>(null),[review,setReview]=useState(emptyReview);
   const [offset,setOffset]=useState(0),[total,setTotal]=useState(0);
+  const [status, setStatus] = useState<ReceiptFilter>(
+    initialStatus === 'review_pending' || initialStatus === 'verified_unapplied' || initialStatus === 'applied' ? initialStatus : '',
+  );
+  const [purpose, setPurpose] = useState<ReceiptPurpose | ''>(
+    initialStatus === 'tuition' ? 'invoice' : initialStatus === 'shop-orders' ? 'order' : '',
+  );
+  const [requestsLoaded, setRequestsLoaded] = useState(false);
   const [resolution,setResolution]=useState({outcome:'refund_recorded',reason:'',evidence_reference:'',amount_confirmed:false});
   const [loading,setLoading]=useState(true),[settingsLoaded,setSettingsLoaded]=useState(false),[settingsDirty,setSettingsDirty]=useState(false),[requestsLoading,setRequestsLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
   const working=useRef(false),live=useRef(true);
+  const reviewRegion = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (selected) reviewRegion.current?.focus();
+  }, [selected]);
   const loadSettings=async()=>{setLoading(true);try{const config=await portalClient.get('/daycare-payments/settings');if(!live.current)return;setAccounts({...emptyBanks(),...config.data.accounts});setVersion(config.data.version);setReason('');setSettingsDirty(false);setSettingsLoaded(true);}finally{if(live.current)setLoading(false);}};
-  const loadRequests=async(nextOffset=offset)=>{setRequestsLoading(true);try{const requests=await portalClient.get('/daycare-payments/requests',{params:{limit:25,offset:nextOffset}});if(!live.current)return;setItems(requests.data.items||[]);setTotal(requests.data.total??requests.data.items?.length??0);setOffset(nextOffset);}finally{if(live.current)setRequestsLoading(false);}};
+  const loadRequests = async (nextOffset = offset, nextStatus = status, nextPurpose = purpose) => {
+    setRequestsLoading(true);
+    try {
+      const params = { limit: 25, offset: nextOffset, ...(nextStatus ? { status: nextStatus } : {}), ...(nextPurpose ? { purpose: nextPurpose } : {}) };
+      const { data } = await portalClient.get('/daycare-payments/requests', { params });
+      if (!live.current) return;
+      setItems(data.items || []);
+      setTotal(data.total ?? data.items?.length ?? 0);
+      setOffset(nextOffset);
+      setStatus(nextStatus);
+      setPurpose(nextPurpose);
+      setRequestsLoaded(true);
+    } finally {
+      if (live.current) setRequestsLoading(false);
+    }
+  };
   useEffect(()=>{live.current=true;void Promise.allSettled([loadSettings(),loadRequests()]).then(results=>{if(live.current){const rejected=results.find(result=>result.status==='rejected');if(rejected?.status==='rejected')setError(apiError(rejected.reason));}});return()=>{live.current=false;};},[]);
   const action=async(work:()=>Promise<void>)=>{if(working.current)return;working.current=true;setBusy(true);setError('');setNotice('');try{await work();}catch(value){if(live.current)setError(apiError(value));}finally{working.current=false;if(live.current)setBusy(false);}};
   const update=(provider:ReceiptProvider,patch:Partial<BankConfig>)=>{setSettingsDirty(true);setAccounts(current=>({...current,[provider]:{...current[provider],...patch}}));};
@@ -24,21 +52,45 @@ export default function DaycarePaymentManagement({onSettled}:{onSettled?:()=>voi
     if(!selected)return;
     if(decision==='approve'&&(!review.payment_date||!Number.isFinite(Date.parse(review.payment_date+(review.payment_date.length===16?':00':'')+'+03:00'))))throw new Error('Enter the actual transfer date and time in Addis Ababa before confirming.');
     const body=decision==='approve'?{...review,version:selected.version,decision,confirmed_amount:Number(review.confirmed_amount),payment_date:new Date(review.payment_date+(review.payment_date.length===16?':00':'')+'+03:00').toISOString()}:{version:selected.version,decision,reason:review.reason,evidence_reference:review.evidence_reference};
-    await portalClient.post(`/daycare-payments/requests/${encodeURIComponent(selected.id)}/review`,body);setSelected(null);await loadRequests();onSettled?.();setNotice(decision==='approve'?'Independent evidence recorded. This does not transfer money.':'Request review recorded. Existing payment evidence remains in the audit history.');
+    await portalClient.post(`/daycare-payments/requests/${encodeURIComponent(selected.id)}/review`,body);setSelected(null);await loadRequests(0);onSettled?.();setNotice(decision==='approve'?'Independent evidence recorded. This does not transfer money.':'Request review recorded. Existing payment evidence remains in the audit history.');
   });
-  return <div className="journey"><Card title="Daycare receiving accounts"><p>Parents pay these accounts for daycare bills and shop orders. These are separate from the platform subscription accounts. Receipt verification for care fees is included in both packages.</p>
+  return <div className="journey">
     {!!error&&<p role="alert" className="j-error">{error}</p>}{!!notice&&<p role="status">{notice}</p>}
-    {loading?<p role="status">Loading receiving settings…</p>:!settingsLoaded?<p>Receiving settings could not be loaded. Retry before editing.</p>:<form className="j-form" onSubmit={event=>{event.preventDefault();void action(async()=>{const result=await portalClient.put('/daycare-payments/settings',{version,accounts,reason});if(!live.current)return;setVersion(result.data.version);setAccounts({...emptyBanks(),...result.data.accounts});setReason('');setSettingsDirty(false);setNotice('Receiving settings saved. Existing payment requests retain their accepted recipient.');});}}>
-      {(Object.entries(banks) as [ReceiptProvider,string][]).map(([provider,label])=><fieldset key={provider} disabled={busy}><legend>{label}</legend><label><input type="checkbox" checked={accounts[provider].enabled} onChange={event=>update(provider,{enabled:event.target.checked})}/> Enable this receiving account</label><div className="j-summary"><label>Account-holder name<input required={accounts[provider].enabled} maxLength={150} value={accounts[provider].account_holder} onChange={event=>update(provider,{account_holder:event.target.value})}/></label><label>{provider==='telebirr'?'Receiving phone number':'Receiving account number'}<input required={accounts[provider].enabled} inputMode="numeric" autoComplete="off" maxLength={30} value={accounts[provider].account_number} onChange={event=>update(provider,{account_number:event.target.value})}/></label></div></fieldset>)}
-      <label>Reason for changing receiving details<textarea required minLength={12} maxLength={1000} disabled={busy} value={reason} onChange={event=>{setSettingsDirty(true);setReason(event.target.value);}}/></label><Button type="submit" disabled={busy||reason.trim().length<12}>Save receiving accounts</Button>
-    </form>}
-    {error&&<Button variant="secondary" disabled={busy||loading} onClick={()=>void action(loadSettings)}>{settingsDirty?'Discard edits and reload receiving settings':'Reload receiving settings'}</Button>}
-  </Card>
-  <Card title="Bank receipt requests" action={<Button variant="secondary" disabled={busy||requestsLoading} onClick={()=>void action(()=>loadRequests())}>Refresh requests</Button>}><p>Check pending and independently reviewed evidence before recording a transfer. A submitted reference alone does not establish payment.</p>
-    {requestsLoading?<p role="status">Loading receipt requests…</p>:!items.length?<p>No receipt requests yet.</p>:<div className="p-table-wrap"><table><thead><tr><th>Purpose</th><th>Amount</th><th>Status</th><th>Submitted reference</th><th>Review</th></tr></thead><tbody>{items.map(request=><tr key={request.id}><td>{request.purpose==='invoice'?'Care invoice':'Shop order'} #{request.target_id}<p>Expected payer: {request.payer_name}</p></td><td>{Number(request.amount).toLocaleString()} {request.currency}</td><td><Badge value={receiptStatusLabel(request.status)}/>{request.message&&<p>{request.message}</p>}</td><td>{request.submitted_reference||request.payment_reference||request.reference||'Not submitted'}</td><td>{['review_pending','verified_unapplied'].includes(request.status)&&<Button variant="secondary" disabled={busy} onClick={()=>select(request)}>Review evidence</Button>}</td></tr>)}</tbody></table></div>}
+  <Card title="Bank receipt requests" action={<Button variant="secondary" disabled={busy||requestsLoading} onClick={()=>void action(()=>loadRequests())}>Refresh requests</Button>}>
+    <div className="j-actions">
+    <label className="p-receipt-filter">Payment type
+      <select value={purpose} disabled={busy || requestsLoading} onChange={event => {
+        const nextPurpose = event.target.value as ReceiptPurpose | '';
+        void action(async () => {
+          await loadRequests(0, status, nextPurpose);
+          setSelected(null);
+        });
+      }}>
+        <option value="">All payments</option>
+        <option value="invoice">Tuition</option>
+        <option value="order">Shop orders</option>
+      </select>
+    </label>
+    <label className="p-receipt-filter">Receipt status
+      <select value={status} disabled={busy || requestsLoading} onChange={event => {
+        const nextStatus = event.target.value as ReceiptFilter;
+        void action(async () => {
+          await loadRequests(0, nextStatus);
+          setSelected(null);
+        });
+      }}>
+        <option value="">All requests</option>
+        <option value="review_pending">Needs review</option>
+        <option value="verified_unapplied">Confirmed, needs reconciliation</option>
+        <option value="applied">Paid</option>
+      </select>
+    </label>
+    </div>
+    {requestsLoading?<p role="status">Loading receipt requests…</p>:!requestsLoaded?<p>Receipt requests could not be loaded. Use Refresh requests to retry.</p>:!items.length?<p>{status ? "No requests match this status." : "No receipt requests yet."}</p>:<div className="p-table-wrap"><table><thead><tr><th>Purpose</th><th>Amount</th><th>Status</th><th>Submitted reference</th><th>Review</th></tr></thead><tbody>{items.map(request=><tr key={request.id}><td>{request.purpose==='invoice'?'Care invoice':'Shop order'} #{request.target_id}<p>Expected payer: {request.payer_name}</p></td><td>{Number(request.amount).toLocaleString()} {request.currency}</td><td><Badge value={receiptStatusLabel(request.status)}/>{request.message&&<p>{request.message}</p>}</td><td>{request.submitted_reference||request.payment_reference||request.reference||'Not submitted'}</td><td>{['review_pending','verified_unapplied'].includes(request.status)&&<Button variant="secondary" disabled={busy} onClick={()=>select(request)}>Review evidence</Button>}</td></tr>)}</tbody></table></div>}
     <div className="j-actions"><Button variant="secondary" disabled={busy||requestsLoading||offset===0} onClick={()=>void action(()=>loadRequests(Math.max(0,offset-25)))}>Previous requests</Button><span>{total?`${offset+1}–${Math.min(offset+25,total)} of ${total}`:'0 requests'}</span><Button variant="secondary" disabled={busy||requestsLoading||offset+25>=total} onClick={()=>void action(()=>loadRequests(offset+25))}>Next requests</Button></div>
   </Card>
-  {selected?.status==='verified_unapplied'&&<Card title="Resolve unapplied confirmed money"><p>The transfer was confirmed, but the bill/order changed. Record only a refund or credit that you have independently completed. The original reference stays permanently claimed. Ankelba does not move money.</p><p>Confirmed amount: {Number(selected.amount).toLocaleString()} {selected.currency}</p><form className="j-form" onSubmit={event=>{event.preventDefault();void action(async()=>{await portalClient.post(`/daycare-payments/requests/${encodeURIComponent(selected.id)}/resolve`,{...resolution,version:selected.version});setSelected(null);await loadRequests();onSettled?.();setNotice('Independent resolution recorded. No money was transferred by Ankelba.');});}}><label>Completed resolution<select value={resolution.outcome} disabled={busy} onChange={event=>setResolution(current=>({...current,outcome:event.target.value}))}><option value="refund_recorded">Refund completed outside Ankelba</option><option value="credit_recorded">Credit independently recorded</option></select></label><label>Evidence reference<input required minLength={4} maxLength={200} disabled={busy} value={resolution.evidence_reference} onChange={event=>setResolution(current=>({...current,evidence_reference:event.target.value}))}/></label><label>Reason and reconciliation details<textarea required minLength={12} maxLength={1000} disabled={busy} value={resolution.reason} onChange={event=>setResolution(current=>({...current,reason:event.target.value}))}/></label><label><input type="checkbox" required checked={resolution.amount_confirmed} disabled={busy} onChange={event=>setResolution(current=>({...current,amount_confirmed:event.target.checked}))}/>I independently confirmed the full amount was returned or credited.</label><div className="j-actions"><Button type="submit" disabled={busy||!resolution.amount_confirmed||resolution.reason.trim().length<12||resolution.evidence_reference.trim().length<4}>Record completed resolution</Button><Button type="button" variant="secondary" disabled={busy} onClick={()=>setSelected(null)}>Close resolution</Button></div></form></Card>}
+  {selected && <section className="p-receipt-review" aria-label="Receipt review" tabIndex={-1} ref={reviewRegion}>
+  {selected?.status==='verified_unapplied'&&<Card title="Resolve unapplied confirmed money"><p>The transfer was confirmed, but the bill/order changed. Record only a refund or credit that you have independently completed. The original reference stays permanently claimed. Ankelba does not move money.</p><p>Confirmed amount: {Number(selected.amount).toLocaleString()} {selected.currency}</p><form className="j-form" onSubmit={event=>{event.preventDefault();void action(async()=>{await portalClient.post(`/daycare-payments/requests/${encodeURIComponent(selected.id)}/resolve`,{...resolution,version:selected.version});setSelected(null);await loadRequests(0);onSettled?.();setNotice('Independent resolution recorded. No money was transferred by Ankelba.');});}}><label>Completed resolution<select value={resolution.outcome} disabled={busy} onChange={event=>setResolution(current=>({...current,outcome:event.target.value}))}><option value="refund_recorded">Refund completed outside Ankelba</option><option value="credit_recorded">Credit independently recorded</option></select></label><label>Evidence reference<input required minLength={4} maxLength={200} disabled={busy} value={resolution.evidence_reference} onChange={event=>setResolution(current=>({...current,evidence_reference:event.target.value}))}/></label><label>Reason and reconciliation details<textarea required minLength={12} maxLength={1000} disabled={busy} value={resolution.reason} onChange={event=>setResolution(current=>({...current,reason:event.target.value}))}/></label><label><input type="checkbox" required checked={resolution.amount_confirmed} disabled={busy} onChange={event=>setResolution(current=>({...current,amount_confirmed:event.target.checked}))}/>I independently confirmed the full amount was returned or credited.</label><div className="j-actions"><Button type="submit" disabled={busy||!resolution.amount_confirmed||resolution.reason.trim().length<12||resolution.evidence_reference.trim().length<4}>Record completed resolution</Button><Button type="button" variant="secondary" disabled={busy} onClick={()=>setSelected(null)}>Close resolution</Button></div></form></Card>}
   {selected?.status==='review_pending'&&<Card title="Independent transfer review"><p>Check the bank’s actual transaction record independently. This records your evidence; it never transfers or refunds money. Confirmed funds with an allocation conflict must be reconciled before another payment is requested.</p>
     <p>Expected payer: {selected.payer_name}. Accepted receiving account: {selected.expected.institution} · {selected.expected.account_holder} · {selected.expected.account_number}. Enter the actual transfer date from the independent record.</p>
     <form className="j-form" onSubmit={event=>{event.preventDefault();void decide('approve');}}>
@@ -48,6 +100,13 @@ export default function DaycarePaymentManagement({onSettled}:{onSettled?:()=>voi
       <div className="j-actions"><Button type="submit" disabled={busy||!review.payer_confirmed||!review.amount_and_receiver_confirmed||!review.timing_confirmed||review.reason.trim().length<12||review.evidence_reference.trim().length<4}>Record independent confirmation</Button>{selected.status==='review_pending'&&<Button type="button" variant="danger" disabled={busy||review.reason.trim().length<12||review.evidence_reference.trim().length<4} onClick={()=>void decide('reject')}>Reject submitted proof</Button>}<Button type="button" variant="secondary" disabled={busy} onClick={()=>setSelected(null)}>Close review</Button></div>
     </form>
   </Card>}
+  </section>}
+  <Card title="Daycare receiving accounts"><p>These accounts receive tuition and shop payments. Enter the account holder’s name as it appears on the bank receipt.</p>
+    {loading?<p role="status">Loading receiving settings…</p>:!settingsLoaded?<p>Receiving settings could not be loaded. Retry before editing.</p>:<form className="j-form" onSubmit={event=>{event.preventDefault();void action(async()=>{const result=await portalClient.put('/daycare-payments/settings',{version,accounts,reason});if(!live.current)return;setVersion(result.data.version);setAccounts({...emptyBanks(),...result.data.accounts});setReason('');setSettingsDirty(false);setNotice('Receiving settings saved. Existing payment requests retain their accepted recipient.');});}}>
+      {(Object.entries(banks) as [ReceiptProvider,string][]).map(([provider,label])=><fieldset key={provider} disabled={busy}><legend>{label}</legend><label><input type="checkbox" checked={accounts[provider].enabled} onChange={event=>update(provider,{enabled:event.target.checked})}/> Enable this receiving account</label><div className="j-summary"><label>Account-holder name<input required={accounts[provider].enabled} maxLength={150} value={accounts[provider].account_holder} onChange={event=>update(provider,{account_holder:event.target.value})}/></label><label>{provider==='telebirr'?'Receiving phone number':'Receiving account number'}<input required={accounts[provider].enabled} inputMode="numeric" autoComplete="off" maxLength={30} value={accounts[provider].account_number} onChange={event=>update(provider,{account_number:event.target.value})}/></label></div></fieldset>)}
+      <label>Reason for changing receiving details<textarea required minLength={12} maxLength={1000} disabled={busy} value={reason} onChange={event=>{setSettingsDirty(true);setReason(event.target.value);}}/></label><Button type="submit" disabled={busy||reason.trim().length<12}>Save receiving accounts</Button>
+    </form>}
+    {error&&<Button variant="secondary" disabled={busy||loading} onClick={()=>void action(loadSettings)}>{settingsDirty?'Discard edits and reload receiving settings':'Reload receiving settings'}</Button>}
+  </Card>
   </div>;
 }
-

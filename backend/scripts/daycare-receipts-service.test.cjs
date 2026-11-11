@@ -63,5 +63,59 @@ test('daycare receipts use strict evidence, preserve money through races and sha
   await t.test('case-sensitive modern CBE tokens remain separate; other receipt providers retain strict evidence',async()=>{
     for(const [provider,token]of [['cbe','DistinctCaseToken'],['cbe','distinctcasetoken'],['abyssinia','SYNTHETICBOAREF']]){const {request:r}=await request(provider);assert.equal((await svc.verify(r.id,proof(r,token),parent)).status,'applied');}
   });
+
+  await t.test('a screenshot pays an order only after a bank lookup, and its reference cannot pay tuition again',async()=>{
+    const [order]=await db('orders').insert({
+      daycare_id:dc.id,parent_id:parent.id,total:100,order_status:'pending',payment_status:'unpaid',created_at:new Date(Date.now()-86400000),
+    }).returning('*');
+    await db('payments').insert({order_id:order.id,method:'pay_at_daycare',status:'unpaid'});
+    const r=await svc.create({purpose:'order',target_id:order.id,provider:'cbe',request_key:crypto.randomUUID()},parent);
+    const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aSU0AAAAASUVORK5CYII=';
+    const token='v2-SyntheticScreenshot01';
+    let extracted=0,lookups=0;
+    const imageService=createDaycarePayments(pool,{
+      extract:async file=>{
+        extracted++;assert.equal(file.type,'image/png');
+        return {available:true,provider:'cbe',reference:token,amount:9999};
+      },
+      lookup:async ({reference})=>{
+        lookups++;assert.equal(reference,`https://mbreciept.cbe.com.et/${token}`);
+        return {available:true,result:{
+          success:true,payer:parent.name,receiver:'Synthetic Receiver',receiverAccount:'1000000000001',
+          amount:100,date:new Date(Date.now()-3600000).toISOString(),reference:token,
+        }};
+      },
+    });
+    await assert.rejects(imageService.verify(r.id,{version:r.version,image:'Ynl0ZXM='},parent),e=>e.statusCode===422);
+    assert.equal(extracted,0);
+    const applied=await imageService.verify(r.id,{version:r.version,image},parent);
+    assert.equal(applied.status,'applied');
+    assert.equal(applied.submitted_reference,`https://mbreciept.cbe.com.et/${token}`);
+    assert.equal(applied.verification_source,'provider_verified');
+    assert.ok(!JSON.stringify(applied).includes(image));
+    assert.equal((await db('payments').where({order_id:order.id}).first()).gateway_ref,token);
+    assert.equal((await db('orders').where({id:order.id}).first()).payment_status,'paid');
+    assert.equal((await imageService.verify(r.id,{version:r.version,image},parent)).status,'applied');
+    assert.equal(extracted,1);
+    const {invoice,request:tuition}=await request();
+    const duplicate=await imageService.verify(tuition.id,{version:tuition.version,image},parent);
+    assert.equal(duplicate.verification.code,'duplicate_reference');
+    assert.equal(duplicate.status,'review_pending');
+    assert.equal(lookups,1);
+    assert.equal((await db('child_invoices').where({id:invoice.id}).first()).amount_paid,'0.00');
+  });
+
+  await t.test('Telebirr receipt formatting still requires the correct destination and settled amount',async()=>{
+    const {request:r}=await request('telebirr');
+    const asAddis=new Date(Date.now()-3600000+10800000).toISOString();
+    const date=`${asAddis.slice(8,10)}-${asAddis.slice(5,7)}-${asAddis.slice(0,4)} ${asAddis.slice(11,19)}`;
+    const telebirr=createDaycarePayments(pool,{lookup:async ({reference})=>({
+      available:true,result:{success:true,data:{
+        payerName:parent.name,creditedPartyName:'Synthetic Receiver',creditedPartyAccountNo:'251911234567',
+        settledAmount:'100.00 Birr',totalPaidAmount:'102.00 Birr',transactionStatus:'Completed',receiptNo:reference,paymentDate:date,
+      }},
+    })});
+    assert.equal((await telebirr.verify(r.id,proof(r,'SyntheticLocalDate'),parent)).status,'applied');
+  });
  });
 });

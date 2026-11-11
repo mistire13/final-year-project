@@ -15,24 +15,36 @@ const time=(value:string|null)=>value?new Date(value).toLocaleString('en-GB',{ti
 
 export default function PlusBillingAutomation(){
   const [settings,setSettings]=useState<Settings>(initial),[reason,setReason]=useState('');
+  const [savedEnabled,setSavedEnabled]=useState(false);
   const [preview,setPreview]=useState<Preview|null>(null),[history,setHistory]=useState<any>({runs:[],deliveries:[],aging:{}});
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+  const [feedbackSection,setFeedbackSection]=useState<'schedule'|'run'>('schedule');
   const [runtime,setRuntime]=useState<{scheduler_enabled:boolean;email_delivery_enabled:boolean}|null>(null);
   const requesting=useRef(false);
-  const load=async()=>{const [configuration,records]=await Promise.all([portalClient.get('/billing-automation/settings'),portalClient.get('/billing-automation/history')]);setSettings(configuration.data);setRuntime(configuration.data.runtime);setHistory(records.data);};
-  useEffect(()=>{let active=true;Promise.all([portalClient.get('/billing-automation/settings'),portalClient.get('/billing-automation/history')]).then(([configuration,records])=>{if(active){setSettings(configuration.data);setRuntime(configuration.data.runtime);setHistory(records.data);}}).catch(value=>{if(active)setError(apiError(value));}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[]);
+  const loadHistory=async()=>setHistory((await portalClient.get('/billing-automation/history')).data);
+  useEffect(()=>{let active=true;Promise.all([portalClient.get('/billing-automation/settings'),portalClient.get('/billing-automation/history')]).then(([configuration,records])=>{if(active){setSettings(configuration.data);setSavedEnabled(configuration.data.enabled);setRuntime(configuration.data.runtime);setHistory(records.data);}}).catch(value=>{if(active)setError(apiError(value));}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[]);
   const update=(patch:Partial<Settings>)=>{setSettings(previous=>({...previous,...patch}));if(Object.keys(patch).some(key=>key!=='enabled'))setPreview(null);setNotice('');};
   const body=()=>({...Object.fromEntries(fields.map(key=>[key,settings[key]])),reason,...(preview?{preview_id:preview.preview_id}:{})});
-  const action=async(work:()=>Promise<void>)=>{if(requesting.current)return;requesting.current=true;setBusy(true);setError('');setNotice('');try{await work();}catch(value){setError(apiError(value));}finally{requesting.current=false;setBusy(false);}};
+  const action=async(work:()=>Promise<void>,section:'schedule'|'run'='schedule')=>{if(requesting.current)return;requesting.current=true;setBusy(true);setFeedbackSection(section);setError('');setNotice('');try{await work();}catch(value){setError(apiError(value));}finally{requesting.current=false;setBusy(false);}};
   const check=()=>action(async()=>{const result=await portalClient.post('/billing-automation/preview',body());setPreview(result.data);setNotice('Preview ready. Check the fees and children, then save to activate the schedule.');});
-  const save=()=>action(async()=>{const result=await portalClient.put('/billing-automation/settings',body());setSettings(result.data);setPreview(null);setReason('');setNotice(result.data.enabled?'Billing schedule saved. Existing invoices remain unchanged.':'Billing automation paused. Manual invoicing remains available.');setHistory((await portalClient.get('/billing-automation/history')).data);});
-  const run=()=>action(async()=>{const result=await portalClient.post('/billing-automation/run',{});await load();const invoices=result.data.invoices;setNotice(invoices.blocked?'Automation is unavailable for this subscription.':invoices.skipped?'No invoice generation is due. Any eligible reminders have been queued.':`Created ${invoices.generated_count} invoices; skipped ${invoices.skipped_count} already invoiced children. ${result.data.queued} reminders queued.`);});
+  const save=()=>action(async()=>{const result=await portalClient.put('/billing-automation/settings',body());setSettings(result.data);setSavedEnabled(result.data.enabled);setPreview(null);setReason('');setNotice(result.data.enabled?'Billing schedule saved. Existing invoices remain unchanged.':'Billing automation paused. Manual invoicing remains available.');await loadHistory();});
+  const run=()=>{
+    if(!savedEnabled||!settings.enabled)return;
+    void action(async()=>{
+      setPreview(null);
+      const {data:{invoices,queued}}=await portalClient.post('/billing-automation/run',{});
+      const outcome=invoices.blocked?'Automation is unavailable for this subscription.':invoices.skipped?'No invoice generation is due.':`Created ${invoices.generated_count} invoices and skipped ${invoices.skipped_count} already invoiced children.`;
+      setNotice(invoices.blocked?outcome:`${outcome} ${queued} reminders queued.`);
+      await loadHistory();
+    },'run');
+  };
+  const feedback=<>{error&&<p role="alert" className="j-error">{error}</p>}{notice&&<p role="status">{notice}</p>}</>;
   const number=(key:'generate_day'|'due_day'|'default_fee'|'discount_percent'|'reminder_before_days'|'reminder_after_days',label:string,min:number,max:number,step=1)=><label>{label}<input type="number" min={min} max={max} step={step} required={key!=='default_fee'||settings.enabled} disabled={busy} value={settings[key]??''} onChange={event=>update({[key]:event.target.value===''?null:Number(event.target.value)})}/></label>;
   return <div className="journey">
     <Card title="Billing automation"><p>Set a monthly care-fee schedule, preview invoices, and remind families about outstanding balances. All schedule dates use Addis Ababa time.</p>
       {runtime&&!runtime.scheduler_enabled&&<p role="status" className="j-muted">The platform scheduler is paused. You can preview and save settings, but automatic invoice creation and reminder delivery wait until the platform administrator enables the scheduler.</p>}
       {runtime&&!runtime.email_delivery_enabled&&<p className="j-muted">Email delivery is disabled on this platform. Email preferences can be saved; queued emails wait until delivery is configured and enabled.</p>}
-      {error&&<p role="alert" className="j-error">{error}</p>}{notice&&<p role="status">{notice}</p>}
+      {feedbackSection==='schedule'&&feedback}
       {loading?<p role="status">Loading billing settings…</p>:<form className="j-form" onSubmit={event=>{event.preventDefault();void save();}}>
         <label><input type="checkbox" checked={settings.enabled} disabled={busy} onChange={event=>update({enabled:event.target.checked})}/> Enable scheduled monthly care-fee invoices</label>
         <div className="j-summary">{number('generate_day','Generate on day of month',1,28)}{number('due_day','Payment due on day of month',settings.generate_day,28)}{number('default_fee','Default monthly fee when a child has no configured fee',0.01,99999999,0.01)}</div>
@@ -54,7 +66,9 @@ export default function PlusBillingAutomation(){
       <p className="j-muted">The preview expires after ten minutes. Changes to child fees, parent links or existing invoices require another preview.</p>
     </Card>}
     <Card title="Outstanding balances"><div className="j-summary">{[['Not overdue',history.aging.current_balance],['1–30 days overdue',history.aging.days_1_30],['31–60 days overdue',history.aging.days_31_60],['Over 60 days overdue',history.aging.days_over_60]].map(([label,value])=><div key={String(label)}><small>{label}</small><strong>{money(value)}</strong></div>)}</div>
-      <Button variant="secondary" disabled={busy||!settings.enabled} onClick={()=>void run()}>Run scheduled work now</Button><p className="j-muted">This processes due invoice work and queues reminders. It never debits a parent or initiates a bank transfer.</p>
+      <Button variant="secondary" disabled={busy||!savedEnabled||!settings.enabled} onClick={run}>Run scheduled work now</Button>
+      <p className="j-muted">{savedEnabled?'Run uses the saved schedule to create due invoices and queue reminders.':'Save an enabled schedule before running invoice generation and reminders.'}</p>
+      {feedbackSection==='run'&&feedback}
     </Card>
     <Card title="Invoice run history">{!history.runs.length?<p>No scheduled invoice runs yet.</p>:<div style={{overflowX:'auto'}}><table><thead><tr><th>Period</th><th>Status</th><th>Created</th><th>Skipped</th><th>Total</th><th>Completed</th></tr></thead><tbody>{history.runs.map((row:any)=><tr key={row.id}><td>{row.billing_period}</td><td><Badge tone={row.status==='completed'?'success':'warning'} value={row.status}/>{row.last_error&&<p>{row.last_error}</p>}</td><td>{row.generated_count}</td><td>{row.skipped_count}</td><td>{money(row.total_amount)}</td><td>{time(row.completed_at)}</td></tr>)}</tbody></table></div>}</Card>
     <Card title="Reminder delivery history">{!history.deliveries.length?<p>No reminders queued yet.</p>:<div style={{overflowX:'auto'}}><table><thead><tr><th>Invoice</th><th>Parent</th><th>Channel</th><th>Status</th><th>Attempts</th><th>Sent</th></tr></thead><tbody>{history.deliveries.map((row:any)=><tr key={row.id}><td>#{row.invoice_id}</td><td>{row.parent_name}</td><td>{row.channel==='in_app'?'In-app':row.channel}</td><td>{row.status}{row.last_error&&<p>{row.last_error}</p>}</td><td>{row.attempts}</td><td>{time(row.sent_at)}</td></tr>)}</tbody></table></div>}</Card>

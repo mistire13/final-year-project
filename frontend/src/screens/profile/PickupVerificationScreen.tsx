@@ -60,7 +60,6 @@ export function PickupVerificationScreen({ route, navigation }: any) {
   return (
     <Page
       title="Pickup status"
-      subtitle="Guardian approval and recorded attendance."
       back
       tabs
       activeTab="Profile"
@@ -95,9 +94,7 @@ export function PickupVerificationScreen({ route, navigation }: any) {
             )}
           </Card>
           <Notice>
-            Staff check an approved adult’s identity before releasing a child.
-            This screen is a status summary, not a pickup pass. QR scanning and
-            biometric device verification are not connected.
+            Pickup status only. Staff verify the approved adult in person.
           </Notice>
           <Card>
             <Text size={19} weight="semibold">
@@ -132,8 +129,7 @@ export function PickupVerificationScreen({ route, navigation }: any) {
                       tone={guardian.pickup_authorized ? "green" : "gold"}
                     />
                     <Text size={13} style={{ marginTop: 12 }}>
-                      This approval does not confirm that this adult performed
-                      the last pickup. Staff record each release separately.
+                      Staff record each pickup separately.
                     </Text>
                   </>
                 ) : (

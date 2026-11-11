@@ -17,6 +17,7 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -67,6 +68,8 @@ export const Text = ({
           fontSize: size || 15,
           color: color || colors.textPrimary,
           lineHeight: (size || 15) * 1.5,
+          minWidth: 0,
+          maxWidth: "100%",
         },
         style,
         { fontFamily: fonts[family], fontWeight: "normal" },
@@ -328,10 +331,12 @@ export function Page({
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const nav = useNavigation<any>();
+  const { width } = useWindowDimensions();
+  const compact = width < 360 ? { paddingHorizontal: 16 } : undefined;
   const scrollRef = React.useRef<React.ElementRef<typeof ScrollView>>(null);
   const reduceMotion = useReducedMotion();
   const heading = title ? (
-    <View style={{ marginBottom: 24 }}>
+    <View style={{ marginBottom: 16 }}>
       <View style={[s.row, { gap: 12 }]}>
         {back && (
           <IconButton
@@ -375,13 +380,13 @@ export function Page({
               }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={[s.content, contentStyle]}
+              contentContainerStyle={[s.content, compact, contentStyle]}
             >
               {heading}
               {children}
             </ScrollView>
           ) : (
-            <View style={[s.content, { flex: 1 }, contentStyle]}>
+            <View style={[s.content, compact, { flex: 1 }, contentStyle]}>
               {heading}
               {children}
             </View>
@@ -473,7 +478,7 @@ export function Button({
         <ActivityIndicator color={c} />
       ) : (
         <>
-          <Text weight="medium" color={c}>
+          <Text weight="medium" color={c} style={{ flexShrink: 1, textAlign: "center" }}>
             {title}
           </Text>
           {Icon && <Icon color={c} size={20} />}
@@ -569,6 +574,7 @@ export function Badge({
     <View
       style={{
         alignSelf: "flex-start",
+        maxWidth: "100%",
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 9,
@@ -591,8 +597,8 @@ export function Section({
   onPress?: () => void;
 }) {
   return (
-    <View style={[s.between, { marginTop: 26, marginBottom: 15 }]}>
-      <Text size={20} weight="medium">
+    <View style={[s.between, { flexWrap: "wrap", marginTop: 24, marginBottom: 12 }]}>
+      <Text size={20} weight="medium" style={{ flexShrink: 1 }}>
         {title}
       </Text>
       {!!action && (
@@ -626,10 +632,10 @@ export function MenuRow({
     <>
       <View style={[s.row, { flex: 1, gap: 12 }]}>
         {Icon && <Icon size={21} color={colors.textSecondary} />}
-        <Text>{title}</Text>
+        <Text style={{ flexShrink: 1 }}>{title}</Text>
       </View>
       {!!detail && (
-        <Text size={13} color={colors.textSecondary}>
+        <Text size={13} color={colors.textSecondary} style={{ flexShrink: 1, maxWidth: "45%", textAlign: "right" }}>
           {detail}
         </Text>
       )}
@@ -791,6 +797,7 @@ export const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
+    maxWidth: "100%",
   },
   inputWrap: {
     minHeight: 54,
@@ -823,7 +830,7 @@ export const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F2EEDC",
   },
-  tab: { flex: 1, alignItems: "center", paddingVertical: 8 },
+  tab: { flex: 1, minWidth: 0, alignItems: "center", paddingVertical: 8 },
   tabInner: {
     alignItems: "center",
     justifyContent: "center",

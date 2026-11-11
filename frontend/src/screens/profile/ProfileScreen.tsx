@@ -1,16 +1,13 @@
-import {usePackageFeatures} from '../../context/PackageFeaturesContext';
 import React from "react";
-import { View, Switch, Pressable, Linking } from "react-native";
+import { View, Switch, Linking } from "react-native";
 import { PencilSimple } from "phosphor-react-native/src/icons/PencilSimple";
 import { UsersThree } from "phosphor-react-native/src/icons/UsersThree";
-import { Package } from "phosphor-react-native/src/icons/Package";
 import { Receipt } from "phosphor-react-native/src/icons/Receipt";
 import { Smiley } from "phosphor-react-native/src/icons/Smiley";
 import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
 import { User } from "phosphor-react-native/src/icons/User";
 import { LockKey } from "phosphor-react-native/src/icons/LockKey";
-import { Globe } from "phosphor-react-native/src/icons/Globe";
 import { Question } from "phosphor-react-native/src/icons/Question";
 import { SignOut } from "phosphor-react-native/src/icons/SignOut";
 import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
@@ -24,6 +21,8 @@ import {
   Button,
   MenuRow,
   Notice,
+  Section,
+  IconButton,
   s,
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
@@ -34,7 +33,6 @@ import { getWebPortalUrl } from "../../utils/host";
 
 export function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
-  const {features}=usePackageFeatures();
   const { preferences, togglePreference, persistenceError } = useDesign();
   const { selectedChild } = useChild();
 
@@ -52,31 +50,21 @@ export function ProfileScreen({ navigation }: any) {
           <Avatar
             source={artwork.mother}
             initials={user?.name ? user.name.slice(0, 2).toUpperCase() : "PA"}
-            size={64}
+            size={50}
           />
           <View style={{ flex: 1, marginLeft: 8 }}>
             <Text size={22} weight="semibold">
               {user?.name || "Parent User"}
             </Text>
-            <Text
-              size={11}
-              color="#7E8793"
-              style={{ letterSpacing: 0.7, marginTop: 3 }}
-            >
-              {user?.role ? `${user.role.toUpperCase()} ACCOUNT` : "PARENT ACCOUNT"}
-            </Text>
-            <Text size={12} color="#767F8C" style={{ marginTop: 8 }}>
-              {user?.email || "No email on record"}
+            <Text size={12} color="#767F8C" style={{ marginTop: 2 }}>
+              {user?.email}
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Edit profile"
+          <IconButton
+            icon={PencilSimple}
+            label="Edit profile"
             onPress={() => navigation.navigate("ParentProfile")}
-            hitSlop={10}
-          >
-            <PencilSimple size={22} />
-          </Pressable>
+          />
         </View>
       </Card>
       {(user?.role === "caregiver" || user?.role === "admin") && (
@@ -85,9 +73,6 @@ export function ProfileScreen({ navigation }: any) {
             <View style={{ flex: 1, marginRight: 12 }}>
               <Text weight="bold" color="#006C75">
                 {user.role === "admin" ? "Daycare Admin Portal" : "Caregiver Staff Workspace"}
-              </Text>
-              <Text size={12} color="#008794" style={{ marginTop: 3 }}>
-                Open full desktop management tools in your browser.
               </Text>
             </View>
             <Button
@@ -100,102 +85,24 @@ export function ProfileScreen({ navigation }: any) {
         </Card>
       )}
 
-      <Text size={19} weight="semibold" style={{ marginVertical: 20 }}>
-        {user?.role === "caregiver" ? "Classroom Children" : user?.role === "admin" ? "Enrolled Children" : "My Children"}
-      </Text>
-
-      {childrenList.length > 0 ? (
-        childrenList.map((ch) => (
-          <Card key={ch.id} style={{ marginBottom: 12 }}>
-            <View style={s.row}>
-              <Avatar
-                source={ch.photo_url?{uri:ch.photo_url}:undefined}
-                initials={ch.full_name ? ch.full_name.slice(0, 2).toUpperCase() : "CH"}
-              />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text size={17} weight="medium">
-                  {ch.full_name}
-                </Text>
-                <Text size={12} color="#7E8490">
-                  {ch.group_name || "Early Learning"} · {ch.relationship || "Enrolled"}
-                </Text>
-              </View>
-              <Button
-                title="View Profile"
-                variant="secondary"
-                onPress={() => navigation.navigate("ChildProfile", { childId: ch.id })}
-                style={{
-                  minHeight: 40,
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                }}
-              />
+      <Section title={user?.role === "caregiver" ? "Classroom children" : user?.role === "admin" ? "Enrolled children" : "My children"} />
+      {childrenList.length ? childrenList.map((child) => (
+        <Card key={child.id} style={{ marginBottom: 8, padding: 14 }} onPress={() => navigation.navigate("ChildProfile", { childId: child.id })}>
+          <View style={s.row}>
+            <Avatar
+              source={child.photo_url ? { uri: child.photo_url } : undefined}
+              initials={child.full_name?.slice(0, 2).toUpperCase()}
+              size={40}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text size={16} weight="semibold" numberOfLines={2}>{child.full_name}</Text>
+              {!!child.group_name && <Text size={12} color="#767F8C" numberOfLines={2}>{child.group_name}</Text>}
             </View>
-          </Card>
-        ))
-      ) : (
-        <Card style={{ padding: 18 }}>
-          <Text size={14} color="#7E8490">
-            {user?.role === "caregiver"
-              ? "Classroom children and activity logs are synced with your daycare center."
-              : user?.role === "admin"
-              ? "Enrolled center children will appear here."
-              : "No children currently linked to this parent account."}
-          </Text>
+            <CaretRight size={16} />
+          </View>
         </Card>
-      )}
-      <View style={[s.row, { marginTop: 22, gap: 14 }]}>
-        {[
-          {
-            title: "Care Fees",
-            sub: "Bills & receipts",
-            Icon: Receipt,
-            go: "ChildCareFees",
-            bg: "#EAF5ED",
-            ink: "#2E7D32",
-          },
-          {
-            title: "Guardians",
-            sub: "Pickup contacts",
-            Icon: UsersThree,
-            go: "AuthorizedGuardians",
-            bg: "#FFF0CA",
-            ink: "#967317",
-          },
-          {
-            title: "Orders",
-            sub: "Store supplies",
-            Icon: Package,
-            go: "Orders",
-            bg: "#E8EFFC",
-            ink: "#213D62",
-          },
-        ].map((item) => (
-          <Card
-            key={item.title}
-            style={{ flex: 1, padding: 16 }}
-            onPress={() => navigation.navigate(item.go)}
-          >
-            <View
-              style={{
-                width: 41,
-                height: 41,
-                borderRadius: 21,
-                backgroundColor: item.bg,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 12,
-              }}
-            >
-              <item.Icon size={23} color={item.ink} weight="fill" />
-            </View>
-            <Text weight="semibold">{item.title}</Text>
-            <Text size={11} color="#8A8E97" style={{ marginTop: 5 }}>
-              {item.sub}
-            </Text>
-          </Card>
-        ))}
-      </View>
+      )) : <Notice>No children linked yet.</Notice>}
+
       <Text
         size={13}
         color="#747B87"
@@ -245,26 +152,11 @@ export function ProfileScreen({ navigation }: any) {
           last
         />
       </Card>
-      <Text
-        size={13}
-        color="#747B87"
-        style={{ letterSpacing: 0.8, marginTop: 28, marginBottom: 12 }}
-      >
-        FINANCE & ORDERS
-      </Text>
+      <Section title="Care and payments" />
       <Card style={{ paddingVertical: 0 }}>
-        <MenuRow
-          title="Care Fees & Invoices"
-          icon={CreditCard}
-          onPress={() => navigation.navigate("ChildCareFees")}
-        />
-        {features.shop && (
-          <MenuRow
-            title="Store Orders & Receipts"
-            icon={Receipt}
-            onPress={() => navigation.navigate("Orders")}
-          />
-        )}
+        <MenuRow title="Pickup contacts" icon={UsersThree} onPress={() => navigation.navigate("AuthorizedGuardians")} />
+        <MenuRow title="Care fees" icon={CreditCard} onPress={() => navigation.navigate("ChildCareFees")} />
+        <MenuRow title="Orders & receipts" icon={Receipt} onPress={() => navigation.navigate("Orders")} last />
       </Card>
 
       <Text
@@ -276,12 +168,12 @@ export function ProfileScreen({ navigation }: any) {
       </Text>
       <Card style={{ paddingVertical: 0 }}>
         <MenuRow
-          title="Daycare Calendar & Events"
+          title="Calendar"
           icon={CalendarBlank}
           onPress={() => navigation.navigate("CalendarPage")}
         />
         <MenuRow
-          title="Notifications Inbox"
+          title="Inbox"
           icon={SpeakerHigh}
           onPress={() => navigation.navigate("Notifications")}
         />

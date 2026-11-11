@@ -70,7 +70,6 @@ export function StaffHomeScreen({ navigation }: any) {
   return (
     <Page
       title={`Hello, ${user?.name?.split(" ")[0] || "team"}`}
-      subtitle="Your care workspace"
     >
       {activeAnn && (
         <Card

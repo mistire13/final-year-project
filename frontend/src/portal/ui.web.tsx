@@ -337,7 +337,6 @@ export function Modal({
     >
       <div className="p-dialog-head">
         <div>
-          <span className="p-eyebrow">ANKELBA ADMINISTRATION</span>
           <h2>{title}</h2>
         </div>
         <button

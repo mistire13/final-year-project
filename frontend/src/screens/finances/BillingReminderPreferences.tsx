@@ -66,7 +66,7 @@ export default function BillingReminderPreferences() {
     <Card style={{ marginBottom: 18, gap: 12 }}>
       <Text size={18} weight="bold">Billing reminders</Text>
       <Text color={colors.textSecondary}>
-        Allow reminders about unpaid care fees to your account email when your daycare enables email reminders. You can turn them off here at any time.
+        Receive reminders about unpaid fees when your daycare offers email reminders.
       </Text>
       {loading ? <Text>Loading your preference…</Text> : saved === null ? (
         <><Notice tone="error">{error}</Notice><Button title="Retry preference" onPress={() => void load()} /></>

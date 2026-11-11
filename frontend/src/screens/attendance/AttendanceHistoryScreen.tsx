@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Pressable,
-  ScrollView,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
@@ -161,7 +160,6 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
   return (
     <Page
       title="Attendance History"
-      subtitle={`Daily check-in, departure, and absence log for ${childName}.`}
       back
       tabs
       activeTab="Home"
@@ -170,22 +168,22 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
       <Card tint="#F4F6EE" style={{ marginBottom: 18, padding: 16 }}>
         <View style={s.row}>
           <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={selectedChild?.full_name?.slice(0,2).toUpperCase()||'CH'} size={54} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text size={18} weight="semibold">
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text size={18} weight="semibold" numberOfLines={2}>
               {selectedChild?.full_name || childName}
             </Text>
-            <Text size={12} color="#747B87">
-              {groupName} · Enrolled
+            <Text size={12} color="#747B87" numberOfLines={2}>
+              {groupName}
             </Text>
           </View>
-          <Button
-            title="Pickup status"
-            icon={QrCode}
-            variant="secondary"
-            style={{ minHeight: 38, paddingVertical: 6, paddingHorizontal: 12 }}
-            onPress={() => navigation.navigate("PickupVerification")}
-          />
         </View>
+        <Button
+          title="Pickup status"
+          icon={QrCode}
+          variant="secondary"
+          style={{ minHeight: 44, paddingVertical: 8, marginTop: 10 }}
+          onPress={() => navigation.navigate("PickupVerification")}
+        />
       </Card>
 
       {/* Summary KPI Cards */}
@@ -255,14 +253,9 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
       </View>
 
       {/* Filter Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginBottom: 18, flexGrow: 0 }}
-        contentContainerStyle={{ gap: 8 }}
-      >
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 16, gap: 6 }}>
         {[
-          { label: "All Events", val: "All" },
+          { label: "All", val: "All" },
           { label: "Arrivals", val: "checkin" },
           { label: "Departures", val: "checkout" },
           { label: "Absences", val: "absent" },
@@ -271,10 +264,14 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
           return (
             <Pressable
               key={f.val}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
               onPress={() => setFilter(f.val as any)}
               style={{
                 paddingVertical: 7,
-                paddingHorizontal: 14,
+                paddingHorizontal: 10,
+                minHeight: 44,
+                justifyContent: "center",
                 borderRadius: 20,
                 backgroundColor: isSelected ? "#061224" : "#EDEAE3",
               }}
@@ -289,15 +286,12 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* Events Timeline */}
       {loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
-          <Text size={13} color="#858A93" style={{ marginTop: 12 }}>
-            Loading attendance records…
-          </Text>
         </Card>
       ) : error ? (
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>
@@ -325,15 +319,15 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
                 <View style={[s.row, { marginTop: 6 }]}>
                   <Clock size={14} color="#7E8793" />
                   <Text size={13} color="#6F7783" style={{ marginLeft: 6 }}>
-                    Time: {formatTime(item.event_time)}
+                    {formatTime(item.event_time)}
                   </Text>
                 </View>
 
                 {item.recorded_by_name && (
                   <View style={[s.row, { marginTop: 4 }]}>
                     <User size={14} color="#7E8793" />
-                    <Text size={12} color="#858D9A" style={{ marginLeft: 6 }}>
-                      Staff: {item.recorded_by_name}
+                    <Text size={12} color="#858D9A" style={{ flexShrink: 1 }}>
+                      {item.recorded_by_name}
                     </Text>
                   </View>
                 )}
@@ -377,15 +371,7 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
             weight="semibold"
             style={{ textAlign: "center", marginBottom: 6 }}
           >
-            No Attendance Events Found
-          </Text>
-          <Text
-            size={13}
-            color="#7A828E"
-            style={{ textAlign: "center", lineHeight: 19 }}
-          >
-            No check-in or checkout records match the selected filter. As
-            daycare staff log attendance events, they appear here instantly.
+            No attendance records
           </Text>
         </Card>
       )}

@@ -107,7 +107,6 @@ export function HealthNoticesScreen({ navigation, route }: any) {
   return (
     <Page
       title="Health & Incidents"
-      subtitle={`Observations and staff updates for ${childName}.`}
       back
       tabs
       activeTab="Profile"
@@ -116,12 +115,12 @@ export function HealthNoticesScreen({ navigation, route }: any) {
       <Card tint="#F3F1F8" style={{ marginBottom: 16, padding: 16 }}>
         <View style={s.row}>
           <Avatar source={selectedChild?.photo_url?{uri:selectedChild.photo_url}:undefined} initials={selectedChild?.full_name?.slice(0,2).toUpperCase()||'CH'} size={54} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text size={18} weight="semibold">
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text size={18} weight="semibold" numberOfLines={2}>
               {selectedChild?.full_name || childName}
             </Text>
-            <Text size={12} color="#747B87">
-              {groupName} · Care Record
+            <Text size={12} color="#747B87" numberOfLines={2}>
+              {groupName}
             </Text>
           </View>
           <View
@@ -156,25 +155,21 @@ export function HealthNoticesScreen({ navigation, route }: any) {
             style={{ marginTop: 2, marginRight: 10 }}
           />
           <View style={{ flex: 1 }}>
-            <Text size={12} weight="bold" color="#8C5300">
-              NON-DIAGNOSTIC NOTICE
-            </Text>
             <Text
               size={12}
               color="#7A4B06"
               style={{ marginTop: 3, lineHeight: 17 }}
             >
-              {disclaimer} Staff log factual day-to-day observations for parent
-              awareness.
+              {disclaimer}
             </Text>
           </View>
         </View>
       </Card>
 
       {/* Filter Tabs */}
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 18 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
         {[
-          { label: "All Records", val: "All" },
+          { label: "All", val: "All" },
           { label: "Observations", val: "health" },
           { label: "Incidents", val: "incident" },
         ].map((f) => {
@@ -182,6 +177,8 @@ export function HealthNoticesScreen({ navigation, route }: any) {
           return (
             <Pressable
               key={f.val}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
               onPress={() => setFilter(f.val as any)}
               style={{
                 paddingVertical: 8,
@@ -206,9 +203,6 @@ export function HealthNoticesScreen({ navigation, route }: any) {
       {loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
-          <Text size={13} color="#858A93" style={{ marginTop: 12 }}>
-            Loading health records…
-          </Text>
         </Card>
       ) : error ? (
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>
@@ -331,15 +325,6 @@ export function HealthNoticesScreen({ navigation, route }: any) {
             style={{ textAlign: "center", marginBottom: 6 }}
           >
             No health updates recorded
-          </Text>
-          <Text
-            size={13}
-            color="#7A828E"
-            style={{ textAlign: "center", lineHeight: 19 }}
-          >
-            No health observations or incident flags have been recorded for{" "}
-            {childName}. Caregivers log any temperature checks, bumps, or minor
-            notes here immediately.
           </Text>
         </Card>
       )}

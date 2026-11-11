@@ -17,8 +17,11 @@ export function PaymentVerificationScreen({ navigation, route }: any) {
     } catch(e:any){setError(e?.response?.data?.message || 'Could not confirm demo payment. Retry to check the same order.');}
     finally{setBusy(false);}
   };
-  return <Page title="Payment options" back>
-    <ReceiptPaymentCard purpose="order" targetId={Number(route.params?.orderId)}/>
+  const orderId=Number(route.params?.orderId);
+  return <Page title="Order payment" subtitle={Number.isSafeInteger(orderId)&&orderId>0?`Order #${orderId}`:undefined} back>
+    {Number.isSafeInteger(orderId)&&orderId>0
+      ? <ReceiptPaymentCard purpose="order" targetId={orderId}/>
+      : <Notice>Open an order from your order history to pay.</Notice>}
     {capabilities.data.demo_enabled&&<>
     <Card><Text size={23} weight="bold">{reference?'Demo payment succeeded':'Simulate a successful payment'}</Text>
       <Text style={{marginTop:16}}>Order {route.params?.orderRef}</Text>

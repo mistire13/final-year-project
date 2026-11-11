@@ -217,7 +217,7 @@
 .pricing-footer { border-top: 1px solid var(--ankelba-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; padding: 32px 48px; background: var(--ankelba-cream); }
 .pricing-footer .ankelba-home-brand-logo { width: 26px; height: 38px; }
 .pricing-footer .ankelba-home-brand-text strong { font-size: 1.15rem; }
-.pricing-footer .ankelba-home-brand-text span { text-transform: none; letter-spacing: 0; font-size: .64rem; margin-top: 3px; }
+.pricing-footer .ankelba-home-brand-text span { text-transform: none; letter-spacing: 0; font-size: 0.875rem; margin-top: 3px; }
 .pricing-footer > div { display: flex; flex-wrap: wrap; gap: 23px; }
 .pricing-footer > div a { text-decoration: none; color: var(--ankelba-muted); font-size: .95rem; font-weight: 600; }
 .pricing-footer > div a:hover { color: var(--ankelba-green); }
@@ -245,7 +245,7 @@
 
 @media (max-width: 1000px) {
   .ankelba-pricing-page .pricing-nav { margin: 16px 24px 0; padding: 11px 18px; }
-  .pricing-nav .ankelba-home-brand-text span { font-size: .56rem; }
+  .pricing-nav .ankelba-home-brand-text span { font-size: 0.875rem; }
   .pricing-hero .hero-sky-sun { left: 2%; width: 85px; }
   .pricing-hero .hero-sky-rainbow { left: 7%; width: 85px; }
   .pricing-hero .hero-sky-blocks { right: 9%; }
@@ -420,7 +420,7 @@
 }
 
 .invoice-label {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -446,7 +446,7 @@
 }
 
 .verified-pill {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   background: var(--pastel-green);
@@ -465,7 +465,7 @@
   color: var(--ankelba-navy);
   border: 1px solid var(--ankelba-border);
   border-radius: var(--radius-pill);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { portalApi, apiError } from "./api";
 import { Badge, Button, Card, Icon, Modal, Person } from "./ui.web";
 import { money } from "./model";
-import DaycarePaymentManagement from './DaycarePaymentManagement.web';
 import {paymentProvenanceLabel} from '../types/daycarePayments';
 import {invoiceIsOverdue} from '../utils/billingDates';
 
@@ -202,18 +201,13 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
 
   return (
     <div className="daycare-finances-container" style={{ display: "flex", flexDirection: "column", gap: 24, padding: "8px 0" }}>
-      {!ctx?.preview&&<DaycarePaymentManagement onSettled={loadData}/>}
       {/* Top Header & Actions */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--navy)", margin: 0 }}>
-            Child Care Fees & Invoicing
-          </h1>
-          <p style={{ fontSize: 13, color: "#666", marginTop: 4, marginBottom: 0 }}>
-            ወርሃዊ የመቆያ ክፍያ አስተዳደር — Monthly child care fee generation, payment collection, and digital receipts.
-          </p>
+          <h2>Invoice management</h2>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          {ctx && !ctx.preview && <Button variant="secondary" onClick={() => ctx.go("bank-receipts", "tuition")}>Bank receipts</Button>}
           <Button
             variant="ghost"
             icon="refresh"
@@ -241,63 +235,63 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
 
       {/* Overview KPI Cards */}
       {overview && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 16 }}>
           <Card className="finance-kpi-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Total Collected</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)", background: "#e8f5e9", padding: "2px 8px", borderRadius: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Total Collected</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--green)", background: "#e8f5e9", padding: "2px 8px", borderRadius: 12 }}>
                 {overview.collection_rate_percent}% Collected
               </span>
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "var(--green)" }}>
               {money(overview.total_collected)}
             </div>
-            <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
               Received via cash & bank transfers
             </div>
           </Card>
 
           <Card className="finance-kpi-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Total Billed</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--navy)", background: "#e8eaf6", padding: "2px 8px", borderRadius: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Total Billed</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", background: "#e8eaf6", padding: "2px 8px", borderRadius: 12 }}>
                 {overview.invoices_count.total} Invoices
               </span>
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "var(--navy)" }}>
               {money(overview.total_billed)}
             </div>
-            <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
               Active care fees across all billing periods
             </div>
           </Card>
 
           <Card className="finance-kpi-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Outstanding Balance</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#f57c00", background: "#fff3e0", padding: "2px 8px", borderRadius: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Outstanding Balance</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#f57c00", background: "#fff3e0", padding: "2px 8px", borderRadius: 12 }}>
                 {overview.invoices_count.pending + overview.invoices_count.partially_paid} Unpaid
               </span>
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#e65100" }}>
               {money(overview.total_outstanding)}
             </div>
-            <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
               Awaiting parent payments
             </div>
           </Card>
 
           <Card className="finance-kpi-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Overdue Fees</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: overview.total_overdue > 0 ? "#c62828" : "#888", background: overview.total_overdue > 0 ? "#ffebee" : "#f5f5f5", padding: "2px 8px", borderRadius: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Overdue Fees</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: overview.total_overdue > 0 ? "#c62828" : "#888", background: overview.total_overdue > 0 ? "#ffebee" : "#f5f5f5", padding: "2px 8px", borderRadius: 12 }}>
                 Past Due
               </span>
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: overview.total_overdue > 0 ? "#c62828" : "#666" }}>
               {money(overview.total_overdue)}
             </div>
-            <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
               Exceeded payment due date
             </div>
           </Card>
@@ -326,7 +320,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                   border: "1px solid #dcd7cc",
                   padding: "6px 12px",
                   borderRadius: 20,
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
@@ -336,32 +330,19 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
             ))}
           </div>
 
-          <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <form className="p-invoice-filters" onSubmit={handleSearch}>
             <input
               type="month"
+              aria-label="Invoice month"
               value={periodFilter}
-              onInput={(e) => setPeriodFilter(e.currentTarget.value)}
-                onChange={(e) => setPeriodFilter(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: "1px solid #dcd7cc",
-                fontSize: 12,
-              }}
+              onChange={(e) => setPeriodFilter(e.target.value)}
             />
             <input
               type="text"
+              aria-label="Search child or parent"
               placeholder="Search child or parent…"
               value={searchTerm}
-              onInput={(e) => setSearchTerm(e.currentTarget.value)}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: "1px solid #dcd7cc",
-                fontSize: 12,
-                minWidth: 180,
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             <Button type="submit" variant="ghost" icon="search">
               Search
@@ -371,22 +352,22 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
 
         {/* Invoices Table */}
         {loading ? (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#888" }}>
+          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--muted)" }}>
             Loading daycare billing records…
           </div>
         ) : invoices.length === 0 ? (
           <div style={{ padding: "48px 0", textAlign: "center", color: "#666" }}>
             <Icon name="file" size={32} />
             <h3 style={{ margin: "12px 0 4px", fontSize: 16 }}>No invoices found</h3>
-            <p style={{ margin: 0, fontSize: 13, color: "#888" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--muted)" }}>
               Click "Generate Monthly Fees" to bill all enrolled children for {periodFilter}.
             </p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 13 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>
               <thead>
-                <tr style={{ background: "#fcfbf7", borderBottom: "1px solid #e8e5dc", color: "#777", textTransform: "uppercase", fontSize: 11 }}>
+                <tr style={{ background: "#fcfbf7", borderBottom: "1px solid #e8e5dc", color: "#777", textTransform: "uppercase", fontSize: 14 }}>
                   <th style={{ padding: "10px 14px" }}>Child & Group</th>
                   <th style={{ padding: "10px 14px" }}>Parent Contact</th>
                   <th style={{ padding: "10px 14px" }}>Invoice Title</th>
@@ -410,11 +391,11 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                       </td>
                       <td style={{ padding: "12px 14px" }}>
                         <div style={{ fontWeight: 600, color: "var(--navy)" }}>{inv.parent_name || "Unlinked Parent"}</div>
-                        <div style={{ fontSize: 11, color: "#888" }}>{inv.parent_phone || inv.parent_email || "No phone registered"}</div>
+                        <div style={{ fontSize: 14, color: "var(--muted)" }}>{inv.parent_phone || inv.parent_email || "No phone registered"}</div>
                       </td>
                       <td style={{ padding: "12px 14px" }}>
                         <div style={{ fontWeight: 600 }}>{inv.title}</div>
-                        <div style={{ fontSize: 11, color: "#888" }}>Period: {inv.billing_period}</div>
+                        <div style={{ fontSize: 14, color: "var(--muted)" }}>Period: {inv.billing_period}</div>
                       </td>
                       <td style={{ padding: "12px 14px", fontWeight: 700, color: "var(--navy)" }}>
                         {money(inv.amount)}
@@ -426,7 +407,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                       </td>
                       <td style={{ padding: "12px 14px", color: isOverdue ? "#c62828" : "#555", fontWeight: isOverdue ? 700 : 400 }}>
                         {inv.due_date?.slice(0, 10)}
-                        {isOverdue && <span style={{ marginLeft: 4, fontSize: 10, color: "#c62828" }}>(Overdue)</span>}
+                        {isOverdue && <span style={{ marginLeft: 4, fontSize: 14, color: "#c62828" }}>(Overdue)</span>}
                       </td>
                       <td style={{ padding: "12px 14px" }}>
                         <Badge
@@ -454,7 +435,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                                 border: "none",
                                 padding: "5px 10px",
                                 borderRadius: 6,
-                                fontSize: 12,
+                                fontSize: 14,
                                 fontWeight: 700,
                                 cursor: "pointer",
                               }}
@@ -471,7 +452,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                               border: "1px solid #dcd7cc",
                               padding: "5px 10px",
                               borderRadius: 6,
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: 600,
                               cursor: "pointer",
                             }}
@@ -493,12 +474,12 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
       {showGenerateModal && (
         <Modal title="Generate Monthly Child Care Fees" onClose={() => setShowGenerateModal(false)}>
           <form onSubmit={handleGenerate} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <p style={{ fontSize: 13, color: "#555", margin: 0 }}>
+            <p style={{ fontSize: 14, color: "#555", margin: 0 }}>
               Auto-generate monthly care fee invoices for all active enrolled children.
               Children already invoiced for this period will be safely skipped.
             </p>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
               Billing Period (Month)
               <input
                 type="month"
@@ -510,11 +491,11 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                   setGenDueDate(`${e.target.value}-10`);
                 }}
                 required
-                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14 }}
               />
             </label>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
               Payment Due Date
               <input
                 type="date"
@@ -523,11 +504,11 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 onInput={(e) => setGenDueDate(e.currentTarget.value)}
                 onChange={(e) => setGenDueDate(e.target.value)}
                 required
-                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14 }}
               />
             </label>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
               Default Care Fee (ETB)
               <input
                 type="number"
@@ -538,15 +519,15 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 onInput={(e) => setGenFee(e.currentTarget.value)}
                 onChange={(e) => setGenFee(e.target.value)}
                 required
-                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14 }}
               />
-              <small style={{ color: "#888", fontWeight: 400 }}>
+              <small style={{ color: "var(--muted)", fontWeight: 400 }}>
                 Used if a child has not been assigned a custom care fee on their profile.
               </small>
             </label>
 
             {genNotice && (
-              <div style={{ padding: "10px 14px", borderRadius: 8, background: "#e8f5e9", color: "var(--green)", fontSize: 13, fontWeight: 600 }}>
+              <div style={{ padding: "10px 14px", borderRadius: 8, background: "#e8f5e9", color: "var(--green)", fontSize: 14, fontWeight: 600 }}>
                 {genNotice}
               </div>
             )}
@@ -568,27 +549,27 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
         <Modal title={`Record Payment · ${payingInvoice.child_name}`} onClose={() => setPayingInvoice(null)}>
           <form onSubmit={handleRecordPayment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ background: "#fcfbf7", padding: "12px 14px", borderRadius: 8, border: "1px solid #e8e5dc" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0 8px", fontSize: 14, marginBottom: 4 }}>
                 <span style={{ color: "#666" }}>Invoice:</span>
                 <span style={{ fontWeight: 700 }}>{payingInvoice.title}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4 }}>
                 <span style={{ color: "#666" }}>Total Invoice Amount:</span>
                 <span style={{ fontWeight: 700 }}>{money(payingInvoice.amount)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
                 <span style={{ color: "#666" }}>Remaining Balance:</span>
                 <span style={{ fontWeight: 800, color: "#e65100" }}>{money(payingInvoice.balance_remaining)}</span>
               </div>
             </div>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
               Amount to Pay (ETB)
               <input
                 type="number"
                 step="0.01"
                 max={parseFloat(String(payingInvoice.balance_remaining))}
-                min="1"
+                min="0.01"
                 value={payAmount}
                 name="amount_paid"
                 onInput={(e) => setPayAmount(e.currentTarget.value)}
@@ -598,20 +579,20 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               />
             </label>
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
               Payment Method
               <select
                 value={payMethod}
                 name="payment_method"
                 onChange={(e) => setPayMethod(e.target.value)}
-                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14 }}
               >
                 <option value="cash_at_daycare">Cash at Daycare Front Desk (ጥሬ ገንዘብ)</option>
               </select>
             </label>
 
             {payMethod !== "cash_at_daycare" && (
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
                 Transaction Reference Code
                 <input
                   type="text"
@@ -621,12 +602,12 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                   onInput={(e) => setPayReference(e.currentTarget.value)}
                 onChange={(e) => setPayReference(e.target.value)}
                   required
-                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
+                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14 }}
                 />
               </label>
             )}
 
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 700 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 14, fontWeight: 700 }}>
               Notes / Receipt Remarks
               <input
                 type="text"
@@ -635,12 +616,12 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 name="notes"
                 onInput={(e) => setPayNotes(e.currentTarget.value)}
                 onChange={(e) => setPayNotes(e.target.value)}
-                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 14 }}
               />
             </label>
 
             {payError && (
-              <div role="alert" className="p-error" style={{ background: "#ffebee", padding: "10px 14px", borderRadius: 8, color: "#c62828", fontSize: 12 }}>
+              <div role="alert" className="p-error" style={{ background: "#ffebee", padding: "10px 14px", borderRadius: 8, color: "#c62828", fontSize: 14 }}>
                 {payError}
               </div>
             )}
@@ -666,47 +647,47 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
               <div style={{ fontSize: 18, fontWeight: 800, color: "var(--navy)" }}>
                 {viewReceipt.daycare_name || "Ankelba Daycare Center"}
               </div>
-              <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
+              <div style={{ fontSize: 14, color: "#666", marginTop: 2 }}>
                 Child Care Fee Receipt · {paymentProvenanceLabel(viewReceipt.verification_source)}
               </div>
-              <div style={{ display: "inline-block", marginTop: 8, background: "#e8f5e9", color: "var(--green)", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 800 }}>
+              <div style={{ display: "inline-block", marginTop: 8, background: "#e8f5e9", color: "var(--green)", padding: "4px 12px", borderRadius: 20, fontSize: 14, fontWeight: 800 }}>
                 RECEIPT #{viewReceipt.receipt_number}
               </div>
             </div>
 
             {/* Receipt Details */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 14 }}>
               <div>
-                <span style={{ color: "#777", fontSize: 11, display: "block" }}>CHILD NAME</span>
+                <span style={{ color: "#777", fontSize: 14, display: "block" }}>CHILD NAME</span>
                 <strong>{viewReceipt.child_name}</strong>
               </div>
               <div>
-                <span style={{ color: "#777", fontSize: 11, display: "block" }}>PARENT / GUARDIAN</span>
+                <span style={{ color: "#777", fontSize: 14, display: "block" }}>PARENT / GUARDIAN</span>
                 <strong>{viewReceipt.parent_name || "N/A"}</strong>
               </div>
               <div>
-                <span style={{ color: "#777", fontSize: 11, display: "block" }}>FOR ITEM</span>
+                <span style={{ color: "#777", fontSize: 14, display: "block" }}>FOR ITEM</span>
                 <span>{viewReceipt.title}</span>
               </div>
               <div>
-                <span style={{ color: "#777", fontSize: 11, display: "block" }}>DATE & TIME</span>
+                <span style={{ color: "#777", fontSize: 14, display: "block" }}>DATE & TIME</span>
                 <span>{new Date(viewReceipt.verified_at).toLocaleString()}</span>
               </div>
               <div>
-                <span style={{ color: "#777", fontSize: 11, display: "block" }}>PAYMENT METHOD</span>
+                <span style={{ color: "#777", fontSize: 14, display: "block" }}>PAYMENT METHOD</span>
                 <span style={{ textTransform: "capitalize", fontWeight: 600 }}>
                   {viewReceipt.payment_method?.replace(/_/g, " ")}
                 </span>
               </div>
               <div>
-                <span style={{ color: "#777", fontSize: 11, display: "block" }}>REFERENCE CODE</span>
+                <span style={{ color: "#777", fontSize: 14, display: "block" }}>REFERENCE CODE</span>
                 <code>{viewReceipt.reference_code || "CASH-FRONT-DESK"}</code>
               </div>
             </div>
 
             {/* Financial Totals */}
             <div style={{ background: "#fcfbf7", padding: "14px 16px", borderRadius: 10, border: "1px solid #e8e5dc", marginTop: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 6 }}>
                 <span>Total Invoice Amount:</span>
                 <span>{money(viewReceipt.total_invoice_amount)}</span>
               </div>
@@ -714,7 +695,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 <span>Amount Paid This Receipt:</span>
                 <span>{money(viewReceipt.amount_paid)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#666" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#666" }}>
                 <span>Remaining Balance:</span>
                 <span>{money(viewReceipt.balance_remaining)}</span>
               </div>
@@ -744,20 +725,20 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ background: "#fcfbf7", padding: "12px 14px", borderRadius: 8, border: "1px solid #e8e5dc" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ color: "#666", fontSize: 13 }}>Invoice:</span>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>{invoiceDetails.title}</span>
+                <span style={{ color: "#666", fontSize: 14 }}>Invoice:</span>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{invoiceDetails.title}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ color: "#666", fontSize: 13 }}>Period & Due Date:</span>
-                <span style={{ fontSize: 13 }}>{invoiceDetails.billing_period} (Due: {invoiceDetails.due_date?.slice(0, 10)})</span>
+                <span style={{ color: "#666", fontSize: 14 }}>Period & Due Date:</span>
+                <span style={{ fontSize: 14 }}>{invoiceDetails.billing_period} (Due: {invoiceDetails.due_date?.slice(0, 10)})</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ color: "#666", fontSize: 13 }}>Total Billed:</span>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>{money(invoiceDetails.amount)}</span>
+                <span style={{ color: "#666", fontSize: 14 }}>Total Billed:</span>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{money(invoiceDetails.amount)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#666", fontSize: 13 }}>Remaining Balance:</span>
-                <span style={{ fontWeight: 800, fontSize: 13, color: parseFloat(String(invoiceDetails.balance_remaining)) > 0 ? "#e65100" : "var(--green)" }}>
+                <span style={{ color: "#666", fontSize: 14 }}>Remaining Balance:</span>
+                <span style={{ fontWeight: 800, fontSize: 14, color: parseFloat(String(invoiceDetails.balance_remaining)) > 0 ? "#e65100" : "var(--green)" }}>
                   {money(invoiceDetails.balance_remaining)}
                 </span>
               </div>
@@ -768,7 +749,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
             </h4>
 
             {(!invoiceDetails.payments || invoiceDetails.payments.length === 0) ? (
-              <p style={{ fontSize: 13, color: "#888", margin: 0 }}>
+              <p style={{ fontSize: 14, color: "var(--muted)", margin: 0 }}>
                 No payments have been recorded for this invoice yet.
               </p>
             ) : (
@@ -776,8 +757,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 {invoiceDetails.payments.map((p: PaymentRecord) => (
                   <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 8, border: "1px solid #e8e5dc", background: "#fff" }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>{p.receipt_number}</div>
-                      <div style={{ fontSize: 11, color: "#777" }}>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{p.receipt_number}</div>
+                      <div style={{ fontSize: 14, color: "#777" }}>
                         {new Date(p.verified_at).toLocaleDateString()} · {p.payment_method?.replace(/_/g, " ")}
                         {p.reference_code && ` · Ref: ${p.reference_code}`}
                       </div>
@@ -811,7 +792,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                           border: "none",
                           color: "var(--navy)",
                           textDecoration: "underline",
-                          fontSize: 11,
+                          fontSize: 14,
                           cursor: "pointer",
                           padding: 0,
                           marginTop: 2,

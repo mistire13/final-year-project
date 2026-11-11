@@ -100,7 +100,7 @@ export default function PricingPage({ onChoose, checkout, selectedTerms, onBackT
         <HeroAtmosphere />
         <motion.div className="pricing-hero-content" initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .55 }}>
           <h1 id="pricing-title">Plans &amp; <span>pricing</span></h1>
-          <p>Choose a package, then select your billing period.</p>
+
         </motion.div>
         <div className="pricing-hero-wave" aria-hidden="true"><svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path d="M0 22C240 76 480-8 720 26s480 30 720-10v44H0Z" fill="var(--ankelba-cream-soft)" /></svg></div>
       </section>
@@ -133,7 +133,7 @@ export default function PricingPage({ onChoose, checkout, selectedTerms, onBackT
             </div>
             <div className="pricing-section-heading">
               <h2 id="pricing-content-title" ref={contentHeading} tabIndex={-1}>Choose a billing period</h2>
-              <p>Each card shows the total price for {selected.name} over that period.</p>
+
             </div>
             <div className="pricing-period-grid">
               {periods.map((period, index) => {
@@ -157,7 +157,7 @@ export default function PricingPage({ onChoose, checkout, selectedTerms, onBackT
           </> : <>
             <div className="pricing-section-heading">
               <h2 id="pricing-content-title" ref={contentHeading} tabIndex={-1}>Compare packages</h2>
-              <p>Compare monthly prices, then choose a package to see all billing periods.</p>
+
             </div>
             {loading ? <div className="pricing-state" role="status"><h3>Loading packages…</h3></div> : error ? <div className="pricing-state" role="alert"><span className="pricing-state-icon"><Icon name="refresh" size={28} /></span><h3>We couldn’t load the plans.</h3><p>{error}</p><button className="btn-pill btn-pill-primary" type="button" onClick={() => setAttempt(value => value + 1)}>Try again <Icon name="refresh" size={17} /></button></div> : offers.length === 0 ? <div className="pricing-state"><h3>Subscriptions are not available yet.</h3><p>Please check back later.</p></div> : <div className="pricing-package-grid">
               {offers.map((offer, index) => {
@@ -173,7 +173,7 @@ export default function PricingPage({ onChoose, checkout, selectedTerms, onBackT
               })}
             </div>}
             {!loading&&!error&&offers.length>0&&<section className="pricing-comparison" aria-labelledby="pricing-comparison-title">
-              <div className="pricing-section-heading"><h2 id="pricing-comparison-title">Compare every feature</h2><p>Both packages cover daily care. Compare the additional business tools before choosing.</p></div>
+              <div className="pricing-section-heading"><h2 id="pricing-comparison-title">Compare every feature</h2></div>
               <div className="pricing-comparison-scroll" role="region" aria-label="Standard and Plus feature comparison" tabIndex={0}>
                 <table><caption>Features are the same across monthly, six-month and annual billing within each package.</caption><thead><tr><th scope="col">Feature</th>{offers.map(offer=><th scope="col" key={offer.code}>{offer.name}</th>)}</tr></thead>
                   <tbody>{packageComparisonRows.map(row=><tr key={row.key}><th scope="row">{row.label}</th>{offers.map(offer=>{const value=packageComparisonValue(offer,row);return <td key={offer.code} className={value==='Included'?'is-included':value==='Not included'?'is-unavailable':''}>{value==='Included'&&<Icon name="check" size={16}/>}<span>{value}</span></td>;})}</tr>)}</tbody>

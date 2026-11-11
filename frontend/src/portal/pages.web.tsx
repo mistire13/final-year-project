@@ -26,7 +26,7 @@ export type PageContext = {
   staff: boolean;
   actor: Row;
   preview: boolean;
-  go: (page: string) => void;
+  go: (page: string, fragment?: string) => void;
   open: (kind: string, row?: Row) => void;
 };
 const find = (rows: Row[], id: number, key = "name") =>
@@ -375,15 +375,13 @@ export function Overview(ctx: PageContext) {
   const [overviewDays, setOverviewDays] = useState(7);
   const m = metrics(data, date);
   const reportRate = m.total ? Math.round((m.submitted / m.total) * 100) : 0;
-  const lowStock = data.products.filter((p) => p.stock_qty <= 5).length;
-  const health = data.health.filter((h) => !h.parent_notified).length;
   return (
     <>
       <div className="p-grid stats">
         <Stat
           title="Enrolled children"
           value={m.total}
-          note={`${data.groups.length} groups, growing together`}
+          note={`${data.groups.length} classrooms`}
           icon="child"
           tint="#eff3e8"
         />
@@ -412,7 +410,7 @@ export function Overview(ctx: PageContext) {
           ink="#9c91ba"
         />
         <Stat
-          title="Safe pickups"
+          title="Recorded pickups"
           value={m.collected}
           note="Recorded check-outs for selected day"
           icon="shield"
@@ -420,14 +418,14 @@ export function Overview(ctx: PageContext) {
           ink="#7e9fab"
         />
       </div>
-      <div className="p-grid main">
+      <div className="p-overview-chart">
         <Card>
           <div className="p-card-head" style={{ alignItems: "center" }}>
             <div>
-              <h2>Little steps, every day</h2>
-              <p>Attendance trends across the last {overviewDays} days</p>
+              <h2>Attendance trends</h2>
+              <p>Last {overviewDays} days</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <div className="p-tabs" style={{ margin: 0, padding: 2 }}>
                 {[7, 14, 30].map((n) => (
                   <button
@@ -435,7 +433,7 @@ export function Overview(ctx: PageContext) {
                     type="button"
                     className={overviewDays === n ? "active" : ""}
                     onClick={() => setOverviewDays(n)}
-                    style={{ padding: "4px 8px", fontSize: 11.5 }}
+                    style={{ padding: "4px 8px", fontSize: 14 }}
                   >
                     {n}D
                   </button>
@@ -448,64 +446,12 @@ export function Overview(ctx: PageContext) {
           </div>
           <AttendanceChart data={data} date={date} days={overviewDays} />
         </Card>
-        <Card>
-          <div className="p-card-head">
-            <div>
-              <h2>A little attention needed</h2>
-              <p>The things worth a closer look</p>
-            </div>
-            <Icon name="bell" size={19} />
-          </div>
-          {[
-            {
-              n: m.missing,
-              t: "Daily reports remaining",
-              s: "Keep families connected to their day",
-              go: "reports",
-              icon: "file",
-            },
-            {
-              n: health,
-              t: "Parent updates pending",
-              s: "Health and incident communication",
-              go: "health",
-              icon: "heart",
-            },
-            {
-              n: lowStock,
-              t: "Items running low",
-              s: "Review daycare essentials",
-              go: "store",
-              icon: "store",
-            },
-          ].map((item) => (
-            <div className="p-attention" key={item.go}>
-              <span className="p-icon-tile">
-                <Icon name={item.icon} size={17} />
-              </span>
-              <div>
-                <strong>
-                  {item.n} {item.t.toLowerCase()}
-                </strong>
-                <p>{item.s}</p>
-              </div>
-              <button
-                className="p-icon-button"
-                aria-label={"Review " + item.t.toLowerCase()}
-                onClick={() => go(item.go)}
-              >
-                <Icon name="arrow" size={17} />
-              </button>
-            </div>
-          ))}
-        </Card>
       </div>
       <div className="p-grid main">
         <Card>
           <div className="p-card-head">
             <div>
               <h2>Today at a glance</h2>
-              <p>Children, caregivers and little daily moments</p>
             </div>
             <Button variant="quiet" onClick={() => go("attendance")}>
               All attendance <Icon name="arrow" size={15} />
@@ -734,7 +680,6 @@ export function Overview(ctx: PageContext) {
           <div className="p-card-head">
             <div>
               <h2>Front-desk coverage</h2>
-              <p>Personal logins. Clear responsibilities.</p>
             </div>
             <Button variant="quiet" onClick={() => go("front-desk")}>
               Manage duties <Icon name="arrow" size={15} />
@@ -1100,9 +1045,10 @@ export function Caregivers(ctx: PageContext) {
 }
 export const Registry = Caregivers;
 
-export function Children(ctx: PageContext) {
+export function Children(ctx: PageContext & { initialGroup?: string }) {
   const { data, query, open } = ctx;
-  const [group, setGroup] = useState("");
+  const [requestedGroup, setGroup] = useState(ctx.initialGroup || "");
+  const group = data.groups.some((entry) => String(entry.id) === requestedGroup) ? requestedGroup : "";
   const [status, setStatus] = useState("");
   const pendingRequests = (data.guardianRequests || []).filter((g) => g.status === "pending");
   return (
@@ -1112,7 +1058,7 @@ export function Children(ctx: PageContext) {
           <div className="p-card-head">
             <div>
               <h2 style={{ fontSize: 16 }}>Pending pickup requests ({pendingRequests.length})</h2>
-              <p>Parent-submitted pickup contacts awaiting review and identity verification before collection authorization.</p>
+              <p>Verify each contact’s identity before approving pickup.</p>
             </div>
           </div>
           <Table
@@ -1151,7 +1097,6 @@ export function Children(ctx: PageContext) {
         <div className="p-card-head">
         <div>
           <h2>Children & Families</h2>
-          <p>Enrolled children, linked guardians, emergency contacts and medical notes</p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <Button icon="plus" onClick={() => open("family")}>
@@ -1307,10 +1252,7 @@ export function Groups(ctx: PageContext) {
           Create group
         </Button>
       </div>
-      <div
-        className="p-grid"
-        style={{ gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))" }}
-      >
+      <div className="p-grid p-classroom-grid">
         {search(data.groups, query).map((g) => {
           const m = metrics(data, date, String(g.id));
           return (
@@ -1324,17 +1266,15 @@ export function Groups(ctx: PageContext) {
                 </Button>
               </div>
               <h2>{g.name}</h2>
-              <p style={{ fontSize: 12 }}>
-                {g.description || "Learning and growing, together."}
-              </p>
-              <div style={{ marginTop: 10, marginBottom: 12, padding: "8px 12px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.5px" }}>
-                  Lead Teacher / Caregiver
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--navy)", marginTop: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{g.lead_caregiver_name || userName(data, g.lead_caregiver_id) || "Not assigned"}</span>
+              {g.description && <p>
+                {g.description}
+              </p>}
+              <div className="p-classroom-assignment">
+                <small>Lead caregiver</small>
+                <div className="p-classroom-assignment-row">
+                  <strong>{g.lead_caregiver_name || userName(data, g.lead_caregiver_id) || "Not assigned"}</strong>
                   <Button variant="quiet small" onClick={() => open("assign-group-caregiver", g)}>
-                    Assign
+                    Assign caregiver
                   </Button>
                 </div>
               </div>
@@ -1363,12 +1303,9 @@ export function Groups(ctx: PageContext) {
                   />
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <Button variant="secondary" style={{ flex: 1 }} onClick={() => open("assign-group-caregiver", g)}>
-                  Assign Caregiver
-                </Button>
-                <Button variant="quiet" onClick={() => ctx.go("children")}>
-                  Manage Roster
+              <div className="p-classroom-actions">
+                <Button variant="secondary" onClick={() => ctx.go("children", `classroom-${g.id}`)}>
+                  Manage roster
                 </Button>
               </div>
             </Card>
@@ -1384,7 +1321,7 @@ export function Duties(ctx: PageContext) {
     <Card>
       <div className="p-card-head">
         <div>
-          <h2>The right people, at the right time</h2>
+          <h2>Duty assignments</h2>
           <p>Assignments are separate from classroom responsibilities.</p>
         </div>
         <Button icon="plus" onClick={() => open("duty")}>
@@ -1881,7 +1818,6 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         <div className="p-card-head">
           <div>
             <h2>Moments to look forward to</h2>
-            <p>Daycare events, meetings and closures</p>
           </div>
           <Button icon="plus" onClick={() => open("event")}>
             Create event
@@ -2006,7 +1942,6 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         <div className="p-card-head">
           <div>
             <h2>Daycare essentials</h2>
-            <p>Products, availability and stock</p>
           </div>
           <Button icon="plus" onClick={() => open("product")}>
             Add product
@@ -2094,8 +2029,8 @@ export function Monitoring(ctx: PageContext & { page: string }) {
         <div className="p-card-head">
           <div>
             <h2>Orders & payments</h2>
-            <p>Fulfillment and payment are tracked separately.</p>
           </div>
+          {!ctx.preview && <Button variant="secondary" onClick={() => ctx.go("bank-receipts", "shop-orders")}>Bank receipts</Button>}
         </div>
         <Table
           rows={search(
@@ -2259,7 +2194,6 @@ export function DaycareSettings(ctx: PageContext) {
         <div className="p-card-head">
           <div>
             <h2>Daycare Center Profile</h2>
-            <p>Official registration and contact information for your center.</p>
           </div>
           <Button variant="secondary" icon="pencil" onClick={() => open("edit-settings", dc)}>
             Edit Center Profile

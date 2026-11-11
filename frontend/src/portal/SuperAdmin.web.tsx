@@ -503,7 +503,7 @@ export default function SuperAdmin() {
         <h2 style={{ fontFamily: "Quicksand_700Bold", color: "#10263B", margin: "0 0 8px" }}>
           Ankelba Super Admin Console
         </h2>
-        <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 20px" }}>
+        <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 20px" }}>
           Verifying security authorization and tenant isolation state...
         </p>
         <div
@@ -548,38 +548,17 @@ export default function SuperAdmin() {
           }}
         >
           <img src={logo} alt="Ankelba" style={{ height: 50, marginBottom: 14 }} />
-          <div>
-            <span
-              style={{
-                display: "inline-block",
-                background: "#FCE7EC",
-                color: "#BD4264",
-                fontWeight: 800,
-                fontSize: 11,
-                letterSpacing: "1.6px",
-                padding: "4px 12px",
-                borderRadius: 999,
-                marginBottom: 10,
-                textTransform: "uppercase",
-              }}
-            >
-              Platform operator
-            </span>
-          </div>
           <h1
             style={{
               fontSize: 26,
               fontWeight: 800,
               color: "#10263B",
-              margin: "0 0 6px",
+              margin: "0 0 24px",
               letterSpacing: "-0.5px",
             }}
           >
             Super Admin Console
           </h1>
-          <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 24px" }}>
-            Cross-tenant governance, daycare approvals, and platform health.
-          </p>
 
           {loginError && (
             <div
@@ -590,7 +569,7 @@ export default function SuperAdmin() {
                 border: "1px solid #f7cfc7",
                 borderRadius: 12,
                 padding: "12px 16px",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
                 marginBottom: 20,
                 textAlign: "left",
@@ -605,7 +584,7 @@ export default function SuperAdmin() {
           )}
 
           <form onSubmit={handleLogin} style={{ textAlign: "left" }}>
-            <label htmlFor="platform-email" style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+            <label htmlFor="platform-email" style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
               Super Admin Email
             </label>
             <input
@@ -629,7 +608,7 @@ export default function SuperAdmin() {
               }}
             />
 
-            <label htmlFor="platform-password" style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+            <label htmlFor="platform-password" style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
               Password
             </label>
             <input
@@ -672,7 +651,7 @@ export default function SuperAdmin() {
           </form>
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #eeece6" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#76818B" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--muted)" }}>
               <a
                 href="/"
                 style={{ cursor: "pointer", color: "#10263B", textDecoration: "underline", fontWeight: 600 }}
@@ -753,7 +732,7 @@ export default function SuperAdmin() {
                 color: "#e07a5f",
                 fontWeight: 800,
                 letterSpacing: "1.5px",
-                fontSize: 9.5,
+                fontSize: 14,
                 padding: "2px 8px",
                 borderRadius: 999,
                 textTransform: "uppercase",
@@ -815,7 +794,7 @@ export default function SuperAdmin() {
                   style={{
                     background: "#e07a5f",
                     color: "#fff",
-                    fontSize: 10,
+                    fontSize: 14,
                     fontWeight: 800,
                     padding: "2px 8px",
                     borderRadius: 999,
@@ -924,16 +903,16 @@ export default function SuperAdmin() {
                   alignItems: "center",
                   justifyContent: "center",
                   fontWeight: 800,
-                  fontSize: 12,
+                  fontSize: 14,
                 }}
               >
                 {getInitials(user?.name)}
               </div>
               <div style={{ flex: 1, overflow: "hidden" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {user?.name || "Super Administrator"}
                 </div>
-                <div style={{ fontSize: 11, color: "#8da4be", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={{ fontSize: 14, color: "#8da4be", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {user?.email}
                 </div>
               </div>
@@ -943,7 +922,7 @@ export default function SuperAdmin() {
                 style={{
                   background: "#417B61",
                   color: "#fff",
-                  fontSize: 9,
+                  fontSize: 14,
                   fontWeight: 800,
                   padding: "2px 6px",
                   borderRadius: 4,
@@ -956,7 +935,7 @@ export default function SuperAdmin() {
                 style={{
                   background: "#2A435D",
                   color: "#cbd5e1",
-                  fontSize: 9,
+                  fontSize: 14,
                   fontWeight: 700,
                   padding: "2px 6px",
                   borderRadius: 4,
@@ -1024,7 +1003,7 @@ export default function SuperAdmin() {
                 color: "#417B61",
                 padding: "5px 12px",
                 borderRadius: 999,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: 700,
                 border: "1px solid #cce6d9",
               }}
@@ -1033,7 +1012,7 @@ export default function SuperAdmin() {
               Tenant policies configured
             </span>
 
-            <span style={{ fontSize: 11, color: "#76818B", fontWeight: 600 }}>
+            <span style={{ fontSize: 14, color: "var(--muted)", fontWeight: 600 }}>
               Synced: {lastRefreshed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </span>
 
@@ -1091,7 +1070,7 @@ export default function SuperAdmin() {
                   {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
                 </span>
                 <div>
-                  <strong style={{ display: "block", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <strong style={{ display: "block", fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
                     Platform Broadcast ({broadcast.level})
                   </strong>
                   <span style={{ fontSize: 14 }}>{broadcast.message}</span>
@@ -1106,7 +1085,7 @@ export default function SuperAdmin() {
                   border: "1px solid currentColor",
                   background: "transparent",
                   color: "inherit",
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -1145,7 +1124,7 @@ export default function SuperAdmin() {
                       <strong style={{ fontSize: 16, color: "#9c5700", display: "block" }}>
                         Action Required: {pendingDaycares.length} Daycare Application{pendingDaycares.length > 1 ? "s" : ""} Awaiting Review
                       </strong>
-                      <span style={{ fontSize: 13, color: "#6e4510" }}>
+                      <span style={{ fontSize: 14, color: "#6e4510" }}>
                         Prospective daycare centers submitted for administrative verification and workspace activation.
                       </span>
                     </div>
@@ -1181,8 +1160,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#10263b", opacity: 0.7 }}><Icon name="building" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Total Centers</div>
-                  <div style={{ fontSize: 11, color: "#417b61", marginTop: 4 }}>Across all regions</div>
+                  <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Total Centers</div>
+                  <div style={{ fontSize: 14, color: "#417b61", marginTop: 4 }}>Across all regions</div>
                 </div>
 
                 <div
@@ -1201,8 +1180,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#e07a5f" }}><Icon name="bell" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Pending Review</div>
-                  <div style={{ fontSize: 11, color: "#e07a5f", marginTop: 4 }}>Needs verification</div>
+                  <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Pending Review</div>
+                  <div style={{ fontSize: 14, color: "#e07a5f", marginTop: 4 }}>Needs verification</div>
                 </div>
 
                 <div
@@ -1221,8 +1200,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#417b61" }}><Icon name="checkCircle" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active Centers</div>
-                  <div style={{ fontSize: 11, color: "#417b61", marginTop: 4 }}>Full platform access</div>
+                  <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Active Centers</div>
+                  <div style={{ fontSize: 14, color: "#417b61", marginTop: 4 }}>Full platform access</div>
                 </div>
 
                 <div
@@ -1241,8 +1220,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#2a9d8f" }}><Icon name="award" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Paid Subscriptions</div>
-                  <div style={{ fontSize: 11, color: stats?.overdue_subscriptions ? "#e07a5f" : "#2a9d8f", marginTop: 4 }}>
+                  <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Paid Subscriptions</div>
+                  <div style={{ fontSize: 14, color: stats?.overdue_subscriptions ? "#e07a5f" : "#2a9d8f", marginTop: 4 }}>
                     {stats?.overdue_subscriptions ? `${stats.overdue_subscriptions} overdue renewal${stats.overdue_subscriptions > 1 ? "s" : ""}` : "Standard & Plus"}
                   </div>
                 </div>
@@ -1263,8 +1242,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#3b82f6" }}><Icon name="child" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Child Profiles</div>
-                  <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 4 }}>All enrollment statuses</div>
+                  <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Child Profiles</div>
+                  <div style={{ fontSize: 14, color: "#3b82f6", marginTop: 4 }}>All enrollment statuses</div>
                 </div>
 
                 <div
@@ -1283,8 +1262,8 @@ export default function SuperAdmin() {
                     </div>
                     <span style={{ color: "#8b5cf6" }}><Icon name="people" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Registered Accounts</div>
-                  <div style={{ fontSize: 11, color: "#8b5cf6", marginTop: 4 }}>All roles, including platform operators</div>
+                  <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Registered Accounts</div>
+                  <div style={{ fontSize: 14, color: "#8b5cf6", marginTop: 4 }}>All roles, including platform operators</div>
                 </div>
               </div>
 
@@ -1293,7 +1272,7 @@ export default function SuperAdmin() {
                 {/* Subscription Plans Card */}
                 <Card title="Center Licensing & Accreditation Status">
                   <div style={{ padding: "10px 0" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14, fontWeight: 700 }}>
                       <span>Verified Regulatory Licenses</span>
                       <span>{daycares.filter((d) => d.license_number).length} Centers</span>
                     </div>
@@ -1307,7 +1286,7 @@ export default function SuperAdmin() {
                       />
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14, fontWeight: 700 }}>
                       <span>Fully Operational Centers</span>
                       <span>{daycares.filter((d) => d.status === "active").length} Centers</span>
                     </div>
@@ -1321,7 +1300,7 @@ export default function SuperAdmin() {
                       />
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14, fontWeight: 700 }}>
                       <span>Applications Under Review</span>
                       <span>{daycares.filter((d) => d.status === "pending").length} Centers</span>
                     </div>
@@ -1393,12 +1372,12 @@ export default function SuperAdmin() {
                     <tbody>
                       {auditLogs.slice(0, 5).map((log) => (
                         <tr key={log.id}>
-                          <td style={{ fontSize: 12, color: "#76818B" }}>
+                          <td style={{ fontSize: 14, color: "var(--muted)" }}>
                             {new Date(log.created_at).toLocaleString()}
                           </td>
                           <td>
                             <strong>{log.actor_name || `User #${log.actor_id}`}</strong>
-                            <div style={{ fontSize: 11, color: "#76818B" }}>{log.actor_email}</div>
+                            <div style={{ fontSize: 14, color: "var(--muted)" }}>{log.actor_email}</div>
                           </td>
                           <td>
                             <Badge value={log.action} />
@@ -1411,7 +1390,7 @@ export default function SuperAdmin() {
                       ))}
                       {auditLogs.length === 0 && (
                         <tr>
-                          <td colSpan={5} style={{ textAlign: "center", padding: 24, color: "#76818B" }}>
+                          <td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--muted)" }}>
                             No audit events logged yet.
                           </td>
                         </tr>
@@ -1476,7 +1455,7 @@ export default function SuperAdmin() {
                       padding: "9px 16px",
                       borderRadius: 10,
                       border: "1.5px solid #dcd8cc",
-                      fontSize: 13,
+                      fontSize: 14,
                       minWidth: 260,
                       outline: "none",
                       background: "#fff",
@@ -1485,7 +1464,7 @@ export default function SuperAdmin() {
                   {daycareSearch && (
                     <button
                       onClick={() => setDaycareSearch("")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#76818B" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)" }}
                     >
                       ✕
                     </button>
@@ -1517,18 +1496,18 @@ export default function SuperAdmin() {
                           <tr key={d.id}>
                             <td>
                               <strong>{d.name}</strong>
-                              <div style={{ fontSize: 11, color: "#76818B", marginTop: 2 }}>
+                              <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
                                 slug: <code style={{ background: "#f2f0e9", padding: "1px 5px", borderRadius: 4 }}>{d.slug}</code>
                               </div>
-                              <div style={{ fontSize: 11, color: "#8a94a0" }}>{d.address || "No address provided"}</div>
+                              <div style={{ fontSize: 14, color: "#8a94a0" }}>{d.address || "No address provided"}</div>
                             </td>
                             <td>
                               <div style={{ fontWeight: 600 }}>{d.admin_name || "Unassigned"}</div>
-                              <div style={{ fontSize: 11, color: "#76818B" }}>{d.admin_email}</div>
+                              <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.admin_email}</div>
                             </td>
                             <td>
                               <div style={{ fontWeight: 600 }}>{d.license_number || "Pending verification"}</div>
-                              <div style={{ fontSize: 11, color: "#76818B" }}>{d.contact_phone || d.contact_email}</div>
+                              <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.contact_phone || d.contact_email}</div>
                             </td>
                             <td>
                               <Badge value={d.status} />
@@ -1537,15 +1516,15 @@ export default function SuperAdmin() {
                               <div style={{ fontWeight: 700, color: d.license_number ? "#166534" : "#64748B" }}>
                                 {d.license_number ? "Verified License" : "Standard Permit"}
                               </div>
-                              <div style={{ fontSize: 11, color: "#76818B", marginTop: 2 }}>
+                              <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
                                 {d.license_number || "Awaiting submission"}
                               </div>
                             </td>
                             <td>
-                              <div style={{ fontWeight: 700, fontSize: 13.5, color: "#10263B" }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: "#10263B" }}>
                                 {d.active_children_count || 0} active students
                               </div>
-                              <div style={{ fontSize: 11, color: "#76818B", marginTop: 2 }}>
+                              <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
                                 {d.children_count || 0} enrolled profiles · {d.staff_count || 0} staff accounts
                               </div>
                             </td>
@@ -1597,7 +1576,7 @@ export default function SuperAdmin() {
 
                       {filteredDaycares.length === 0 && (
                         <tr>
-                          <td colSpan={7} style={{ textAlign: "center", padding: 36, color: "#76818B" }}>
+                          <td colSpan={7} style={{ textAlign: "center", padding: 36, color: "var(--muted)" }}>
                             No daycare centers match the selected filter.
                           </td>
                         </tr>
@@ -1616,11 +1595,10 @@ export default function SuperAdmin() {
             <div>
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "0 0 6px" }}>
-                  Daycare Self-Registration Applications Queue
+                  Daycare applications
                 </h2>
-                <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
-                  Review prospective daycare applications submitted via the Ankelba website.
-                  Approving an application activates the daycare center workspace and enables the administrator's account.
+                <p style={{ color: "var(--muted)", fontSize: 14, margin: 0 }}>
+                  Approval activates the workspace and the administrator’s account.
                 </p>
               </div>
 
@@ -1630,13 +1608,9 @@ export default function SuperAdmin() {
                     <div style={{ display: "inline-flex", padding: 14, borderRadius: "50%", background: "#eef6f2", color: "#417B61", marginBottom: 12 }}>
                       <Icon name="checkCircle" size={36} />
                     </div>
-                    <h3 style={{ fontSize: 20, color: "#10263B", marginBottom: 6 }}>All Caught Up!</h3>
-                    <p style={{ color: "#76818B", maxWidth: 460, margin: "0 auto 20px" }}>
-                      There are currently no daycare registration applications pending review.
-                      Prospective daycares that register on the landing page will appear here immediately.
-                    </p>
+                    <h3 style={{ fontSize: 20, marginBottom: 16 }}>No applications to review</h3>
                     <Button variant="secondary" onClick={() => setActivePage("daycares")}>
-                      View Active Daycare Directory →
+                      Daycare directory
                     </Button>
                   </div>
                 </Card>
@@ -1653,41 +1627,41 @@ export default function SuperAdmin() {
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>
+                          <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>
                             Proposed Administrator
                           </div>
                           <div style={{ fontSize: 15, fontWeight: 700, color: "#10263B" }}>{d.admin_name}</div>
-                          <div style={{ fontSize: 13, color: "#76818B" }}>{d.admin_email}</div>
+                          <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.admin_email}</div>
                         </div>
 
                         <div>
-                          <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>
+                          <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>
                             Official License & Center Info
                           </div>
                           <div style={{ fontSize: 14, fontWeight: 600 }}>{d.license_number || "No license submitted"}</div>
-                          <div style={{ fontSize: 13, color: "#76818B" }}>{d.address || "Address not provided"}</div>
+                          <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.address || "Address not provided"}</div>
                         </div>
 
                         <div>
-                          <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>
+                          <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>
                             Contact Information
                           </div>
-                          <div style={{ fontSize: 13, fontWeight: 600 }}>{d.contact_phone || "No phone"}</div>
-                          <div style={{ fontSize: 13, color: "#76818B" }}>{d.contact_email}</div>
+                          <div style={{ fontSize: 14, fontWeight: 600 }}>{d.contact_phone || "No phone"}</div>
+                          <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.contact_email}</div>
                         </div>
 
                         <div>
-                          <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>
+                          <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>
                             Requested Subscription Plan
                           </div>
                           <div style={{ fontSize: 14, fontWeight: 700, textTransform: "capitalize", color: "#e07a5f" }}>
                             {d.requested_plan || "Not recorded on this older application"}
                           </div>
-                          {d.subscription_terms && <div style={{ fontSize: 13 }}>
+                          {d.subscription_terms && <div style={{ fontSize: 14 }}>
                             {d.subscription_terms.price} {d.subscription_terms.currency} · {String(d.subscription_terms.billing_cycle || '').replaceAll('_', ' ')} · {d.subscription_terms.max_children} children
                           </div>}
-                          {d.payment_status && <div style={{ fontSize: 13 }}>Payment: {d.payment_status.replaceAll('_', ' ')}{d.payment_reference ? ` · ${d.payment_reference}` : ''}</div>}
-                          <div style={{ fontSize: 11, color: "#76818B" }}>
+                          {d.payment_status && <div style={{ fontSize: 14 }}>Payment: {d.payment_status.replaceAll('_', ' ')}{d.payment_reference ? ` · ${d.payment_reference}` : ''}</div>}
+                          <div style={{ fontSize: 14, color: "var(--muted)" }}>
                             Submitted: {new Date(d.created_at).toLocaleDateString()}
                           </div>
                         </div>
@@ -1786,7 +1760,7 @@ export default function SuperAdmin() {
                       padding: "9px 16px",
                       borderRadius: 10,
                       border: "1.5px solid #dcd8cc",
-                      fontSize: 13,
+                      fontSize: 14,
                       minWidth: 260,
                       outline: "none",
                       background: "#fff",
@@ -1795,7 +1769,7 @@ export default function SuperAdmin() {
                   {userSearch && (
                     <button
                       onClick={() => setUserSearch("")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#76818B" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)" }}
                     >
                       ✕
                     </button>
@@ -1834,7 +1808,7 @@ export default function SuperAdmin() {
                                   alignItems: "center",
                                   justifyContent: "center",
                                   fontWeight: 700,
-                                  fontSize: 12,
+                                  fontSize: 14,
                                 }}
                               >
                                 {getInitials(u.name)}
@@ -1842,7 +1816,7 @@ export default function SuperAdmin() {
                               <strong>{u.name}</strong>
                             </div>
                           </td>
-                          <td style={{ color: "#76818B" }}>{u.email}</td>
+                          <td style={{ color: "var(--muted)" }}>{u.email}</td>
                           <td>
                             <Badge value={u.role} />
                           </td>
@@ -1850,20 +1824,20 @@ export default function SuperAdmin() {
                             {u.daycare_name ? (
                               <span style={{ fontWeight: 600 }}>{u.daycare_name}</span>
                             ) : (
-                              <span style={{ color: "#76818B", fontStyle: "italic" }}>Platform Level (Global)</span>
+                              <span style={{ color: "var(--muted)", fontStyle: "italic" }}>Platform Level (Global)</span>
                             )}
                           </td>
                           <td>
                             <Badge value={u.status} />
                           </td>
-                          <td style={{ fontSize: 12, color: "#76818B" }}>
+                          <td style={{ fontSize: 14, color: "var(--muted)" }}>
                             {u.created_at ? new Date(u.created_at).toLocaleDateString() : "Existing"}
                           </td>
                         </tr>
                       ))}
                       {!usersLoading && !usersError && filteredUsers.length === 0 && (
                         <tr>
-                          <td colSpan={6} style={{ textAlign: "center", padding: 36, color: "#76818B" }}>
+                          <td colSpan={6} style={{ textAlign: "center", padding: 36, color: "var(--muted)" }}>
                             No user accounts match the search or role filter.
                           </td>
                         </tr>
@@ -1893,11 +1867,8 @@ export default function SuperAdmin() {
               >
                 <div>
                   <h2 style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "0 0 6px" }}>
-                    Platform-wide Administrative Audit Trail
+                    Platform audit trail
                   </h2>
-                  <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
-                    Immutable historical record of cross-tenant actions, onboarding approvals, and security events.
-                  </p>
                 </div>
 
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -1910,7 +1881,7 @@ export default function SuperAdmin() {
                       padding: "9px 16px",
                       borderRadius: 10,
                       border: "1.5px solid #dcd8cc",
-                      fontSize: 13,
+                      fontSize: 14,
                       minWidth: 260,
                       outline: "none",
                       background: "#fff",
@@ -1919,7 +1890,7 @@ export default function SuperAdmin() {
                   {auditSearch && (
                     <button
                       onClick={() => setAuditSearch("")}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#76818B" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)" }}
                     >
                       ✕
                     </button>
@@ -1943,12 +1914,12 @@ export default function SuperAdmin() {
                     <tbody>
                       {filteredAuditLogs.map((log) => (
                         <tr key={log.id}>
-                          <td style={{ fontSize: 12, color: "#76818B", whiteSpace: "nowrap" }}>
+                          <td style={{ fontSize: 14, color: "var(--muted)", whiteSpace: "nowrap" }}>
                             {new Date(log.created_at).toLocaleString()}
                           </td>
                           <td>
                             <strong>{log.actor_name || `User #${log.actor_id}`}</strong>
-                            <div style={{ fontSize: 11, color: "#76818B" }}>{log.actor_email}</div>
+                            <div style={{ fontSize: 14, color: "var(--muted)" }}>{log.actor_email}</div>
                           </td>
                           <td>
                             <Badge value={log.action} />
@@ -1957,7 +1928,7 @@ export default function SuperAdmin() {
                             {log.daycare_name ? (
                               <span style={{ fontWeight: 600 }}>{log.daycare_name}</span>
                             ) : (
-                              <span style={{ color: "#76818B", fontStyle: "italic" }}>System Global</span>
+                              <span style={{ color: "var(--muted)", fontStyle: "italic" }}>System Global</span>
                             )}
                           </td>
                           <td>
@@ -1965,14 +1936,14 @@ export default function SuperAdmin() {
                               {formatTargetEntity(log.target_table, log.target_id)}
                             </span>
                           </td>
-                          <td style={{ fontSize: 13, color: "#3B4651", lineHeight: 1.4 }}>
+                          <td style={{ fontSize: 14, color: "#3B4651", lineHeight: 1.4 }}>
                             {formatAuditDetails(log.action, log.metadata, log.target_table, log.target_id)}
                           </td>
                         </tr>
                       ))}
                       {filteredAuditLogs.length === 0 && (
                         <tr>
-                          <td colSpan={6} style={{ textAlign: "center", padding: 36, color: "#76818B" }}>
+                          <td colSpan={6} style={{ textAlign: "center", padding: 36, color: "var(--muted)" }}>
                             No audit log entries match the search query.
                           </td>
                         </tr>
@@ -1991,11 +1962,8 @@ export default function SuperAdmin() {
             <div>
               <div style={{ marginBottom: 20 }}>
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "0 0 6px" }}>
-                  Platform Health, Infrastructure & Isolation Diagnostics
+                  Platform health
                 </h2>
-                <p style={{ color: "#76818B", fontSize: 14, margin: 0 }}>
-                  PostgreSQL connection telemetry, configured access controls, and record counts available to platform operators.
-                </p>
               </div>
 
               {/* 4 Health Metrics Cards */}
@@ -2020,8 +1988,8 @@ export default function SuperAdmin() {
                   <div style={{ fontSize: 26, fontWeight: 800, color: "#417B61", lineHeight: 1, marginBottom: 6 }}>
                     {health?.db_connected ? "Operational" : "Connected"}
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>PostgreSQL Database</div>
-                  <div style={{ fontSize: 11, color: "#417B61", marginTop: 4 }}>
+                  <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700 }}>PostgreSQL Database</div>
+                  <div style={{ fontSize: 14, color: "#417B61", marginTop: 4 }}>
                     Latency: {health?.db_latency_ms ?? 1} ms
                   </div>
                 </div>
@@ -2039,8 +2007,8 @@ export default function SuperAdmin() {
                   <div style={{ fontSize: 26, fontWeight: 800, color: "#10263B", lineHeight: 1, marginBottom: 6 }}>
                     {health ? formatUptime(health.uptime_seconds) : "Running"}
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>Server Process Uptime</div>
-                  <div style={{ fontSize: 11, color: "#76818B", marginTop: 4 }}>Node.js {health?.node_version || "Active"}</div>
+                  <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700 }}>Server Process Uptime</div>
+                  <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>Node.js {health?.node_version || "Active"}</div>
                 </div>
 
                 <div
@@ -2056,8 +2024,8 @@ export default function SuperAdmin() {
                   <div style={{ fontSize: 26, fontWeight: 800, color: "#2A9D8F", lineHeight: 1, marginBottom: 6 }}>
                     {health?.db_size || "14 MB"}
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>Database Storage Size</div>
-                  <div style={{ fontSize: 11, color: "#2A9D8F", marginTop: 4 }}>PostgreSQL Dev Cluster</div>
+                  <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700 }}>Database Storage Size</div>
+                  <div style={{ fontSize: 14, color: "#2A9D8F", marginTop: 4 }}>PostgreSQL Dev Cluster</div>
                 </div>
 
                 <div
@@ -2073,8 +2041,8 @@ export default function SuperAdmin() {
                   <div style={{ fontSize: 26, fontWeight: 800, color: "#e07a5f", lineHeight: 1, marginBottom: 6 }}>
                     {health?.environment || "development"}
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818B", fontWeight: 700 }}>Environment Mode</div>
-                  <div style={{ fontSize: 11, color: "#e07a5f", marginTop: 4 }}>REST API Port 5000</div>
+                  <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700 }}>Environment Mode</div>
+                  <div style={{ fontSize: 14, color: "#e07a5f", marginTop: 4 }}>REST API Port 5000</div>
                 </div>
               </div>
 
@@ -2088,10 +2056,10 @@ export default function SuperAdmin() {
                         <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="shield" size={17} /></span>
                         <strong style={{ color: "#10263B" }}>Row-Level Tenant Isolation</strong>
                       </div>
-                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                      <div style={{ fontSize: 14, color: "#417B61", fontWeight: 700 }}>
                         Tenant row policies configured
                       </div>
-                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                      <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>
                         Cross-daycare access requires separate acceptance verification.
                       </p>
                     </div>
@@ -2101,10 +2069,10 @@ export default function SuperAdmin() {
                         <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="lock" size={17} /></span>
                         <strong style={{ color: "#10263B" }}>Role-Based Access Control (RBAC)</strong>
                       </div>
-                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                      <div style={{ fontSize: 14, color: "#417B61", fontWeight: 700 }}>
                         Configured roles: owner, admin, caregiver, parent
                       </div>
-                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                      <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>
                         Role checks are configured on operational routes; this view does not test every permission.
                       </p>
                     </div>
@@ -2114,10 +2082,10 @@ export default function SuperAdmin() {
                         <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="zap" size={17} /></span>
                         <strong style={{ color: "#10263B" }}>Stateful Token Revocation</strong>
                       </div>
-                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                      <div style={{ fontSize: 14, color: "#417B61", fontWeight: 700 }}>
                         Account state checks configured
                       </div>
-                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                      <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>
                         Sign-in state is checked against the account. Revocation acceptance is tested separately.
                       </p>
                     </div>
@@ -2127,10 +2095,10 @@ export default function SuperAdmin() {
                         <span style={{ color: "#417B61", display: "flex", alignItems: "center" }}><Icon name="eye" size={17} /></span>
                         <strong style={{ color: "#10263B" }}>Guardian Pickup Biometrics</strong>
                       </div>
-                      <div style={{ fontSize: 12, color: "#417B61", fontWeight: 700 }}>
+                      <div style={{ fontSize: 14, color: "#417B61", fontWeight: 700 }}>
                         Device unavailable · manual verification supported
                       </div>
-                      <p style={{ fontSize: 12, color: "#76818B", margin: "4px 0 0" }}>
+                      <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>
                         No biometric or QR device is connected. Staff must record the approved manual identity check.
                       </p>
                     </div>
@@ -2145,25 +2113,25 @@ export default function SuperAdmin() {
                     <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
                       {health?.table_counts?.daycares_count || daycares.length}
                     </div>
-                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Daycare Tenants</div>
+                    <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Daycare Tenants</div>
                   </div>
                   <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
                     <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
                       {health?.table_counts?.users_count || users.length}
                     </div>
-                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>User Accounts</div>
+                    <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>User Accounts</div>
                   </div>
                   <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
                     <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
                       {health?.table_counts?.children_count || stats?.total_children || 0}
                     </div>
-                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Child Profiles</div>
+                    <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Child Profiles</div>
                   </div>
                   <div style={{ padding: "14px 18px", background: "#fbfaf7", borderRadius: 10, border: "1px solid #eeece6" }}>
                     <div style={{ fontSize: 24, fontWeight: 800, color: "#10263b" }}>
                       {health?.table_counts?.audit_count || auditLogs.length}
                     </div>
-                    <div style={{ fontSize: 12, color: "#76818b", fontWeight: 700 }}>Platform Audit Entries</div>
+                    <div style={{ fontSize: 14, color: "#76818b", fontWeight: 700 }}>Platform Audit Entries</div>
                   </div>
                 </div>
               </Card>
@@ -2186,7 +2154,7 @@ export default function SuperAdmin() {
 
               {/* Live Preview Card */}
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#76818B", textTransform: "uppercase", marginBottom: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", marginBottom: 8 }}>
                   Live Tenant Preview (How Daycares See This)
                 </div>
                 <div
@@ -2225,11 +2193,11 @@ export default function SuperAdmin() {
                   </span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                      <strong style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      <strong style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
                         Platform Notice • {broadcast.level}
                       </strong>
                       {!broadcast.active && (
-                        <span style={{ fontSize: 11, background: "#94a3b8", color: "#fff", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                        <span style={{ fontSize: 14, background: "#94a3b8", color: "#fff", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
                           Currently Inactive / Draft
                         </span>
                       )}
@@ -2245,7 +2213,7 @@ export default function SuperAdmin() {
               <Card title="Broadcast Composer">
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+                    <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
                       Announcement Text
                     </label>
                     <textarea
@@ -2264,7 +2232,7 @@ export default function SuperAdmin() {
                         boxSizing: "border-box",
                       }}
                     />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#76818B", marginTop: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
                       <span>Keep messages clear, friendly, and actionable for daycare operators.</span>
                       <span>{broadcast.message.length} characters</span>
                     </div>
@@ -2272,7 +2240,7 @@ export default function SuperAdmin() {
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+                      <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
                         Notice Urgency Level
                       </label>
                       <select
@@ -2294,7 +2262,7 @@ export default function SuperAdmin() {
                     </div>
 
                     <div>
-                      <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+                      <label style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
                         Broadcast Status
                       </label>
                       <div style={{ display: "flex", gap: 10 }}>
@@ -2396,15 +2364,15 @@ export default function SuperAdmin() {
               <button
                 aria-label="Close approval dialog" disabled={actionBusyId===approveModal.daycare.id}
                 onClick={() => setApproveModal({ open: false, daycare: null, plan: "standard", trialDays: 30 })}
-                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--muted)" }}
               >
                 ✕
               </button>
             </div>
             <div className="journey j-panel" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
               <p style={{ margin: "0 0 8px" }}>Approve <strong>{approveModal.daycare.name}</strong> for administrator <strong>{approveModal.daycare.admin_email}</strong>.</p>
-              <p style={{ margin: "0 0 8px", color: "#64748B", fontSize: 13 }}>License Number: <strong>{approveModal.daycare.license_number || "Standard Registration"}</strong> · Location: <strong>{approveModal.daycare.address || "Addis Ababa"}</strong></p>
-              <p style={{ margin: 0, color: "#166534", fontSize: 13, fontWeight: 600 }}>Approval activates the daycare workspace and starts the paid period. A confirmed payment is required.</p>
+              <p style={{ margin: "0 0 8px", color: "#64748B", fontSize: 14 }}>License Number: <strong>{approveModal.daycare.license_number || "Standard Registration"}</strong> · Location: <strong>{approveModal.daycare.address || "Addis Ababa"}</strong></p>
+              <p style={{ margin: 0, color: "#166534", fontSize: 14, fontWeight: 600 }}>Approval activates the daycare workspace and starts the paid period. A confirmed payment is required.</p>
             </div>
             {actionError && <p role="alert" style={{color:'#9d3028'}}>{actionError}</p>}
 
@@ -2465,17 +2433,17 @@ export default function SuperAdmin() {
               <button
                 aria-label="Close rejection dialog" disabled={actionBusyId===rejectModal.daycare.id}
                 onClick={() => setRejectModal({ open: false, daycare: null, reason: "" })}
-                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#76818B" }}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--muted)" }}
               >
                 ✕
               </button>
             </div>
-            <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 18px" }}>
+            <p style={{ color: "var(--muted)", fontSize: 14, margin: "0 0 18px" }}>
               Rejecting <strong>{rejectModal.daycare.name}</strong> will mark the application as rejected. Review and resolve any confirmed payment separately.
             </p>
 
             <div style={{ marginBottom: 24 }}>
-              <label htmlFor="rejection-reason" style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
+              <label htmlFor="rejection-reason" style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
                 Reason for Rejection (Logged to Audit Trail)
               </label>
               <textarea
@@ -2489,7 +2457,7 @@ export default function SuperAdmin() {
                   padding: "10px 14px",
                   borderRadius: 10,
                   border: "1.5px solid #dcd8cc",
-                  fontSize: 13,
+                  fontSize: 14,
                   fontFamily: "inherit",
                   resize: "vertical",
                   boxSizing: "border-box",
@@ -2576,7 +2544,7 @@ export default function SuperAdmin() {
                 <h3 style={{ fontSize: 22, fontWeight: 800, color: "#10263B", margin: "0 0 4px" }}>
                   {inspectModal.daycare.name}
                 </h3>
-                <span style={{ fontSize: 12, color: "#76818B" }}>
+                <span style={{ fontSize: 14, color: "var(--muted)" }}>
                   Slug: <code>{inspectModal.daycare.slug}</code> (Tenant ID: #{inspectModal.daycare.id})
                 </span>
               </div>
@@ -2595,33 +2563,33 @@ export default function SuperAdmin() {
               }}
             >
               <div>
-                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Primary Administrator</div>
+                <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>Primary Administrator</div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{inspectModal.daycare.admin_name}</div>
-                <div style={{ fontSize: 12, color: "#76818B" }}>{inspectModal.daycare.admin_email}</div>
+                <div style={{ fontSize: 14, color: "var(--muted)" }}>{inspectModal.daycare.admin_email}</div>
               </div>
 
               <div>
-                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>License & Regulatory</div>
+                <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>License & Regulatory</div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{inspectModal.daycare.license_number || "Not on file"}</div>
-                <div style={{ fontSize: 12, color: "#76818B" }}>Physical: {inspectModal.daycare.address}</div>
+                <div style={{ fontSize: 14, color: "var(--muted)" }}>Physical: {inspectModal.daycare.address}</div>
               </div>
 
               <div>
-                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Operational Status</div>
+                <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>Operational Status</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#417B61" }}>
                   Active Licensed Daycare
                 </div>
-                <div style={{ fontSize: 12, color: "#76818B" }}>
+                <div style={{ fontSize: 14, color: "var(--muted)" }}>
                   Official center registration active
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 11, color: "#76818B", fontWeight: 700, textTransform: "uppercase" }}>Student Enrollment & Staff</div>
+                <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>Student Enrollment & Staff</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#10263B" }}>
                   {inspectModal.daycare.active_children_count || 0} Active Children Enrolled
                 </div>
-                <div style={{ fontSize: 12, color: "#76818B", marginTop: 4 }}>
+                <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
                   {inspectModal.daycare.children_count || 0} total child profiles · {inspectModal.daycare.staff_count || 0} staff members
                 </div>
               </div>

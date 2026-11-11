@@ -350,24 +350,14 @@ export default function CaregiverTerminal() {
           <div className="terminal-hero-orbit terminal-hero-orbit-one" />
           <div className="terminal-hero-orbit terminal-hero-orbit-two" />
           <div className="terminal-hero-grid" />
-          <div className="terminal-hero-detail terminal-hero-detail-arrivals"><span><Icon name="checkCircle" size={20} /></span><div>Every arrival, welcomed.<small>A thoughtful start to the day.</small></div></div>
-          <div className="terminal-hero-detail terminal-hero-detail-pickup"><span><Icon name="shield" size={20} /></span><div>Every handover, considered.<small>Care that keeps families connected.</small></div></div>
-          <div className="terminal-hero-caption">A LITTLE CLOSER. EVERY DAY.</div>
         </div>
         <section className="p-login-story">
           <a href="/" className="terminal-brand"><img src={require("../../design/figma-exports/ankelba-symbol.png")} alt="" /><span>Ankelba<small>DAYCARE WORKSPACE</small></span></a>
-          <span className="p-eyebrow">CARE WITH CONFIDENCE</span>
-          <h1>A warm welcome.<br />A safe handover.</h1>
-          <p>Keep arrivals organized and every pickup accounted for. One clear workspace for your front desk team.</p>
-          <div className="terminal-login-features">
-            <div><Icon name="checkCircle" /><span>Daily attendance<small>Know who is here and who is expected.</small></span></div>
-            <div><Icon name="shield" /><span>Verified pickups<small>Check authorized guardians before release.</small></span></div>
-          </div>
+          <h1>Attendance and pickup</h1>
         </section>
         <section className="p-login-card"><div>
           <div className="terminal-login-heading-icon"><Icon name="desk" size={26} /></div>
-          <span className="p-eyebrow">CAREGIVER WORKSPACE</span>
-          <h1>Staff Front Desk Login</h1>
+          <h1>Front desk sign in</h1>
           <p className="terminal-login-description">Sign in with your caregiver or daycare administrator account.</p>
           <form onSubmit={handleLogin}>
             <label htmlFor="terminal-email">Email address<input id="terminal-email" name="email" type="email" autoComplete="username" placeholder="you@daycare.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required /></label>
@@ -393,16 +383,16 @@ export default function CaregiverTerminal() {
         </div>
       </header>
       <section className="terminal-workspace-intro">
-        <div><span className="p-eyebrow">STAFF WORKSPACE</span><h1>Front desk</h1><p>A clear view of today's arrivals, attendance, and safe pickups.</p></div>
+        <h1>Front desk</h1>
         <div className="terminal-shift-panel"><Icon name="clock" size={20} /><div><strong>{currentTime}</strong><small>{new Date().toLocaleDateString("en-US", { timeZone: "Africa/Addis_Ababa", weekday: "short", month: "short", day: "numeric" })} · Addis Ababa</small></div><Button variant="secondary" onClick={fetchWorkspace} disabled={loading} icon="refresh">{loading ? "Refreshing…" : "Refresh"}</Button></div>
       </section>
       <section className="terminal-stats-bar" aria-label="Today's attendance overview">
         {[
-          { label: "At daycare", count: presentCount, note: "Checked in and in care", icon: "people", tone: "green" },
-          { label: "Expected arrivals", count: notArrivedCount, note: "Not yet checked in", icon: "clock", tone: "amber" },
-          { label: "Picked up", count: checkedOutCount, note: "Handovers completed", icon: "shield", tone: "sky" },
-          { label: "Absent", count: absentCount, note: "Marked absent today", icon: "calendar", tone: "neutral" },
-        ].map(stat => <div className="terminal-metric" key={stat.label}><div className="terminal-metric-top"><span>{stat.label}</span><span className={"terminal-metric-icon " + stat.tone}><Icon name={stat.icon} size={19} /></span></div><strong>{loading ? "—" : stat.count}</strong><small>{stat.note}</small></div>)}
+          { label: "At daycare", count: presentCount, icon: "people", tone: "green" },
+          { label: "Expected arrivals", count: notArrivedCount, icon: "clock", tone: "amber" },
+          { label: "Picked up", count: checkedOutCount, icon: "shield", tone: "sky" },
+          { label: "Absent", count: absentCount, icon: "calendar", tone: "neutral" },
+        ].map(stat => <div className="terminal-metric" key={stat.label}><div className="terminal-metric-top"><span>{stat.label}</span><span className={"terminal-metric-icon " + stat.tone}><Icon name={stat.icon} size={19} /></span></div><strong>{loading ? "—" : stat.count}</strong></div>)}
       </section>
 
       {/* ─── Feedback Banner ─── */}

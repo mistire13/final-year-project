@@ -93,7 +93,6 @@ function CheckoutScreenContent({ navigation }: any) {
   return (
     <Page
       title="Checkout"
-      subtitle="Review your items and payment preference."
       back
       tabs
       activeTab="Shop"
@@ -105,14 +104,14 @@ function CheckoutScreenContent({ navigation }: any) {
             initials={childName.slice(0, 2).toUpperCase()}
             size={56}
           />
-          <View style={{ marginLeft: 12 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text size={11} color="#8C9199" style={{ letterSpacing: 0.5 }}>
-              ORDER FOR
+              Order for
             </Text>
-            <Text size={18} weight="semibold">
+            <Text size={18} weight="semibold" numberOfLines={2}>
               {selectedChild?.full_name || childName}
             </Text>
-            <Text size={13} color="#AC8C42">
+            <Text size={13} color="#AC8C42" numberOfLines={2}>
               {groupName}
             </Text>
           </View>
@@ -120,7 +119,7 @@ function CheckoutScreenContent({ navigation }: any) {
       </Card>
 
       <Card>
-        <View style={s.between}>
+        <View style={[s.between, { flexWrap: "wrap" }]}>
           <Text size={18} weight="semibold">
             Order Summary
           </Text>
@@ -144,7 +143,7 @@ function CheckoutScreenContent({ navigation }: any) {
             }}
           >
             <View style={s.between}>
-              <Text weight="medium">{i.product.name}</Text>
+              <Text weight="medium" style={{ flex: 1, minWidth: 0 }}>{i.product.name}</Text>
               <Text weight="semibold">
                 {formatMoney(Number(i.product.price) * i.quantity)}
               </Text>
@@ -177,10 +176,10 @@ function CheckoutScreenContent({ navigation }: any) {
         {
           key: "pay_at_daycare" as const,
           title: "Pay at Daycare",
-          text: "Collect your receipt and settle payment at the daycare office.",
+          text: "Pay at the front desk.",
           Icon: Storefront,
         },
-        ...(bankEnabled?[{key:'bank_transfer' as const,title:'Bank transfer with receipt',text:'View the daycare account, transfer externally and verify your receipt after placing the order.',Icon:DeviceMobile}]:[]),
+        ...(bankEnabled?[{key:'bank_transfer' as const,title:'Online payment',text:'Transfer to the daycare and submit your receipt.',Icon:DeviceMobile}]:[]),
         ...(demoEnabled?[{key:'demo' as const,title:'Demo payment',text:'Simulate success for this demo. No money is transferred.',Icon:DeviceMobile}]:[]),
 
       ].map((p) => (
@@ -227,7 +226,7 @@ function CheckoutScreenContent({ navigation }: any) {
             <View style={{ flex: 1 }}>
               <View style={s.row}>
                 <p.Icon size={18} style={{ marginRight: 6 }} />
-                <Text weight="semibold">{p.title}</Text>
+                <Text weight="semibold" style={{ flexShrink: 1 }}>{p.title}</Text>
               </View>
               <Text size={12} color="#7E8591" style={{ marginTop: 4 }}>
                 {p.text}
@@ -241,7 +240,6 @@ function CheckoutScreenContent({ navigation }: any) {
 
       <Field
         label="Order Note (Optional)"
-        placeholder="Add special instructions or delivery details…"
         multiline
         value={note}
         onChangeText={setNote}
@@ -253,9 +251,7 @@ function CheckoutScreenContent({ navigation }: any) {
         </View>
       ) : null}
 
-      <Notice>
-        {method==='demo'?'Demo payment is a simulation. Continue to record simulated success.':'Your order is paid when the daycare records settlement. Zero-total orders require no payment.'}
-      </Notice>
+      {cart.length > 0 && cartTotal === 0 && <Notice>No payment required.</Notice>}
 
       <Button
         title={submitting ? "Placing Order…" : "Place Order"}

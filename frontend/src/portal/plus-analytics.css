@@ -6,15 +6,15 @@
 .plus-analytics .plus-report-filters :is(input,select):focus-visible{outline:3px solid var(--green);outline-offset:2px}
 .plus-report-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .plus-report-summary .p-card{padding:20px}
-.plus-report-summary small{display:block;color:var(--muted);font-size:13px;font-weight:600}
+.plus-report-summary small{display:block;color:var(--muted);font-size:14px;font-weight:600}
 .plus-report-summary strong{display:block;color:var(--navy);font-size:clamp(21px,2vw,29px);margin:12px 0;overflow-wrap:anywhere}
-.plus-report-summary p{font-size:13px;margin-bottom:0;color:var(--muted)}
+.plus-report-summary p{font-size:14px;margin-bottom:0;color:var(--muted)}
 .plus-attendance-chart{height:190px;display:flex;gap:3px;align-items:flex-end;border-bottom:1px solid var(--line);padding-top:12px;margin-top:20px}
 .plus-attendance-column{display:flex;flex-direction:column-reverse;justify-content:flex-start;height:100%;flex:1;min-width:0}
 .plus-attendance-column span{display:block;min-height:0}
 .plus-attendance-present{background:var(--green);border-radius:3px 3px 0 0}
 .plus-attendance-absent{background:var(--amber)}
-.plus-chart-key{display:flex;flex-wrap:wrap;align-items:center;gap:16px;color:var(--muted);font-size:13px}
+.plus-chart-key{display:flex;flex-wrap:wrap;align-items:center;gap:16px;color:var(--muted);font-size:14px}
 .plus-chart-key span:before{content:'';display:inline-block;width:10px;height:10px;background:var(--green);margin-right:6px;border-radius:3px}
 .plus-chart-key span:nth-child(2):before{background:var(--amber)}
 .plus-shop-report-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;min-width:0}

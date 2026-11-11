@@ -12,6 +12,7 @@ const messages = {
   reference_unconfirmed: 'The payment provider could not confirm this reference. Check the reference or contact support if you already paid.',
   invalid_input: 'Check the payment reference and any required account suffix.',
   invalid_response: 'The verification service returned an unreadable response. Your payment remains pending. Do not pay again.',
+  image_unreadable: 'We could not read the receipt. Try a clearer screenshot or enter the receipt details.',
   timeout: 'The verification service did not respond in time. Your payment remains pending. Do not pay again.',
   transport: 'The verification service could not be reached. Your payment remains pending. Do not pay again.',
   mismatch: 'The receipt details could not be matched to this payment’s amount, currency, recipient, reference and date. Your payment remains pending for review.',
@@ -35,18 +36,15 @@ async function readJson(response) {
   } finally { reader.releaseLock(); }
 }
 
-async function lookupVeritas(input, options={}) {
-  if(!bankCodes.includes(input.provider))return failure('invalid_input');
-  let body;
-  try { body=receiptInput(input.provider,input.reference,input.suffix); } catch { return failure('invalid_input'); }
+async function postVeritas(path, body, contentType, options, timeout) {
   const key=options.apiKey??process.env.VERITAS_API_KEY;
   if(!key?.trim())return failure('not_configured');
   try {
-    const url=new URL(`/verify-${input.provider}`,options.baseUrl??process.env.VERITAS_API_URL??'https://verifyapi.leulzenebe.pro');
+    const url=new URL(path,options.baseUrl??process.env.VERITAS_API_URL??'https://verifyapi.leulzenebe.pro');
     if(url.protocol!=='https:' && !(process.env.NODE_ENV==='test'&&url.hostname==='localhost'))return failure('not_configured');
     const response=await (options.fetch??global.fetch)(url,{
-      method:'POST',headers:{'x-api-key':key,'content-type':'application/json',accept:'application/json'},
-      body:JSON.stringify(body),signal:AbortSignal.timeout(20000),redirect:'error',
+      method:'POST',headers:{'x-api-key':key,accept:'application/json',...(contentType?{'content-type':contentType}:{})},
+      body,signal:AbortSignal.timeout(timeout),redirect:'error',
     });
     if(!response.ok){
       await response.body?.cancel?.();
@@ -57,8 +55,30 @@ async function lookupVeritas(input, options={}) {
     try { result=await readJson(response); } catch(error) {
       return failure(['TimeoutError','AbortError'].includes(error.name)?'timeout':'invalid_response',response.status);
     }
-    if(!result||result.success!==true)return failure('reference_unconfirmed',response.status);
     return {available:true,result,httpStatus:response.status};
   } catch(error) { return failure(['TimeoutError','AbortError'].includes(error.name)?'timeout':'transport'); }
 }
-module.exports={lookupVeritas,messageFor};
+
+async function lookupVeritas(input, options={}) {
+  if(!bankCodes.includes(input.provider))return failure('invalid_input');
+  let body;
+  try { body=receiptInput(input.provider,input.reference,input.suffix); } catch { return failure('invalid_input'); }
+  const check=await postVeritas(`/verify-${input.provider}`,JSON.stringify(body),'application/json',options,20000);
+  if(check.available&&check.result?.success!==true)return failure('reference_unconfirmed',check.httpStatus);
+  return check;
+}
+
+async function extractVeritasReceipt(image, options={}) {
+  const form=new FormData();
+  form.append('file',new Blob([image.bytes],{type:image.type}),image.type==='image/png'?'receipt.png':'receipt.jpg');
+  const check=await postVeritas('/verify-image?autoVerify=false',form,null,options,25000);
+  if(!check.available)return check.code==='reference_unconfirmed'?failure('image_unreadable',check.httpStatus):check;
+  const result=check.result;
+  const data=result?.data??result;
+  if(result?.success===false||data?.success===false||!bankCodes.includes(data?.type??data?.provider)||typeof data.reference!=='string'){
+    return failure('image_unreadable',check.httpStatus);
+  }
+  return {available:true,provider:data.type??data.provider,reference:data.reference,suffix:data.accountSuffix??data.suffix};
+}
+
+module.exports={lookupVeritas,extractVeritasReceipt,messageFor};

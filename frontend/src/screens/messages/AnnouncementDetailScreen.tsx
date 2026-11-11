@@ -45,19 +45,14 @@ export function AnnouncementDetailScreen({ route }: any) {
       ) : (
         item && (
           <Card>
-            <Text size={12} color="#657363">
-              {item.announcement_type === "meal_plan"
-                ? "MEAL PLAN"
-                : "DAYCARE UPDATE"}
-            </Text>
-            <Text size={26} weight="bold" style={{ marginVertical: 16 }}>
+            <Text size={22} weight="bold" style={{ marginBottom: 8 }}>
               {item.title}
             </Text>
             <Text size={12} color="#657363">
               {item.author_name || "Daycare team"} ·{" "}
               {new Date(item.created_at).toLocaleDateString()}
             </Text>
-            <Text style={{ marginTop: 24, lineHeight: 25 }}>{item.body}</Text>
+            <Text style={{ marginTop: 16, lineHeight: 24 }}>{item.body}</Text>
             {item.target_group_name && (
               <Text size={12} style={{ marginTop: 20 }}>
                 For {item.target_group_name}

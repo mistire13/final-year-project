@@ -169,7 +169,7 @@ test("preview mount, date changes, refresh and mutations stay entirely in sample
   let tree = fixture.render();
   await fixture.state.effects();
   tree = fixture.render();
-  const initial = elements(tree).find((element) => element.props?.data)?.props;
+  const initial = elements(tree).find((element) => typeof element.props?.open === "function" && element.props?.data)?.props;
   assert.equal(initial.preview, true);
   assert.ok(initial.data.children.length > 0);
   elements(tree).find((element) => element.props?.["aria-label"] === "Refresh data").props.onClick();
@@ -180,7 +180,7 @@ test("preview mount, date changes, refresh and mutations stay entirely in sample
   const modal = elements(tree).find((element) => element.props?.modal);
   await modal.props.save({ name: "Synthetic preview room", description: "Preview only" });
   tree = fixture.render();
-  const updated = elements(tree).find((element) => element.props?.data)?.props;
+  const updated = elements(tree).find((element) => typeof element.props?.open === "function" && element.props?.data)?.props;
   assert.ok(updated.data.groups.some((group) => group.name === "Synthetic preview room"));
   assert.ok(updated.data.audit.some((entry) => entry.action === "GROUPS"));
   assert.deepEqual(fixture.calls, []);

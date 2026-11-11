@@ -82,10 +82,11 @@ export default function ApplicationStatus() {
           {!result ? (
             <form onSubmit={check}>
               <div className="form-group" style={{ marginBottom: "1.25rem" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 700, marginBottom: "6px", color: "var(--ankelba-navy)" }}>
+                <label htmlFor="application-email" style={{ display: "block", fontSize: "15px", fontWeight: 700, marginBottom: "6px", color: "var(--ankelba-navy)" }}>
                   Director Login Email Address
                 </label>
                 <input
+                  id="application-email"
                   type="email"
                   required
                   autoComplete="username"
@@ -97,10 +98,11 @@ export default function ApplicationStatus() {
               </div>
 
               <div className="form-group" style={{ marginBottom: "1.75rem" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 700, marginBottom: "6px", color: "var(--ankelba-navy)" }}>
+                <label htmlFor="application-password" style={{ display: "block", fontSize: "15px", fontWeight: 700, marginBottom: "6px", color: "var(--ankelba-navy)" }}>
                   Password
                 </label>
                 <input
+                  id="application-password"
                   type="password"
                   required
                   autoComplete="current-password"

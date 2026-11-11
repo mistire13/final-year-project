@@ -1,14 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, ActivityIndicator, Pressable, ScrollView, Modal, Platform } from "react-native";
+import { View, ActivityIndicator, Pressable, ScrollView, Modal } from "react-native";
 import { Receipt } from "phosphor-react-native/src/icons/Receipt";
 import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
-import { WarningCircle } from "phosphor-react-native/src/icons/WarningCircle";
 import { Clock } from "phosphor-react-native/src/icons/Clock";
-import { DeviceMobile } from "phosphor-react-native/src/icons/DeviceMobile";
-import { Buildings } from "phosphor-react-native/src/icons/Buildings";
-import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
-import { CurrencyDollar } from "phosphor-react-native/src/icons/CurrencyDollar";
-import { X } from "phosphor-react-native/src/icons/X";
 import {
   Page,
   Text,
@@ -65,12 +59,11 @@ export function ParentBillsScreen({ navigation }: any) {
 
   const displayedBills = activeTab === "active" ? activeBills : paidBills;
 
-  if (loading) return <Page title="Care Fees & Receipts" back><ActivityIndicator /><Text>Loading care fees and receipts…</Text></Page>;
+  if (loading) return <Page title="Care Fees & Receipts" back><ActivityIndicator accessibilityLabel="Loading care fees" /></Page>;
   if (error) return <Page title="Care Fees & Receipts" back><Notice>{error}</Notice><Button title="Retry" onPress={loadBills} /></Page>;
 
   return (
     <Page title="Care Fees & Receipts" back tabs activeTab="Profile">
-      <BillingReminderPreferences />
       {/* Overview Card */}
       <Card
         style={{
@@ -98,9 +91,9 @@ export function ParentBillsScreen({ navigation }: any) {
               <CheckCircle size={20} color="#2E7D32" weight="fill" />
             )}
           </View>
-          <View>
-            <Text size={12} color="#7E8490" weight="semibold">
-              TOTAL OUTSTANDING BALANCE
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text size={13} color="#7E8490" weight="semibold">
+              Total due
             </Text>
             <Text size={24} weight="bold" color={totalOutstanding > 0 ? "#D96500" : "#2E7D32"}>
               {formatMoney(totalOutstanding)}
@@ -108,11 +101,6 @@ export function ParentBillsScreen({ navigation }: any) {
           </View>
         </View>
 
-        <Text size={12} color="#666" style={{ marginTop: 4 }}>
-          {totalOutstanding > 0
-            ? "Monthly child stay & care fee. Please settle via front desk or bank transfer."
-            : "All daycare care fees and charges are fully settled. Thank you!"}
-        </Text>
       </Card>
 
       {/* Segmented Filter Buttons */}
@@ -136,7 +124,7 @@ export function ParentBillsScreen({ navigation }: any) {
             weight="semibold"
             color={activeTab === "active" ? "#FFFFFF" : "#061224"}
           >
-            Due Bills ({activeBills.length})
+            Due ({activeBills.length})
           </Text>
         </Pressable>
 
@@ -159,37 +147,13 @@ export function ParentBillsScreen({ navigation }: any) {
             weight="semibold"
             color={activeTab === "paid" ? "#FFFFFF" : "#061224"}
           >
-            Paid Archive ({paidBills.length})
+            Paid ({paidBills.length})
           </Text>
         </Pressable>
       </View>
 
-      {error ? (
-        <View style={{ marginBottom: 16 }}>
-          <Notice tone="error">{error}</Notice>
-          <Button title="Retry" onPress={loadBills} style={{ marginTop: 8 }} />
-        </View>
-      ) : null}
-
-      {loading ? (
-        <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <ActivityIndicator size="small" color="#061224" />
-          <Text size={13} color="#8A919B" style={{ marginTop: 12 }}>
-            Loading care fees and receipts…
-          </Text>
-        </View>
-      ) : displayedBills.length === 0 ? (
-        <Card style={{ padding: 28, alignItems: "center" }}>
-          <Receipt size={36} color="#B0B5BD" />
-          <Text size={16} weight="semibold" style={{ marginTop: 12 }}>
-            {activeTab === "active" ? "No Pending Bills" : "No Paid Records Yet"}
-          </Text>
-          <Text size={13} color="#7E8490" style={{ marginTop: 4, textAlign: "center" }}>
-            {activeTab === "active"
-              ? "All your monthly care invoices are paid up to date."
-              : "Completed payment receipts will be safely archived here."}
-          </Text>
-        </Card>
+      {displayedBills.length === 0 ? (
+        <Notice>{activeTab === "active" ? "No bills due." : "No paid bills yet."}</Notice>
       ) : (
         displayedBills.map((b) => {
           const bal = parseFloat(String(b.balance_remaining)) || 0;
@@ -199,20 +163,17 @@ export function ParentBillsScreen({ navigation }: any) {
             <Card key={b.id} style={{ marginBottom: 14, padding: 18 }}>
               {/* Card Header: Child & Status */}
               <View style={[s.between, { alignItems: "flex-start", marginBottom: 10 }]}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text size={11} color="#7E8490" weight="semibold" style={{ textTransform: "uppercase" }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text size={12} color="#64748B">
                     {b.child_name} · {b.billing_period}
                   </Text>
                   <Text size={16} weight="bold" color="#061224" style={{ marginTop: 2 }}>
                     {b.title}
                   </Text>
-                  <Text size={12} color="#818A96" style={{ marginTop: 2 }}>
-                    {b.daycare_name}
-                  </Text>
                 </View>
 
                 <Badge
-                  title={b.status === "paid" ? "PAID" : isOverdue ? "OVERDUE" : b.status === "partially_paid" ? "PARTIAL" : "PENDING"}
+                  title={b.status === "paid" ? "Paid" : isOverdue ? "Overdue" : b.status === "partially_paid" ? "Part paid" : "Due"}
                   tone={b.status === "paid" ? "green" : isOverdue ? "red" : b.status === "partially_paid" ? "gold" : "neutral"}
                 />
               </View>
@@ -227,18 +188,18 @@ export function ParentBillsScreen({ navigation }: any) {
                   marginBottom: 12,
                 }}
               >
-                <View style={[s.between, { marginBottom: 6 }]}>
+                <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                   <Text size={13} color="#666">
-                    Total Amount:
+                    Total
                   </Text>
                   <Text size={13} weight="semibold">
                     {formatMoney(Number(b.amount) || 0)}
                   </Text>
                 </View>
 
-                <View style={[s.between, { marginBottom: 6 }]}>
+                <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                   <Text size={13} color="#666">
-                    Amount Paid:
+                    Paid
                   </Text>
                   <Text size={13} weight="semibold" color="#2E7D32">
                     {formatMoney(Number(b.amount_paid) || 0)}
@@ -247,7 +208,7 @@ export function ParentBillsScreen({ navigation }: any) {
 
                 <View style={[s.between, { borderTopWidth: 1, borderTopColor: "#EDEAE4", paddingTop: 6 }]}>
                   <Text size={13} weight="semibold" color="#061224">
-                    Balance Due:
+                    Balance due
                   </Text>
                   <Text size={15} weight="bold" color={bal > 0 ? "#D96500" : "#2E7D32"}>
                     {formatMoney(bal)}
@@ -255,12 +216,12 @@ export function ParentBillsScreen({ navigation }: any) {
                 </View>
               </View>
 
-              <View style={[s.between, { alignItems: "center" }]}>
+              <View style={[s.between, { flexWrap: "wrap", alignItems: "center" }]}>
                 <Text size={12} color={isOverdue ? "#C62828" : "#8A919B"}>
                   Due by: {b.due_date?.slice(0, 10)}
                 </Text>
 
-                {b.payments && b.payments.length > 0 && (
+                {b.payments && b.payments.length === 1 && (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`View receipt ${b.payments[0].receipt_number}`}
@@ -276,11 +237,15 @@ export function ParentBillsScreen({ navigation }: any) {
               </View>
 
               {/* If multiple receipts exist */}
-              {Number(b.balance_remaining)>0&&b.status!=='cancelled'&&<View style={{gap:12,marginVertical:12}}><Button title={bankBill===b.id?'Hide bank payment details':'Pay this bill by bank transfer'} variant="outline" onPress={()=>setBankBill(current=>current===b.id?null:b.id)}/>{bankBill===b.id&&<ReceiptPaymentCard purpose="invoice" targetId={b.id} onApplied={loadBills}/>}</View>}
+              {Number(b.balance_remaining)>0&&b.status!=='cancelled'&&<View style={{gap:12,marginVertical:12}}><Button title={bankBill===b.id?'Hide online payment':'Pay online'} variant="outline" onPress={()=>setBankBill(current=>current===b.id?null:b.id)}/>{bankBill===b.id&&<ReceiptPaymentCard purpose="invoice" targetId={b.id} onApplied={()=>{
+                setActiveTab("paid");
+                setBankBill(null);
+                void loadBills();
+              }}/>}</View>}
               {b.payments && b.payments.length > 1 && (
                 <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#F0EEE6" }}>
                   <Text size={11} color="#7E8490" weight="semibold" style={{ marginBottom: 6 }}>
-                    ALL DIGITAL RECEIPTS ({b.payments.length})
+                    Receipts ({b.payments.length})
                   </Text>
                   {b.payments.map((p) => (
                     <Pressable
@@ -288,7 +253,7 @@ export function ParentBillsScreen({ navigation }: any) {
                       accessibilityRole="button"
                       accessibilityLabel={`View receipt ${p.receipt_number}`}
                       onPress={() => setSelectedReceipt({ receipt: p, bill: b })}
-                      style={[s.between, { paddingVertical: 4 }]}
+                      style={[s.between, { flexWrap: "wrap", minHeight: 44 }]}
                     >
                       <Text size={12} color="#061224">
                         {p.receipt_number} ({p.payment_method?.replace(/_/g, " ")})
@@ -305,48 +270,12 @@ export function ParentBillsScreen({ navigation }: any) {
         })
       )}
 
-      {/* Payment Options Guide Card */}
-      <Card style={{ marginTop: 16, padding: 18, backgroundColor: "#FFFFFF" }}>
-        <Text size={14} weight="bold" color="#061224" style={{ marginBottom: 10 }}>
-          How to Settle Care Fees (ክፍያ መፈጸሚያ መንገዶች)
+      {activeTab === "active" && activeBills.length > 0 && (
+        <Text size={13} color="#64748B" style={{ marginBottom: 14 }}>
+          To pay in cash, visit the daycare front desk.
         </Text>
-
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
-          <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#EAF5ED", alignItems: "center", justifyContent: "center" }}>
-            <Buildings size={18} color="#2E7D32" weight="fill" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text size={13} weight="semibold">1. Cash at Front Reception Desk</Text>
-            <Text size={12} color="#7E8490" style={{ marginTop: 2 }}>
-              Pay directly at reception. Staff record the cash payment and issue a digital receipt.
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
-          <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#FFF3E0", alignItems: "center", justifyContent: "center" }}>
-            <DeviceMobile size={18} color="#D96500" weight="fill" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text size={13} weight="semibold">2. Bank or Telebirr transfer</Text>
-            <Text size={12} color="#7E8490" style={{ marginTop: 2 }}>
-              Open a bill's bank payment details to see the enabled accounts, exact recipient and amount. Submit the CBE receipt link, or the supported bank or Telebirr reference, after transferring.
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: "#EDE7F6", alignItems: "center", justifyContent: "center" }}>
-            <CurrencyDollar size={18} color="#5E35B1" weight="fill" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text size={13} weight="semibold">3. Check a delayed payment</Text>
-            <Text size={12} color="#7E8490" style={{ marginTop: 2 }}>
-              Reopen the bill to recover your saved proof and status. If checking is unavailable or needs review, contact your daycare. Do not transfer again for the same bill.
-            </Text>
-          </View>
-        </View>
-      </Card>
+      )}
+      <BillingReminderPreferences />
 
       {/* Modal: Official Digital Receipt View */}
       {selectedReceipt && (
@@ -369,6 +298,7 @@ export function ParentBillsScreen({ navigation }: any) {
               style={{
                 width: "100%",
                 maxWidth: 440,
+                maxHeight: "90%",
                 backgroundColor: "#FFFFFF",
                 borderRadius: 16,
                 padding: 22,
@@ -378,27 +308,13 @@ export function ParentBillsScreen({ navigation }: any) {
                 shadowRadius: 12,
               }}
             >
-              {/* Modal Header */}
-              <View style={[s.between, { alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#EAE7E0", paddingBottom: 12 }]}>
-                <View style={s.row}>
-                  <Receipt size={22} color="#061224" />
-                  <Text size={16} weight="bold" style={{ marginLeft: 8 }}>
-                    Official Digital Receipt
-                  </Text>
-                </View>
-                <Pressable onPress={() => setSelectedReceipt(null)} hitSlop={10}>
-                  <X size={20} color="#777" />
-                </Pressable>
-              </View>
+              <Text size={18} weight="bold">Receipt</Text>
 
               {/* Receipt Body */}
               <ScrollView style={{ maxHeight: 420, marginTop: 12 }}>
                 <View style={{ alignItems: "center", marginVertical: 8 }}>
                   <Text size={18} weight="bold" color="#061224">
                     {selectedReceipt.bill.daycare_name}
-                  </Text>
-                  <Text size={12} color="#777" style={{ marginTop: 2 }}>
-                    Daycare Child Care Fee Digital Receipt
                   </Text>
                   <View
                     style={{
@@ -416,22 +332,22 @@ export function ParentBillsScreen({ navigation }: any) {
                 </View>
 
                 <View style={{ backgroundColor: "#FAF9F5", borderRadius: 10, padding: 14, marginVertical: 12 }}>
-                  <View style={[s.between, { marginBottom: 6 }]}>
+                  <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                     <Text size={12} color="#777">Child Name:</Text>
-                    <Text size={13} weight="bold">{selectedReceipt.bill.child_name}</Text>
+                    <Text size={13} weight="bold" style={{ flexShrink: 1 }}>{selectedReceipt.bill.child_name}</Text>
                   </View>
 
-                  <View style={[s.between, { marginBottom: 6 }]}>
+                  <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                     <Text size={12} color="#777">Invoice Item:</Text>
-                    <Text size={12} weight="semibold">{selectedReceipt.bill.title}</Text>
+                    <Text size={12} weight="semibold" style={{ flexShrink: 1 }}>{selectedReceipt.bill.title}</Text>
                   </View>
 
-                  <View style={[s.between, { marginBottom: 6 }]}>
+                  <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                     <Text size={12} color="#777">Payment Date:</Text>
                     <Text size={12}>{new Date(selectedReceipt.receipt.verified_at).toLocaleDateString()}</Text>
                   </View>
 
-                  <View style={[s.between, { marginBottom: 6 }]}>
+                  <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                     <Text size={12} color="#777">Method:</Text>
                     <Text size={12} weight="semibold" style={{ textTransform: "capitalize" }}>
                       {selectedReceipt.receipt.payment_method?.replace(/_/g, " ")}
@@ -440,28 +356,25 @@ export function ParentBillsScreen({ navigation }: any) {
 
                   <Text size={12}>{paymentProvenanceLabel(selectedReceipt.receipt.verification_source)}</Text>
 
-                  <View style={[s.between, { marginBottom: 6 }]}>
+                  <View style={[s.between, { flexWrap: "wrap", marginBottom: 6 }]}>
                     <Text size={12} color="#777">Reference Code:</Text>
-                    <Text size={12} weight="semibold">
+                    <Text size={12} weight="semibold" style={{ flexShrink: 1 }}>
                       {selectedReceipt.receipt.reference_code || "CASH-DESK"}
                     </Text>
                   </View>
 
                   <View style={[s.between, { borderTopWidth: 1, borderTopColor: "#EAE7E0", paddingTop: 8, marginTop: 4 }]}>
-                    <Text size={13} weight="bold" color="#2E7D32">Amount Paid:</Text>
+                    <Text size={13} weight="bold" color="#2E7D32">Paid</Text>
                     <Text size={16} weight="bold" color="#2E7D32">
                       {formatMoney(Number(selectedReceipt.receipt.amount_paid) || 0)}
                     </Text>
                   </View>
                 </View>
 
-                <Text size={11} color="#999" style={{ textAlign: "center", marginBottom: 12 }}>
-                  This is an immutable digital receipt generated by the Ankelba Daycare Platform.
-                </Text>
               </ScrollView>
 
               <Button
-                title="Close Receipt"
+                title="Close"
                 onPress={() => setSelectedReceipt(null)}
                 style={{ marginTop: 8 }}
               />

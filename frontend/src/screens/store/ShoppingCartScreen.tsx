@@ -20,7 +20,6 @@ function ShoppingCartScreenContent({ navigation }: any) {
   return (
     <Page
       title="My Cart"
-      subtitle="A few essentials for their day."
       back
       tabs
       activeTab="Shop"
@@ -30,12 +29,10 @@ function ShoppingCartScreenContent({ navigation }: any) {
           <Text size={21} weight="semibold">
             Your cart is empty
           </Text>
-          <Text color="#747C88" style={{ marginVertical: 14 }}>
-            Find something for your little one.
-          </Text>
           <Button
             title="Explore Store"
             onPress={() => navigation.navigate("DaycareStore")}
+            style={{ marginTop: 12 }}
           />
         </Card>
       ) : (
@@ -55,14 +52,14 @@ function ShoppingCartScreenContent({ navigation }: any) {
                   }
                   style={{ width: 74, height: 80, borderRadius: 15 }}
                 />
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text size={16} weight="medium">
                     {item.product.name}
                   </Text>
                   <Text size={13} color="#7E8691" style={{ marginTop: 5 }}>
                     {formatMoney(Number(item.product.price))} each
                   </Text>
-                  <View style={[s.between, { marginTop: 9 }]}>
+                  <View style={[s.between, { flexWrap: "wrap", marginTop: 9 }]}>
                     <View
                       style={{
                         flexDirection: "row",
@@ -112,11 +109,6 @@ function ShoppingCartScreenContent({ navigation }: any) {
           ))}
           <Card style={{ marginTop: 10 }}>
             <View style={s.between}>
-              <Text color="#7B838F">Subtotal</Text>
-              <Text>{formatMoney(cartTotal)}</Text>
-            </View>
-            <View style={s.divider} />
-            <View style={s.between}>
               <Text size={20} weight="medium">
                 Total
               </Text>
@@ -124,13 +116,6 @@ function ShoppingCartScreenContent({ navigation }: any) {
                 {formatMoney(cartTotal)}
               </Text>
             </View>
-            <Text
-              size={11}
-              color="#89909A"
-              style={{ textAlign: "center", marginTop: 18 }}
-            >
-              Items are supplied by your daycare.
-            </Text>
           </Card>
           <Button
             title="Proceed to Checkout"

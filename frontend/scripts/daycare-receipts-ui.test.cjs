@@ -16,11 +16,11 @@ function harness(file,imports){
   const primitives=Object.fromEntries(['Button','Card','Text','Field','Notice','Badge'].map(name=>[name,name]));
   const m={exports:{}};
   vm.runInNewContext(compile(file),{module:m,exports:m.exports,Date,Math,globalThis:{},require(name){if(name==='react')return {...react,default:react};if(name==='react-native')return {View:'View'};if(name.includes('design/System')||name==='./ui.web')return primitives;if(name.endsWith('types/daycarePayments'))return {receiptStatusLabel:value=>value};if(name in imports)return imports[name];throw Error(name);}});
-  const nodes=()=>{const all=[];function visit(n){if(Array.isArray(n))return n.forEach(visit);if(!n||typeof n!=='object')return;all.push(n);visit(n.props?.children);}visit(tree);return all;};
+  const nodes=(root=tree)=>{const all=[];function visit(n){if(Array.isArray(n))return n.forEach(visit);if(!n||typeof n!=='object')return;all.push(n);visit(n.props?.children);}visit(root);return all;};
   const text=n=>Array.isArray(n)?n.map(text).join(''):n&&typeof n==='object'?text(n.props?.children):String(n??'');
   return {render(next=props){props=next;cursor=0;effects=[];tree=m.exports.default(props);effects.forEach(effect=>effect());return tree;},nodes,text:()=>text(tree),find:predicate=>nodes().find(predicate),button:title=>nodes().find(n=>n.type==='Button'&&(n.props.title||text(n))===title),unmount:()=>cleanups.forEach(cleanup=>cleanup?.())};
 }
-function parent(api={}){return harness('../src/screens/payments/ReceiptPaymentCard.tsx',{'../../api/daycarePayments':{receivingAccounts:async()=>[account],receiptRequests:async()=>[],...api}});}
+function parent(api={},pick=async()=>({canceled:true})){return harness('../src/screens/payments/ReceiptPaymentCard.tsx',{'expo-image-picker':{launchImageLibraryAsync:pick},'../../api/daycarePayments':{receivingAccounts:async()=>[account],receiptRequests:async()=>[],...api}});}
 function portal(api={}){return harness('../src/portal/DaycarePaymentManagement.web.tsx',{'./api':{portalClient:{get:async url=>({data:url.endsWith('settings')?{version:1,accounts:{cbe:{...account,enabled:true}}}:{items:[],total:0}}),...api},apiError:error=>error.message}});}
 const props={purpose:'invoice',targetId:7};
 
@@ -95,25 +95,27 @@ test('failed initial settings load cannot expose an empty save form; requests re
 test('independent resolution sends optimistic version plus evidence and never exposes rejection of verified money',async()=>{
   let body,posts=0;const record=receipt({status:'verified_unapplied',version:9});
   const h=portal({get:async url=>({data:url.endsWith('settings')?{version:1,accounts:{}}:{items:[record],total:1}}),post:async(url,value)=>{posts++;assert.match(url,/\/resolve$/);body=value;return {data:receipt({status:'resolved'})};}});
-  h.render();await turn();h.render();h.button('Review evidence').props.onClick();h.render();assert.equal(h.button('Reject submitted proof'),undefined);assert.equal(h.button('Record independent confirmation'),undefined);
+  h.render();await turn();h.render();h.button('Review evidence').props.onClick();h.render();
+  const review=()=>h.nodes(h.find(n=>n.props['aria-label']==='Receipt review'));assert.equal(h.button('Reject submitted proof'),undefined);assert.equal(h.button('Record independent confirmation'),undefined);
   assert.equal(h.button('Record completed resolution').props.disabled,true);
   h.find(n=>n.type==='input'&&n.props.minLength===4).props.onChange({target:{value:'SYNTHETIC-REFUND'}});
-  h.nodes().filter(n=>n.type==='textarea').at(-1).props.onChange({target:{value:'Independently returned the full amount'}});
+  review().find(n=>n.type==='textarea').props.onChange({target:{value:'Independently returned the full amount'}});
   h.find(n=>n.type==='input'&&n.props.type==='checkbox'&&n.props.required).props.onChange({target:{checked:true}});h.render();
   assert.equal(h.button('Record completed resolution').props.disabled,false);
-  h.nodes().filter(n=>n.type==='form').at(-1).props.onSubmit({preventDefault(){}});await turn();h.render();assert.equal(posts,1);assert.equal(body.version,9);assert.equal(body.amount_confirmed,true);assert.equal(body.evidence_reference,'SYNTHETIC-REFUND');
+  review().find(n=>n.type==='form').props.onSubmit({preventDefault(){}});await turn();h.render();assert.equal(posts,1);assert.equal(body.version,9);assert.equal(body.amount_confirmed,true);assert.equal(body.evidence_reference,'SYNTHETIC-REFUND');
 });
 
 test('independent approval requires entered bank date and sends confirmed evidence in Addis Ababa time',async()=>{
   let body;const record=receipt({status:'review_pending',submitted_reference:'SYNTHETIC-PROOF',version:8});
   const h=portal({get:async url=>({data:url.endsWith('settings')?{version:1,accounts:{}}:{items:[record],total:1}}),post:async(url,value)=>{assert.match(url,/\/review$/);body=value;return {data:receipt({status:'applied'})};}});
   h.render();await turn();h.render();h.button('Review evidence').props.onClick();h.render();
+  const review=()=>h.nodes(h.find(n=>n.props['aria-label']==='Receipt review'));
   const date=h.find(n=>n.type==='input'&&n.props.type==='datetime-local');assert.equal(date.props.value,'');assert.equal(date.props.required,true);
   date.props.onChange({target:{value:'2026-11-10T13:30:15'}});
   h.nodes().filter(n=>n.type==='input'&&n.props.minLength===4).at(-1).props.onChange({target:{value:'SYNTHETIC-EVIDENCE'}});
-  h.nodes().filter(n=>n.type==='textarea').at(-1).props.onChange({target:{value:'Independently checked the bank transaction'}});
+  review().find(n=>n.type==='textarea').props.onChange({target:{value:'Independently checked the bank transaction'}});
   h.nodes().filter(n=>n.type==='input'&&n.props.type==='checkbox'&&n.props.required).forEach(n=>n.props.onChange({target:{checked:true}}));h.render();
-  h.nodes().filter(n=>n.type==='form').at(-1).props.onSubmit({preventDefault(){}});await turn();
+  review().find(n=>n.type==='form').props.onSubmit({preventDefault(){}});await turn();
   assert.equal(body.payment_date,'2026-11-10T10:30:15.000Z');assert.equal(body.version,8);assert.equal(body.confirmed_amount,120);assert.equal(body.verified_reference,'SYNTHETIC-PROOF');assert.equal(body.decision,'approve');
 });
 
@@ -125,4 +127,28 @@ test('parent API preserves role client, target filters, request key and optimist
   await m.exports.verifyDaycareReceipt(receipt({id:'request/id',provider:'abyssinia',version:8}),' PROOF ',' 12345 ');
   assert.equal(calls.at(-1)[1],'/daycare-payments/requests/request%2Fid/verify');assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1)[2])),{version:8,reference:'PROOF',suffix:'12345'});
   await m.exports.verifyDaycareReceipt(receipt(),' PROOF ','12345');assert.equal('suffix' in calls.at(-1)[2],false);
+  await m.exports.verifyDaycareReceipt(receipt({provider:'abyssinia'}),'IGNORED','', 'cGhvdG8=');
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1)[2])),{version:2,image:'cGhvdG8='});
+  assert.ok(calls.at(-1)[3].timeout>45000,'image check allows time for both Veritas calls');
+});
+
+test('parents can select a screenshot and submit it without typing a reference',async()=>{
+  let submitted,applied=0;
+  const h=parent({
+    receiptRequests:async()=>[receipt({purpose:'order',target_id:8})],
+    verifyDaycareReceipt:async(request,reference,suffix,image)=>{
+      submitted={request,reference,suffix,image};
+      return receipt({purpose:'order',target_id:8,status:'applied',submitted_reference:'https://mbreciept.cbe.com.et/SyntheticReceipt'});
+    },
+  },async()=>({canceled:false,assets:[{base64:'cGhvdG8='}]}));
+  h.render({purpose:'order',targetId:8,onApplied:()=>{applied++;}});await turn();h.render();
+  assert.equal(h.button('Check this receipt').props.disabled,true);
+  h.button('Choose receipt screenshot').props.onPress();await turn();h.render();
+  assert.equal(h.button('Check this receipt').props.disabled,false);
+  h.button('Check this receipt').props.onPress();await turn();h.render();
+  assert.equal(submitted.request.target_id,8);
+  assert.equal(submitted.reference,'');assert.equal(submitted.image,'cGhvdG8=');
+  assert.equal(applied,1);
+  assert.match(h.text(),/Your order is paid/);
+  assert.equal(h.button('Choose receipt screenshot'),undefined);
 });
