@@ -66,13 +66,13 @@ test('daycare receipts use strict evidence, preserve money through races and sha
 
   await t.test('a screenshot pays an order only after a bank lookup, and its reference cannot pay tuition again',async()=>{
     const [order]=await db('orders').insert({
-      daycare_id:dc.id,parent_id:parent.id,total:100,order_status:'pending',payment_status:'unpaid',created_at:new Date(Date.now()-86400000),
+      daycare_id:dc.id,parent_id:parent.id,total:100,order_status:'placed',payment_status:'unpaid',created_at:new Date(Date.now()-86400000),
     }).returning('*');
     await db('payments').insert({order_id:order.id,method:'pay_at_daycare',status:'unpaid'});
     const r=await svc.create({purpose:'order',target_id:order.id,provider:'cbe',request_key:crypto.randomUUID()},parent);
     const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aSU0AAAAASUVORK5CYII=';
-    const token='v2-SyntheticScreenshot01';
-    let extracted=0,lookups=0;
+    let token='v2-SyntheticScreenshot01';
+    let receiverAccount='1000000000001',extracted=0,lookups=0;
     const imageService=createDaycarePayments(pool,{
       extract:async file=>{
         extracted++;assert.equal(file.type,'image/png');
@@ -81,7 +81,7 @@ test('daycare receipts use strict evidence, preserve money through races and sha
       lookup:async ({reference})=>{
         lookups++;assert.equal(reference,`https://mbreciept.cbe.com.et/${token}`);
         return {available:true,result:{
-          success:true,payer:parent.name,receiver:'Synthetic Receiver',receiverAccount:'1000000000001',
+          success:true,payer:parent.name,receiver:'Synthetic Receiver',receiverAccount,
           amount:100,date:new Date(Date.now()-3600000).toISOString(),reference:token,
         }};
       },
@@ -103,6 +103,13 @@ test('daycare receipts use strict evidence, preserve money through races and sha
     assert.equal(duplicate.status,'review_pending');
     assert.equal(lookups,1);
     assert.equal((await db('child_invoices').where({id:invoice.id}).first()).amount_paid,'0.00');
+    token='v2-SyntheticScreenshot02';
+    receiverAccount='1000000000002';
+    const {invoice:wrongInvoice,request:wrongAccount}=await request();
+    const mismatch=await imageService.verify(wrongAccount.id,{version:wrongAccount.version,image},parent);
+    assert.equal(mismatch.verification.code,'mismatch');
+    assert.equal(mismatch.status,'review_pending');
+    assert.equal((await db('child_invoices').where({id:wrongInvoice.id}).first()).amount_paid,'0.00');
   });
 
   await t.test('Telebirr receipt formatting still requires the correct destination and settled amount',async()=>{

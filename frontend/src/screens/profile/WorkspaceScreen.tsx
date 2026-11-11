@@ -3,10 +3,12 @@ import { Linking, Platform } from "react-native";
 import { Page, Card, Text, MenuRow } from "../../components/design/System";
 import { SquaresFour } from "phosphor-react-native/src/icons/SquaresFour";
 import { useAuth } from "../../context/AuthContext";
+import { usePackageFeatures } from "../../context/PackageFeaturesContext";
 import { getWebPortalUrl } from "../../utils/host";
 
 export function WorkspaceScreen() {
   const { user } = useAuth();
+  const { features } = usePackageFeatures();
   const [error, setError] = useState("");
   const admin = user?.role === "admin";
   if (!admin && user?.role !== "caregiver") {
@@ -18,7 +20,7 @@ export function WorkspaceScreen() {
        ["Front-desk duties", "front-desk"], ["Attendance & pickups", "attendance"],
        ["Daily reports", "reports"], ["Health & incidents", "health"],
        ["Guardian verification", "biometric"], ["Communication", "communication"],
-       ["Events & calendar", "events"], ["Products & stock", "store"],
+       ["Events & calendar", "events"], ...(features.shop ? [["Products & stock", "store"]] : []),
        ["Orders & payments", "orders"], ["Audit history", "audit"],
        ["Center profile & plan", "settings"]]
     : [["Front-desk workspace", "workspace"]];

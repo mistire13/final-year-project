@@ -554,20 +554,24 @@ export default function CaregiverTerminal() {
                   {child.allergies && (
                     <div
                       style={{
-                        background: "#FEF2F2",
+                        borderLeft: "2.5px solid #dc2626",
+                        paddingLeft: "0.55rem",
                         color: "#991B1B",
-                        padding: "0.35rem 0.65rem",
-                        borderRadius: "8px",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
                         marginBottom: "0.75rem",
                         display: "flex",
+                        flexWrap: "wrap",
                         alignItems: "center",
-                        gap: "0.35rem",
+                        gap: "0.3rem 0.45rem",
+                        overflowWrap: "anywhere",
+                        lineHeight: 1.4,
                       }}
                     >
-                      <span><Icon name="alert" size={16} /> Care alert:</span>
-                      <span>{child.allergies}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontWeight: 700 }}>
+                        <Icon name="alert" size={15} /> Care alert:
+                      </span>
+                      <span style={{ color: "var(--ink)" }}>{child.allergies}</span>
                     </div>
                   )}
 
@@ -592,7 +596,7 @@ export default function CaregiverTerminal() {
                     {child.status === "absent" && (
                       <span
                         className="terminal-status-indicator"
-                        style={{ background: "var(--cream-soft)", color: "var(--muted)" }}
+                        style={{ color: "var(--muted)" }}
                       >
                         Absent today
                       </span>

@@ -67,7 +67,7 @@ export default function SetupChecklist({ data }: { data: Dataset }) {
     <section className="journey j-panel" style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         <h2>Center setup</h2>
-        <span className="j-tag">{count} of {steps.length} complete</span>
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--muted)' }}>{count} of {steps.length} complete</span>
       </div>
       <progress
         aria-label="Daycare setup progress"
@@ -85,15 +85,13 @@ export default function SetupChecklist({ data }: { data: Dataset }) {
               </span>
               <span
                 style={{
-                  color: s.done ? '#166534' : '#008794',
+                  color: s.done ? '#166534' : 'var(--navy)',
                   fontWeight: 700,
-                  fontSize: 12.5,
-                  padding: '3px 8px',
-                  borderRadius: 6,
-                  background: s.done ? '#DCFCE7' : '#F0FDFA',
+                  fontSize: 13,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                {s.done ? 'Complete ✓' : 'Continue →'}
+                {s.done ? 'Complete' : 'Continue →'}
               </span>
             </a>
           </li>

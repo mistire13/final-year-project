@@ -2,11 +2,12 @@
 const router=require('express').Router();
 const auth=require('../../middleware/auth');
 const {allowRoles}=require('../../middleware/rbac');
+const {requirePackageFeature}=require('../saas/package-features');
 const db=require('../../config/db');
 const service=require('./staff-scheduling.service').createStaffScheduling(db);
 const run=fn=>async(req,res,next)=>{try{res.json(await fn(req));}catch(error){next(error);}};
 const numberId=(req,res,next)=>/^\d{1,12}$/.test(req.params.id)&&Number(req.params.id)>0?next():res.status(404).json({error:'Record not found.'});
-router.use(auth,allowRoles('admin','caregiver'));
+router.use(auth,allowRoles('admin','caregiver'),requirePackageFeature('staff_scheduling',db));
 router.get('/',run(req=>service.overview(req.user,req.query)));
 router.post('/templates',allowRoles('admin'),run(req=>service.createTemplate(req.body,req.user)));
 router.patch('/templates/:id',allowRoles('admin'),numberId,run(req=>service.setTemplateEnabled(Number(req.params.id),req.body,req.user)));

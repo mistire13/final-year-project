@@ -311,7 +311,7 @@ const listDaycares = async ({ status, search } = {}) => {
         'pending' AS subscription_status,
         (SELECT i.terms FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS subscription_terms,
         NULL::timestamp with time zone AS subscription_ends_at,
-        100 AS max_children,
+        COALESCE((SELECT (i.terms->>'max_children')::int FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id), CASE WHEN requested_plan='premium' THEN 150 ELSE 50 END) AS max_children,
         created_at,
         updated_at,
         1 AS version,
@@ -426,6 +426,20 @@ const approveApplication = async (id, _options = {}, actorId) => {
       throw Object.assign(new Error('A confirmed payment linked to this application is required before approval.'), { statusCode:409 });
     }
     const terms = payment.terms;
+    const { catalogFeatures, FEATURE_POLICY_VERSION } = require('./package-features');
+    if (
+      !['standard', 'premium'].includes(terms.code) ||
+      !Number.isInteger(terms.max_children) ||
+      terms.max_children < 1 ||
+      !['monthly', 'six_month', 'annual'].includes(terms.billing_cycle) ||
+      !(Number(terms.price) > 0)
+    ) {
+      throw Object.assign(new Error('Confirmed payment terms are incomplete or invalid for activation.'), { statusCode: 409 });
+    }
+    if (!terms.features) {
+      terms.features = catalogFeatures(terms.code);
+      terms.feature_policy_version = FEATURE_POLICY_VERSION;
+    }
     const started = new Date();
     const ends = addBillingPeriod(started, terms.billing_cycle);
 

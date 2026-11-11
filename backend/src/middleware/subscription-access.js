@@ -28,6 +28,12 @@ function isCareWrite(method, path) {
 
 function createSubscriptionAccess(control, now = () => Date.now()) {
   return async (req, res, next) => {
+    if (!req.user?.daycare_id) {
+      return res.status(403).json({ error: 'An active daycare account is required.' });
+    }
+    if (req.user.daycare_status && req.user.daycare_status !== 'active') {
+      return res.status(403).json({ error: 'Daycare account is not active.' });
+    }
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     const path = (req.originalUrl || req.url).split('?')[0];
     if (isCareWrite(req.method, path)) return next();

@@ -4,10 +4,13 @@
  * Admin Dashboard Aggregated Statistics.
  */
 const db = require('../../config/db');
+const { getDaycareFeatures } = require('../saas/package-features');
 
 const getStats = async (user) => {
   const isSuper = user && user.role === 'super_admin';
   const daycareId = user?.daycare_id || null;
+  const featureAccess = isSuper ? null : await getDaycareFeatures(db, daycareId);
+  const includeShop = isSuper || !!featureAccess?.features?.shop;
 
   // Run all aggregation queries in parallel
   const [
@@ -63,15 +66,17 @@ const getStats = async (user) => {
       WHERE parent_notified = FALSE
         AND ($1::boolean = TRUE OR daycare_id = $2)
     `, [isSuper, daycareId]),
-    // Pending orders count and revenue
-    db.query(`
+    // Pending orders count and revenue (Plus shop capability or platform operator only)
+    includeShop
+      ? db.query(`
       SELECT
         COUNT(*) FILTER (WHERE order_status = 'placed')   AS pending_orders,
         COUNT(*) FILTER (WHERE order_status = 'confirmed') AS confirmed_orders,
         COALESCE(SUM(total) FILTER (WHERE payment_status = 'paid' AND NOT EXISTS(SELECT 1 FROM payments p WHERE p.order_id=orders.id AND p.method='demo')), 0) AS total_revenue
       FROM orders
       WHERE ($1::boolean = TRUE OR daycare_id = $2)
-    `, [isSuper, daycareId]),
+    `, [isSuper, daycareId])
+      : Promise.resolve({ rows: [{ pending_orders: 0, confirmed_orders: 0, total_revenue: 0 }] }),
     // Unread messages count
     db.query(`
       SELECT COUNT(*) AS unread_messages

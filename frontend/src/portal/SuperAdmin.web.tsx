@@ -727,14 +727,11 @@ export default function SuperAdmin() {
             <div style={{ fontSize: 24, fontFamily: "Quicksand_700Bold", letterSpacing: "-0.5px" }}>Ankelba</div>
             <span
               style={{
-                display: "inline-block",
-                background: "rgba(224, 122, 95, 0.2)",
+                display: "block",
                 color: "#e07a5f",
                 fontWeight: 800,
-                letterSpacing: "1.5px",
-                fontSize: 14,
-                padding: "2px 8px",
-                borderRadius: 999,
+                letterSpacing: "1.4px",
+                fontSize: 11,
                 textTransform: "uppercase",
                 marginTop: 2,
               }}
@@ -998,17 +995,13 @@ export default function SuperAdmin() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
-                background: "#eef6f2",
-                color: "#417B61",
-                padding: "5px 12px",
-                borderRadius: 999,
-                fontSize: 14,
-                fontWeight: 700,
-                border: "1px solid #cce6d9",
+                gap: 7,
+                color: "#065f46",
+                fontSize: 13.5,
+                fontWeight: 600,
               }}
             >
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#417B61" }} />
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981" }} />
               Tenant policies configured
             </span>
 
@@ -1482,7 +1475,7 @@ export default function SuperAdmin() {
                         <th>Administrator</th>
                         <th>License & Contact</th>
                         <th>Status</th>
-                        <th>Accreditation</th>
+                        <th>Plan &amp; License</th>
                         <th>Enrolled Children</th>
                         <th>Actions</th>
                       </tr>
@@ -1513,16 +1506,17 @@ export default function SuperAdmin() {
                               <Badge value={d.status} />
                             </td>
                             <td>
-                              <div style={{ fontWeight: 700, color: d.license_number ? "#166534" : "#64748B" }}>
-                                {d.license_number ? "Verified License" : "Standard Permit"}
+                              <div style={{ fontWeight: 700, color: (d.subscription_terms?.code || d.subscription_plan || d.requested_plan) === "premium" ? "#1e3a5f" : "#374151" }}>
+                                {(d.subscription_terms?.name || ((d.subscription_terms?.code || d.subscription_plan || d.requested_plan) === "premium" ? "Plus" : "Standard"))}
+                                {d.subscription_status ? ` · ${d.subscription_status}` : ""}
                               </div>
                               <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
-                                {d.license_number || "Awaiting submission"}
+                                {d.license_number ? `License: ${d.license_number}` : "Permit pending"}
                               </div>
                             </td>
                             <td>
                               <div style={{ fontWeight: 700, fontSize: 14, color: "#10263B" }}>
-                                {d.active_children_count || 0} active students
+                                {d.active_children_count || 0}{d.max_children ? ` / ${d.max_children}` : ""} active students
                               </div>
                               <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
                                 {d.children_count || 0} enrolled profiles · {d.staff_count || 0} staff accounts
@@ -2575,19 +2569,20 @@ export default function SuperAdmin() {
               </div>
 
               <div>
-                <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>Operational Status</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#417B61" }}>
-                  Active Licensed Daycare
+                <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>Subscription Plan</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#10263B" }}>
+                  {(inspectModal.daycare.subscription_terms?.name || ((inspectModal.daycare.subscription_terms?.code || inspectModal.daycare.subscription_plan || inspectModal.daycare.requested_plan) === "premium" ? "Plus" : "Standard"))}
+                  {inspectModal.daycare.subscription_status ? ` (${inspectModal.daycare.subscription_status})` : ""}
                 </div>
                 <div style={{ fontSize: 14, color: "var(--muted)" }}>
-                  Official center registration active
+                  {inspectModal.daycare.subscription_ends_at ? `Paid through ${new Date(inspectModal.daycare.subscription_ends_at).toLocaleDateString()}` : "Official center registration"}
                 </div>
               </div>
 
               <div>
                 <div style={{ fontSize: 14, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase" }}>Student Enrollment & Staff</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#10263B" }}>
-                  {inspectModal.daycare.active_children_count || 0} Active Children Enrolled
+                  {inspectModal.daycare.active_children_count || 0}{inspectModal.daycare.max_children ? ` / ${inspectModal.daycare.max_children}` : ""} Active Children Enrolled
                 </div>
                 <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
                   {inspectModal.daycare.children_count || 0} total child profiles · {inspectModal.daycare.staff_count || 0} staff members

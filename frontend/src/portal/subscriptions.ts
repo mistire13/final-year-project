@@ -28,3 +28,19 @@ export function packageComparisonValue(offer:PackageOffer,row:typeof packageComp
   if(row.capacity)return `${offer.max_children} active children`;
   return !row.feature||offer.features?.[row.feature]===true?'Included':'Not included';
 }
+export const featureKeyLabels:Record<string,string>={
+  shop:'Daycare shop, orders and stock control',
+  business_analytics:'Comparative business reports and CSV/PDF exports',
+  billing_automation:'Scheduled monthly invoices and payment reminders',
+  staff_scheduling:'Repeating attendance/pickup shifts, leave and substitutes',
+};
+export function packageTierSummary(value:any){
+  const code=(value?.package_code||value?.subscription_terms?.code||value?.subscription_plan||'standard')==='premium'?'premium':'standard';
+  const name=value?.package_name||value?.subscription_terms?.name||(code==='premium'?'Plus':'Standard');
+  const maxChildren=typeof value?.max_children==='number'?value.max_children:(code==='premium'?150:50);
+  const activeChildren=typeof value?.active_children_count==='number'?value.active_children_count:null;
+  const endMs=value?.subscription_ends_at?Date.parse(value.subscription_ends_at):NaN;
+  const expired=Number.isFinite(endMs)?endMs<=Date.now():value?.effective_status==='expired';
+  const cancelled=value?.effective_status==='cancelled'||value?.subscription_status==='cancelled';
+  return {code,name,isPlus:code==='premium',maxChildren,activeChildren,expired,cancelled};
+}

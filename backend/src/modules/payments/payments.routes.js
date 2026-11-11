@@ -8,13 +8,15 @@ const router = express.Router();
 const auth = require('../../middleware/auth');
 const { allowRoles } = require('../../middleware/rbac');
 const { validate } = require('../../middleware/validator');
+const { requirePackageFeature } = require('../saas/package-features');
+const db = require('../../config/db');
 const { initiatePaymentSchema } = require('./payments.validator');
 const c = require('./payments.controller');
 const Joi = require('joi');
 const svc = require('./payments.service');
 
 router.get('/capabilities',auth,allowRoles('parent'),async(req,res,next)=>{try{const access=await require('../saas/package-features').getDaycareFeatures(require('../../config/db'),req.user.daycare_id);res.json({...svc.capabilities(),demo_enabled:svc.capabilities().demo_enabled&&access.features.shop});}catch(error){next(error);}});
-router.post('/demo', auth, allowRoles('parent'), validate(Joi.object({order_id:Joi.number().integer().positive().required()})), async (req,res,next)=>{
+router.post('/demo', auth, allowRoles('parent'), requirePackageFeature('shop', db), validate(Joi.object({order_id:Joi.number().integer().positive().required()})), async (req,res,next)=>{
   try { res.json(await svc.simulatePayment(req.body,req.user)); } catch(error) { next(error); }
 });
 

@@ -204,6 +204,7 @@ export function makePreview(date = today()): Dataset {
       email: "admin@example.com",
       role: "admin",
       status: "active",
+      created_at: addDays(date, -90) + "T08:00:00+03:00",
     },
     ...caregivers.map((name, i) => ({
       id: 10 + i,
@@ -211,6 +212,7 @@ export function makePreview(date = today()): Dataset {
       email: "caregiver" + (i + 1) + "@example.com",
       role: "caregiver",
       status: "active",
+      created_at: addDays(date, -60) + "T08:00:00+03:00",
     })),
     ...names.map((name, i) => ({
       id: 100 + i,
@@ -218,6 +220,9 @@ export function makePreview(date = today()): Dataset {
       email: "parent" + (i + 1) + "@example.com",
       role: "parent",
       status: "active",
+      created_at:
+        addDays(date, i < 15 ? -60 + i : i === 23 ? -2 : -Math.max(2, (23 - i) * 3)) +
+        "T08:00:00+03:00",
     })),
   ];
   const children = names.map((name, i) => ({
@@ -228,14 +233,16 @@ export function makePreview(date = today()): Dataset {
     enrollment_status: i === 23 ? "waitlist" : "active",
     group_id: (i % 3) + 1,
     caregiver_id: 10 + (i % 6),
-    created_at: addDays(date, -90) + "T08:00:00+03:00",
+    created_at:
+      addDays(date, i < 15 ? -60 + i : i === 23 ? -2 : -Math.max(2, (23 - i) * 3)) +
+      "T08:00:00+03:00",
   }));
   const attendance: Row[] = [],
     reports: Row[] = [];
   for (let d = 29; d >= 0; d--) {
     const day = addDays(date, -d);
     children
-      .filter((c) => c.enrollment_status === "active")
+      .filter((c) => c.enrollment_status === "active" && dayOf(c.created_at) <= day)
       .forEach((c, i) => {
         if ((i + d) % 11 === 0) return;
         const absent = (i + d) % 9 === 0;

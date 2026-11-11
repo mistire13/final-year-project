@@ -159,6 +159,9 @@ app.use([
   if (!req.user?.daycare_id || !['admin', 'caregiver', 'parent'].includes(req.user.role) || req.user.is_impersonating) {
     return res.status(403).json({ error: 'Daycare account required' });
   }
+  if (req.user.daycare_status && req.user.daycare_status !== 'active') {
+    return res.status(403).json({ error: 'Daycare account is not active' });
+  }
   next();
 }, subscriptionAccess);
 app.use('/api/portal', require('./modules/portal/portal.routes'));

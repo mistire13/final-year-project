@@ -43,7 +43,7 @@ const reviewSchema = Joi.object({
   version: Joi.number().integer().min(1).required(),
   decision: Joi.string().valid('approve', 'reject').required(),
   reason: Joi.string().trim().min(12).max(1000).required(),
-  verified_reference: Joi.string().trim().min(4).max(150).when('decision',{is:'approve',then:Joi.required(),otherwise:Joi.forbidden()}),
+  verified_reference: Joi.string().trim().min(4).max(2048).when('decision',{is:'approve',then:Joi.required(),otherwise:Joi.forbidden()}),
   evidence_reference: Joi.string().trim().min(4).max(200).when('decision',{is:'approve',then:Joi.required(),otherwise:Joi.forbidden()}),
   amount_and_receiver_confirmed: Joi.boolean().valid(true).when('decision',{is:'approve',then:Joi.required(),otherwise:Joi.forbidden()}),
 });

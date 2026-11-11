@@ -68,8 +68,10 @@ This reference provides exact CSS variables, UI components, and code patterns fo
 - `.p-card`: Clean card container with `background: #ffffff`, soft border, and elevation shadow.
 - `.p-button`: Rounded button with micro-motion hover/tap states.
   - Variants: `.primary` (navy/emerald fill), `.secondary` (outlined), `.danger` (coral/red fill), `.ghost` (transparent).
-- `.p-badge`: Capsule status indicator with pastel tint background and dark text.
-  - Tones: `active`, `pending`, `suspended`, `trial`, `verified`.
+- `.p-badge`: Clean inline `7px` status dot + sentence-case label (no rounded pill boxes or forced capitalization).
+  - Supported tones: `green`/`success`, `gold`/`warning`/`amber`, `red`/`danger`, `blue`/`info`, `purple`, `neutral`/`quiet`.
+- `.p-chart-summary-line`: Editorial tabular-numeric metric line above charts (never pastel pill clusters).
+- `.p-care-list`: Multi-line wrapped allergy/dietary cell (`white-space: normal`, bounded column width).
 - `.p-table`: Tabular data grid with sticky header, muted column titles, and hover row highlighting.
 - `.p-modal`: Accessible modal dialog container with dark semi-transparent backdrop.
 

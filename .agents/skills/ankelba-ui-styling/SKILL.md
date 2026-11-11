@@ -78,7 +78,9 @@ All portal components must be rendered inside the `.ankelba-portal` root wrapper
 ### Standard Primitives (`frontend/src/portal/ui.web.tsx`)
 - `<Card>`: Container surfaces (`.p-card`) with glassmorphism or elevated shadows.
 - `<Button>`: Motion-wrapped button (`.p-button`, variants: `primary`, `secondary`, `danger`, `ghost`).
-- `<Badge>`: Status pill chips (`.p-badge`, tones: `success`, `warning`, `danger`, `info`, `neutral`).
+- `<Badge>`: Clean inline semantic dot + sentence-case text (`.p-badge`, tones: `green`/`success`, `gold`/`warning`/`amber`, `red`/`danger`, `blue`/`info`, `neutral`/`quiet`). **Do NOT style status indicators, chart summaries, counts, or table cells as floating pastel rounded pill capsules.**
+- `.p-chart-summary-line`: Plain editorial metric summary strip (`tabular-nums` numbers + muted unit labels), never stacked pill badges.
+- `.p-care-list`: Multi-line wrapped care/allergy cell layout (`white-space: normal; max-width: 260px`) with subtle left semantic rules instead of unbreakable horizontal pill loops.
 - `<Icon name="..." />`: Standardized inline SVG icon set (home, chart, child, shield, clock, etc.).
 - `<Modal>`: Accessible dialogs with animated backdrops, escape key bindings, and focus traps.
 - `<RecordForm>`: Form layout with unified input styling and validation hints.
@@ -118,3 +120,5 @@ When modifying or creating any frontend UI:
    - Never introduce ad-hoc HEX colors (e.g. `#000000`, `#ff0000`, `#0000ff`). Always select from `tokens.ts` (mobile) or `portal.css` custom variables (web).
 4. **Respect Session & Role Boundaries**:
    - Ensure portal components strictly use `portalTokenStorage` / `operatorApi` and mobile screens use `tokenStorage` / `apiClient` as specified in `.agents/rules/session_isolation.md`.
+5. **No Pastel Pill/Badge Bloat**:
+   - Never introduce rounded pastel pill bubbles (`border-radius: 9999px` with tinted fills + borders) for counts, percentages, chart metrics, table statuses, or allergy tags in web portals. Use clean inline dots (`.p-badge`), editorial text stats (`.p-chart-summary-line`), or wrapped left-accent rows (`.p-care-list`).

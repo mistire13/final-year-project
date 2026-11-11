@@ -18,6 +18,7 @@ import {
   today,
 } from "./model";
 import { Badge, Button, Card, Empty, Icon, Person, Table } from "./ui.web";
+import { AttendanceChart, CenterOverviewChart } from "./PortalCharts.web";
 import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
 export type PageContext = {
   data: Dataset;
@@ -70,302 +71,38 @@ function Stat({
     </Card>
   );
 }
-function AttendanceChart({
-  data,
-  date,
-  days = 7,
-  group = "",
+
+const CARE_ALERT_CATEGORIES = ["allergy", "dietary", "medical_note"];
+
+function CareAlertsCell({
+  instructions,
+  emptyLabel = "No care alerts recorded",
 }: {
-  data: Dataset;
-  date: string;
-  days?: number;
-  group?: string;
+  instructions?: any[];
+  emptyLabel?: string;
 }) {
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const [chartMode, setChartMode] = useState<"line" | "bar">("line");
-
-  const series = Array.from({ length: days }, (_, i) => {
-    const day = addDays(date, i - days + 1);
-    const m = metrics(data, day, group);
-    return {
-      day,
-      value: m.present + m.collected,
-      present: m.present,
-      collected: m.collected,
-      absent: m.absent,
-      pending: m.pending,
-      total: m.total,
-    };
-  });
-
-  const maxVal = Math.max(4, ...series.map((s) => Math.max(s.value, s.absent)));
-  const x = (i: number) => 45 + i * (570 / (days - 1 || 1));
-  const y = (value: number) => 155 - (value / maxVal) * 120;
-  const colWidth = Math.max(8, Math.min(32, 570 / (days * 1.6)));
-  const points = series.map((s, i) => `${x(i)},${y(s.value)}`).join(" ");
-
-  const hovered = hoverIndex !== null && hoverIndex >= 0 && hoverIndex < series.length ? series[hoverIndex] : null;
-
+  const items = (instructions || []).filter((c: any) =>
+    CARE_ALERT_CATEGORIES.includes(c.category),
+  );
+  if (!items.length) {
+    return <span className="p-care-none">{emptyLabel}</span>;
+  }
   return (
-    <div style={{ position: "relative", width: "100%" }}>
-      {/* Mode Switcher & Summary Info */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
-        <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", alignItems: "center", gap: 12 }}>
-          <span>Showing <strong>{days} days</strong> of attendance trends</span>
-          {hovered && (
-            <span style={{ color: "var(--navy)", fontWeight: 600 }}>
-              Hovered: {new Date(hovered.day + "T12:00:00Z").toLocaleDateString("en", { month: "short", day: "numeric", weekday: "short" })}
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 4, background: "#F1F5F9", padding: "2px 3px", borderRadius: 8 }}>
-          <button
-            type="button"
-            onClick={() => setChartMode("line")}
-            style={{
-              padding: "3px 8px",
-              fontSize: 11,
-              fontWeight: 600,
-              borderRadius: 6,
-              border: "none",
-              background: chartMode === "line" ? "#ffffff" : "transparent",
-              color: chartMode === "line" ? "var(--navy)" : "#64748B",
-              boxShadow: chartMode === "line" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-              cursor: "pointer",
-            }}
-          >
-            Trend Line
-          </button>
-          <button
-            type="button"
-            onClick={() => setChartMode("bar")}
-            style={{
-              padding: "3px 8px",
-              fontSize: 11,
-              fontWeight: 600,
-              borderRadius: 6,
-              border: "none",
-              background: chartMode === "bar" ? "#ffffff" : "transparent",
-              color: chartMode === "bar" ? "var(--navy)" : "#64748B",
-              boxShadow: chartMode === "bar" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-              cursor: "pointer",
-            }}
-          >
-            Daily Bars
-          </button>
-        </div>
-      </div>
-
-      {/* SVG Chart with Interactive Hit-Zones */}
-      <svg
-        className="p-chart"
-        viewBox="0 0 650 195"
-        role="img"
-        aria-label={`Daily children attending: ${series.map((s) => s.day + ": " + s.value).join(", ")}`}
-        preserveAspectRatio="none"
-        style={{ overflow: "visible" }}
-      >
-        <defs>
-          <linearGradient id="attendance-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#008794" stopOpacity=".32" />
-            <stop offset="1" stopColor="#008794" stopOpacity=".02" />
-          </linearGradient>
-          <linearGradient id="bar-green" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#008794" />
-            <stop offset="1" stopColor="#00656f" />
-          </linearGradient>
-          <linearGradient id="bar-absent" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#F87171" />
-            <stop offset="1" stopColor="#EF4444" />
-          </linearGradient>
-        </defs>
-
-        {/* Horizontal gridlines */}
-        {[0, 1, 2, 3].map((i) => (
-          <g key={i}>
-            <line
-              x1="42"
-              x2="626"
-              y1={25 + i * 42}
-              y2={25 + i * 42}
-              stroke="#edf0e9"
-              strokeDasharray="3 5"
-            />
-            <text x="10" y={29 + i * 42} fill="#94A3B8" fontSize="11" fontFamily="inherit">
-              {Math.round(maxVal * (1 - i / 3))}
-            </text>
-          </g>
-        ))}
-
-        {/* Line Mode: Area + Polyline */}
-        {chartMode === "line" && (
-          <>
-            <polygon
-              points={`45,155 ${points} 615,155`}
-              fill="url(#attendance-fill)"
-            />
-            <polyline
-              points={points}
-              fill="none"
-              stroke="#008794"
-              strokeWidth="2.8"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          </>
-        )}
-
-        {/* Bar Mode: Rounded Columns */}
-        {chartMode === "bar" &&
-          series.map((s, i) => {
-            const barH = Math.max(3, (s.value / maxVal) * 120);
-            const absentH = Math.max(0, (s.absent / maxVal) * 120);
-            const isHovered = hoverIndex === i;
-            return (
-              <g key={"bar-" + s.day}>
-                <rect
-                  x={x(i) - colWidth / 2}
-                  y={155 - barH}
-                  width={colWidth}
-                  height={barH}
-                  rx="4"
-                  fill="url(#bar-green)"
-                  opacity={isHovered ? 1 : 0.85}
-                  style={{ transition: "all 0.15s ease" }}
-                />
-                {s.absent > 0 && (
-                  <rect
-                    x={x(i) - colWidth / 2}
-                    y={155 - barH - absentH - 2}
-                    width={colWidth}
-                    height={absentH}
-                    rx="3"
-                    fill="url(#bar-absent)"
-                    opacity={isHovered ? 1 : 0.75}
-                    style={{ transition: "all 0.15s ease" }}
-                  />
-                )}
-              </g>
-            );
-          })}
-
-        {/* Active Hover Indicator Line */}
-        {hoverIndex !== null && (
-          <line
-            x1={x(hoverIndex)}
-            x2={x(hoverIndex)}
-            y1={20}
-            y2={155}
-            stroke="#008794"
-            strokeWidth="1.5"
-            strokeDasharray="3 3"
-          />
-        )}
-
-        {/* Points and Dates */}
-        {series.map((s, i) => {
-          const isHovered = hoverIndex === i;
-          return (
-            <g key={s.day}>
-              {chartMode === "line" && (
-                <circle
-                  cx={x(i)}
-                  cy={y(s.value)}
-                  r={isHovered ? "6" : "3.5"}
-                  fill={isHovered ? "#008794" : "#ffffff"}
-                  stroke="#008794"
-                  strokeWidth={isHovered ? "2.5" : "2"}
-                  style={{ transition: "r 0.15s ease" }}
-                />
-              )}
-              {(days <= 7 || i % (days > 14 ? 5 : 2) === 0 || i === days - 1) && (
-                <text
-                  x={x(i)}
-                  y="180"
-                  textAnchor="middle"
-                  fill={isHovered ? "#008794" : "#64748B"}
-                  fontWeight={isHovered ? "700" : "500"}
-                  fontSize="11"
-                  fontFamily="inherit"
-                >
-                  {new Date(s.day + "T12:00:00Z").toLocaleDateString("en", {
-                    [days <= 7 ? "weekday" : "day"]: "short" as any,
-                    ...(days > 7 ? { day: "numeric" } : {}),
-                  })}
-                </text>
-              )}
-
-              {/* Invisible Hit Zone for Touch/Mouse */}
-              <rect
-                x={x(i) - (570 / (days - 1 || 1)) / 2}
-                y={15}
-                width={570 / (days - 1 || 1)}
-                height={165}
-                fill="transparent"
-                style={{ cursor: "pointer" }}
-                onMouseEnter={() => setHoverIndex(i)}
-                onMouseLeave={() => setHoverIndex(null)}
-              />
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Floating Interactive Tooltip */}
-      {hovered && (
-        <div
-          style={{
-            position: "absolute",
-            top: 25,
-            left: Math.min(Math.max(12, (x(hoverIndex!) / 650) * 100), 75) + "%",
-            transform: "translate(-50%, -100%)",
-            background: "rgba(16, 38, 59, 0.94)",
-            color: "#ffffff",
-            padding: "8px 12px",
-            borderRadius: 8,
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.22)",
-            fontSize: 12,
-            zIndex: 10,
-            pointerEvents: "none",
-            whiteSpace: "nowrap",
-            backdropFilter: "blur(4px)",
-            WebkitBackdropFilter: "blur(4px)",
-            lineHeight: 1.4,
-          }}
-        >
-          <div style={{ fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.15)", paddingBottom: 4, marginBottom: 4 }}>
-            {new Date(hovered.day + "T12:00:00Z").toLocaleDateString("en", { weekday: "long", month: "short", day: "numeric" })}
+    <div className="p-care-list">
+      {items.map((a: any, i: number) => {
+        const kindClass =
+          a.category === "allergy"
+            ? "is-allergy"
+            : a.category === "dietary"
+              ? "is-dietary"
+              : "is-medical";
+        return (
+          <div key={a.id ?? i} className={`p-care-item ${kindClass}`}>
+            <span className="p-care-item-kind">{label(a.category)}:</span>
+            <span>{a.instruction_text}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#34D399" }}>
-            <span style={{ fontSize: 9 }}>●</span>
-            <strong>{hovered.value} Attended</strong> ({hovered.present} on-site, {hovered.collected} picked up)
-          </div>
-          {hovered.absent > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#F87171" }}>
-              <span style={{ fontSize: 9 }}>●</span>
-              <span>{hovered.absent} Absent</span>
-            </div>
-          )}
-          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
-            Attendance Rate: <strong>{hovered.total ? Math.round((hovered.value / hovered.total) * 100) : (hovered.value > 0 ? 100 : 0)}%</strong>
-          </div>
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="p-legend" style={{ marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 16 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#008794" }} />
-            Attended ({series.reduce((acc, s) => acc + s.value, 0)} total check-ins)
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#EF4444" }} />
-            Absent
-          </span>
-        </div>
-        <small style={{ color: "var(--muted)" }}>Hover columns for daily breakdown</small>
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -420,31 +157,13 @@ export function Overview(ctx: PageContext) {
       </div>
       <div className="p-overview-chart">
         <Card>
-          <div className="p-card-head" style={{ alignItems: "center" }}>
-            <div>
-              <h2>Attendance trends</h2>
-              <p>Last {overviewDays} days</p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div className="p-tabs" style={{ margin: 0, padding: 2 }}>
-                {[7, 14, 30].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={overviewDays === n ? "active" : ""}
-                    onClick={() => setOverviewDays(n)}
-                    style={{ padding: "4px 8px", fontSize: 14 }}
-                  >
-                    {n}D
-                  </button>
-                ))}
-              </div>
-              <Button variant="quiet" onClick={() => go("analytics")}>
-                Analytics <Icon name="arrow" size={14} />
-              </Button>
-            </div>
-          </div>
-          <AttendanceChart data={data} date={date} days={overviewDays} />
+          <CenterOverviewChart
+            data={data}
+            date={date}
+            days={overviewDays}
+            onDaysChange={setOverviewDays}
+            go={go}
+          />
         </Card>
       </div>
       <div className="p-grid main">
@@ -635,9 +354,9 @@ export function Overview(ctx: PageContext) {
               key: "allergyText",
               title: "Allergies & Dietary",
               render: (r) => (
-                <Badge
-                  value={r.allergyText}
-                  tone={r.hasAllergies ? "gold" : "green"}
+                <CareAlertsCell
+                  instructions={r.care_instructions}
+                  emptyLabel="No care alerts"
                 />
               ),
             },
@@ -798,13 +517,23 @@ export function Analytics({ data, date }: PageContext) {
           icon="file"
           tint="#efedf6"
         />
-        <Stat
-          title="Paid order value"
-          value={money(paid.reduce((n, o) => n + Number(o.total), 0))}
-          note="Center-wide · by order creation date"
-          icon="store"
-          tint="#faf0df"
-        />
+        {data.daycare?.features?.shop || data.orders.length > 0 ? (
+          <Stat
+            title="Paid order value"
+            value={money(paid.reduce((n, o) => n + Number(o.total), 0))}
+            note="Center-wide · by order creation date"
+            icon="store"
+            tint="#faf0df"
+          />
+        ) : (
+          <Stat
+            title="Active classrooms"
+            value={data.groups.length}
+            note={`${m.total} enrolled ${m.total === 1 ? "child" : "children"} · ${data.daycare?.package_name || "Standard"}`}
+            icon="child"
+            tint="#faf0df"
+          />
+        )}
         <Stat
           title="Parent updates pending"
           value={
@@ -829,7 +558,9 @@ export function Analytics({ data, date }: PageContext) {
                 {addDays(date, 1 - days)} through {date}
               </p>
             </div>
-            <Badge value={`${m.total} active children`} tone="green" />
+            <span className="p-header-meta">
+              {m.total} active {m.total === 1 ? "child" : "children"}
+            </span>
           </div>
           <AttendanceChart data={data} date={date} days={days} group={group} />
           <p className="p-kpi-note">
@@ -900,12 +631,9 @@ export function Analytics({ data, date }: PageContext) {
               key: "missing",
               title: "Remaining",
               render: (r) => (
-                <Badge
-                  value={
-                    r.missing === 0 ? "complete" : `${r.missing} remaining`
-                  }
-                  tone={r.missing ? "gold" : "green"}
-                />
+                <span className={r.missing ? "p-text-warn" : "p-text-ok"}>
+                  {r.missing === 0 ? "Complete" : `${r.missing} remaining`}
+                </span>
               ),
             },
           ]}
@@ -993,10 +721,17 @@ export function Caregivers(ctx: PageContext) {
               const count = assigned.length;
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Badge
-                    value={`${count} ${count === 1 ? "child" : "children"}`}
-                    tone={count > 0 ? "green" : "quiet"}
-                  />
+                  <span
+                    style={{
+                      fontSize: "13.5px",
+                      fontWeight: count > 0 ? 600 : 400,
+                      color: count > 0 ? "var(--navy)" : "var(--muted)",
+                    }}
+                  >
+                    {count > 0
+                      ? `${count} ${count === 1 ? "child" : "children"}`
+                      : "None"}
+                  </span>
                   <Button variant="quiet small" onClick={() => open("assign-caregiver", r)}>
                     Assign
                   </Button>
@@ -1180,19 +915,12 @@ export function Children(ctx: PageContext & { initialGroup?: string }) {
           {
             key: "care_instructions",
             title: "Allergies & Care",
-            render: (r) => {
-              const allergies = (r.care_instructions || []).filter((c: any) => ["allergy", "dietary", "medical_note"].includes(c.category));
-              if (allergies.length > 0) {
-                return (
-                  <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                    {allergies.map((a: any, i: number) => (
-                      <Badge key={i} value={`${label(a.category)}: ${a.instruction_text}`} tone="gold" />
-                    ))}
-                  </div>
-                );
-              }
-              return <span style={{ fontSize: "12px", color: "#10B981", fontWeight: 600 }}>No care alerts recorded</span>;
-            },
+            render: (r) => (
+              <CareAlertsCell
+                instructions={r.care_instructions}
+                emptyLabel="No care alerts recorded"
+              />
+            ),
           },
           {
             key: "caregiver_id",
@@ -1498,18 +1226,12 @@ export function Attendance(ctx: PageContext) {
             {
               key: "allergies",
               title: "Safety & Care",
-              render: (r) => {
-                if (r.allergies && r.allergies.length > 0) {
-                  return (
-                    <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                      {r.allergies.map((a: any, i: number) => (
-                        <Badge key={i} value={`${label(a.category)}: ${a.instruction_text}`} tone="gold" />
-                      ))}
-                    </div>
-                  );
-                }
-                return <span style={{ fontSize: "12px", color: "#6B7280" }}>No care alerts recorded</span>;
-              },
+              render: (r) => (
+                <CareAlertsCell
+                  instructions={r.allergies}
+                  emptyLabel="No care alerts recorded"
+                />
+              ),
             },
             {
               key: "event_type",
@@ -1997,10 +1719,12 @@ export function Monitoring(ctx: PageContext & { page: string }) {
               key: "stock_qty",
               title: "Stock",
               render: (r) => (
-                <Badge
-                  value={r.stock_qty + " in stock"}
-                  tone={r.stock_qty <= 5 ? "gold" : "green"}
-                />
+                <span
+                  className={r.stock_qty <= 5 ? "p-text-warn" : ""}
+                  style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+                >
+                  {r.stock_qty} in stock
+                </span>
               ),
             },
             {
@@ -2137,9 +1861,18 @@ export function DaycareSettings(ctx: PageContext) {
     address: "Addis Ababa, Ethiopia",
     status: "active",
   };
-  const childCount = data.children?.length || 0;
+  const activeChildCount = data.children?.filter((c) => c.enrollment_status === "active").length || 0;
+  const childCount = activeChildCount || data.children?.length || 0;
   const staffCount = data.users?.filter((u) => ["admin", "caregiver"].includes(u.role)).length || 0;
   const groupCount = data.groups?.length || 0;
+  const planName = dc.package_name || (dc.subscription_plan === "premium" ? "Plus" : dc.subscription_plan === "standard" ? "Standard" : "Active");
+  const subExpired = dc.subscription_active === false || (dc.subscription_ends_at && Date.parse(dc.subscription_ends_at) <= Date.now());
+  const subStatusLabel = subExpired
+    ? `Expired · ${planName}`
+    : dc.subscription_status === "cancelled"
+      ? `Cancelled · ${planName}`
+      : `Active · ${planName}`;
+  const subStatusTone = subExpired ? "amber" : dc.subscription_status === "cancelled" ? "gold" : "green";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
@@ -2147,12 +1880,12 @@ export function DaycareSettings(ctx: PageContext) {
       <Card>
         <div className="p-card-head">
           <div>
-            <h2>Center Operational Capacity & Overview</h2>
+            <h2>Center Operational Capacity &amp; Overview</h2>
             <p>Active child enrollment, classroom assignments, and authorized professional care staff.</p>
           </div>
           <Badge
-            value="Active License"
-            tone="green"
+            value={subStatusLabel}
+            tone={subStatusTone}
           />
         </div>
 
@@ -2160,10 +1893,10 @@ export function DaycareSettings(ctx: PageContext) {
           <div style={{ background: "#fcfaf4", padding: "18px 20px", borderRadius: 14, border: "1px solid #eeece6" }}>
             <small style={{ color: "#76818B", fontWeight: 700, textTransform: "uppercase", fontSize: 11 }}>Enrolled Students</small>
             <div style={{ fontSize: 24, fontWeight: 800, color: "#10263B", margin: "4px 0" }}>
-              {childCount} Children
+              {dc.max_children ? `${childCount} / ${dc.max_children} Children` : `${childCount} Children`}
             </div>
             <div style={{ fontSize: 13, color: "#417B61", fontWeight: 600 }}>
-              Active student roster
+              {dc.max_children ? `${planName} plan quota` : "Active student roster"}
             </div>
           </div>
 

@@ -129,9 +129,9 @@ async function snapshot(date,days,user,staffOnly=false) {
   const users=await queryRows(client,(staffOnly && !isAdmin)?`SELECT u.id,u.name,u.email,u.status,r.name AS role${extraColsSql} FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 OR u.id=ANY($2::int[])`:`SELECT u.id,u.name,u.email,u.status,r.name AS role,u.created_at${extraColsSql} FROM users u JOIN roles r ON r.id=u.role_id WHERE ($1::integer IS NULL OR u.daycare_id=$1) ORDER BY u.name`,(staffOnly && !isAdmin)?[actor.id,guardians.map(g=>g.user_id)]:[daycareId]);
   const guardianRequests=await queryRows(client,"SELECT * FROM pickup_guardians WHERE child_id=ANY($1::int[]) ORDER BY created_at DESC",[ids]);
   const verifications=await queryRows(client,"SELECT v.id,v.child_id,v.guardian_user_id,v.pickup_guardian_id,COALESCE(p.name,u.name) AS guardian_name,v.verified_by,v.result,v.method,v.verified_at,v.attendance_id FROM guardian_verification_events v LEFT JOIN pickup_guardians p ON p.id=v.pickup_guardian_id LEFT JOIN users u ON u.id=v.guardian_user_id WHERE v.child_id=ANY($1::int[]) AND (v.verified_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $2::date-($3::int-1) AND $2::date",[ids,date,days]);
-  const [daycare] = daycareId ? await queryRows(client, 'SELECT id, name, slug, contact_email, contact_phone, address, license_number, status, subscription_plan, trial_ends_at, max_children, version, created_at FROM daycares WHERE id=$1', [daycareId]) : [null];
+  const [daycare] = daycareId ? await queryRows(client, 'SELECT id, name, slug, contact_email, contact_phone, address, license_number, status, subscription_plan, subscription_status, subscription_started_at, subscription_ends_at, trial_ends_at, max_children, version, created_at FROM daycares WHERE id=$1', [daycareId]) : [null];
   const featureAccess=await getDaycareFeatures(client,daycareId);
-  if(daycare){daycare.features=featureAccess.features;daycare.package_name=featureAccess.package_name;}
+  if(daycare){daycare.features=featureAccess.features;daycare.package_code=featureAccess.package_code;daycare.package_name=featureAccess.package_name;daycare.subscription_active=featureAccess.active;}
   async function attachReportDetails(rList) {
     if (!rList || !rList.length) return rList;
     const rIds = rList.map(r => r.id);

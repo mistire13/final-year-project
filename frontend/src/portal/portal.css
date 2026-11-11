@@ -985,62 +985,152 @@
 }
 
 /* ==========================================================================
-   Badges (Modern Pill Styling with High Contrast)
+   Care Alerts (Responsive Multi-Line Wrapping inside Tables & Modals)
+   ========================================================================== */
+.p-care-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+  min-width: 165px;
+  max-width: 260px;
+  white-space: normal;
+  line-height: 1.45;
+}
+
+.p-care-item {
+  display: inline-block;
+  max-width: 100%;
+  padding-left: 7px;
+  border-left: 2.5px solid #d97706;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.p-care-item.is-allergy { border-left-color: #dc2626; }
+.p-care-item.is-dietary { border-left-color: #d97706; }
+.p-care-item.is-medical { border-left-color: #7c3aed; }
+
+.p-care-item-kind {
+  font-weight: 700;
+  margin-right: 4px;
+  color: #92400e;
+}
+.p-care-item.is-allergy .p-care-item-kind { color: #991b1b; }
+.p-care-item.is-medical .p-care-item-kind { color: #5b21b6; }
+
+.p-care-none {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: normal;
+}
+
+.p-header-meta {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.p-text-ok {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.p-text-warn {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+/* ==========================================================================
+   Status Indicators (Clean Editorial Dot + Text — No Pill Capsules)
    ========================================================================== */
 .p-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 4px 11px;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.4;
-  letter-spacing: 0.3px;
+  gap: 7px;
+  padding: 0;
+  border-radius: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0;
   white-space: nowrap;
-  text-transform: capitalize;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  text-transform: none;
+  background: transparent;
+  color: #334155;
+  border: 0;
 }
 
-.p-badge.green {
-  background: #ecfdf5;
+.p-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #94a3b8;
+}
+
+.p-badge.green,
+.p-badge.success {
   color: #065f46;
-  border: 1px solid #a7f3d0;
+}
+.p-badge.green::before,
+.p-badge.success::before {
+  background: #10b981;
 }
 
-.p-badge.gold {
-  background: #fffbeb;
+.p-badge.gold,
+.p-badge.amber,
+.p-badge.warning {
   color: #92400e;
-  border: 1px solid #fde68a;
+}
+.p-badge.gold::before,
+.p-badge.amber::before,
+.p-badge.warning::before {
+  background: #d97706;
 }
 
-.p-badge.red {
-  background: #fef2f2;
+.p-badge.red,
+.p-badge.danger {
   color: #991b1b;
-  border: 1px solid #fecaca;
+}
+.p-badge.red::before,
+.p-badge.danger::before {
+  background: #ef4444;
 }
 
 .p-badge.blue,
-.p-badge.indigo {
-  background: #eff6ff;
+.p-badge.indigo,
+.p-badge.info {
   color: #1e40af;
-  border: 1px solid #bfdbfe;
+}
+.p-badge.blue::before,
+.p-badge.indigo::before,
+.p-badge.info::before {
+  background: #2563eb;
 }
 
 .p-badge.purple {
-  background: #f5f3ff;
   color: #5b21b6;
-  border: 1px solid #ddd6fe;
+}
+.p-badge.purple::before {
+  background: #7c3aed;
 }
 
 .p-badge.neutral,
 .p-badge.quiet {
-  background: #f1f5f9;
   color: #475569;
-  border: 1px solid #e2e8f0;
+  font-weight: 500;
+}
+.p-badge.neutral::before,
+.p-badge.quiet::before {
+  background: #94a3b8;
 }
 
 /* ==========================================================================
@@ -2072,6 +2162,101 @@
 .p-attention-title strong { font-size: 24px; font-variant-numeric: tabular-nums; }
 .p-attention-fallback { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
 .p-overview-chart { margin-block: 24px; }
+.p-chart-controls,
+.p-chart-subbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.p-chart-metric-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--cream-soft);
+  border: 1px solid var(--line);
+}
+.p-chart-metric-pills button {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.p-chart-metric-pills button.active {
+  background: var(--cream-card);
+  color: var(--navy);
+  box-shadow: var(--shadow-xs);
+}
+.p-chart-mode-toggle {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--cream-soft);
+  border: 1px solid var(--line);
+}
+.p-chart-mode-toggle button {
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 10px;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.p-chart-mode-toggle button.active {
+  background: var(--cream-card);
+  color: var(--navy);
+  box-shadow: var(--shadow-xs);
+}
+.p-chart-metric-pills button:focus-visible,
+.p-chart-mode-toggle button:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.p-chart-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  font-size: 13.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.p-chart-metric-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.p-chart-metric-stat strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.p-chart-metric-stat.green strong { color: var(--green); }
+.p-chart-metric-stat.gold strong { color: var(--amber); }
+.p-chart-metric-stat.blue strong { color: var(--navy); }
+.p-chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 255px;
+}
+@media (max-width: 560px) {
+  .p-chart-canvas-wrap { height: 220px; }
+}
 .p-receipt-filter { display: grid; gap: 6px; max-width: 350px; margin-block: 16px; font-weight: 600; }
 .p-receipt-review { scroll-margin-top: 94px; }
 .p-invoice-filters {

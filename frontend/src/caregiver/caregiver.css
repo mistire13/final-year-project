@@ -125,16 +125,31 @@
 }
 
 .caregiver-terminal-container .terminal-status-indicator {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.3rem 0.8rem;
-  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0;
+  border-radius: 0;
   margin-bottom: 1rem;
+  background: transparent;
+  color: var(--ink);
 }
-.caregiver-terminal-container .terminal-status-indicator.not-arrived { background: var(--amber-soft); color: var(--amber); }
-.caregiver-terminal-container .terminal-status-indicator.present { background: var(--green-soft); color: var(--green); }
-.caregiver-terminal-container .terminal-status-indicator.checked-out { background: var(--sky-soft); color: var(--sky); }
+.caregiver-terminal-container .terminal-status-indicator::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+.caregiver-terminal-container .terminal-status-indicator.not-arrived { color: var(--amber); }
+.caregiver-terminal-container .terminal-status-indicator.not-arrived::before { background: var(--amber); }
+.caregiver-terminal-container .terminal-status-indicator.present { color: var(--green); }
+.caregiver-terminal-container .terminal-status-indicator.present::before { background: var(--green); }
+.caregiver-terminal-container .terminal-status-indicator.checked-out { color: var(--sky); }
+.caregiver-terminal-container .terminal-status-indicator.checked-out::before { background: var(--sky); }
 
 .caregiver-terminal-container .btn-terminal-action {
   width: 100%;

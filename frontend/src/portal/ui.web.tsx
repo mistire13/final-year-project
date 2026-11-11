@@ -97,13 +97,23 @@ export function Button({
     </motion.button>
   );
 }
+const BADGE_TONE_ALIASES: Record<string, string> = {
+  success: "green",
+  warning: "gold",
+  amber: "gold",
+  danger: "red",
+  error: "red",
+  info: "blue",
+};
+
 export function Badge({ value, tone }: { value: unknown; tone?: string }) {
   const text = String(value ?? "unknown");
+  const resolvedTone = tone ? BADGE_TONE_ALIASES[tone] || tone : undefined;
   return (
     <span
       className={
         "p-badge " +
-        (tone ||
+        (resolvedTone ||
           ([
             "active",
             "checkin",

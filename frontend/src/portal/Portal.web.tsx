@@ -223,7 +223,7 @@ const nav = [
 const num = (value: any) => (value ? Number(value) : null);
 const options = (rows: Row[], key = "name") =>
   rows.map((r) => ({ value: String(r.id), label: r[key] }));
-function Brand({ daycareName }: { daycareName?: string }) {
+function Brand({ daycareName, planName }: { daycareName?: string; planName?: string }) {
   return (
     <div className="p-brand p-workspace-brand">
       <div className="p-workspace-wordmark">
@@ -232,7 +232,7 @@ function Brand({ daycareName }: { daycareName?: string }) {
       </div>
       {daycareName && (
         <div className="p-workspace-center">
-          <Icon name="building" size={16} /> <span>{daycareName}</span>
+          <Icon name="building" size={16} /> <span>{daycareName}{planName ? ` · ${planName}` : ""}</span>
         </div>
       )}
     </div>
@@ -282,14 +282,40 @@ export default function Portal() {
     return () => { live = false; };
   }, [actor?.id, actor?.role, preview, page]);
   const base = `/${staff ? "staff" : "admin"}${preview ? "/preview" : ""}`;
+  const portalFeatures = data.daycare?.features || {};
+  const featureByNavKey: Record<string, string> = {
+    'staff-scheduling': 'staff_scheduling',
+    'billing-automation': 'billing_automation',
+    store: 'shop',
+    business: 'business_analytics',
+  };
+  const adminNav = nav.map((group) => ({
+    ...group,
+    items: group.items.map(([key, titleText, iconName]) => {
+      const fKey = featureByNavKey[key];
+      if (!fKey) return [key, titleText, iconName];
+      const unlocked = !preview && portalFeatures[fKey] === true;
+      const baseTitle = titleText.replace(/ · Plus$/, '');
+      return [key, unlocked ? baseTitle : `${baseTitle} · Plus`, iconName];
+    }),
+  }));
   const navigation = staff
     ? [
         {
           group: "Your shift",
-          items: [["workspace", "Attendance & pickup", "desk"], ["reports", "Daily reports", "file"], ["health", "Health & incidents", "heart"], ["communication", "Messages & announcements", "message"], ["events", "Calendar", "calendar"], ["staff-scheduling","My front-desk shifts · Plus","clock"]],
+          items: [
+            ["workspace", "Attendance & pickup", "desk"],
+            ["reports", "Daily reports", "file"],
+            ["health", "Health & incidents", "heart"],
+            ["communication", "Messages & announcements", "message"],
+            ["events", "Calendar", "calendar"],
+            ...((preview || portalFeatures.staff_scheduling)
+              ? [["staff-scheduling", preview ? "My front-desk shifts · Plus" : "My front-desk shifts", "clock"]]
+              : []),
+          ],
         },
       ]
-    : nav;
+    : adminNav;
   const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users"])];
   const normalizedPage = page === "users" ? "caregivers" : page;
   const selected = available.includes(normalizedPage)
@@ -1142,9 +1168,33 @@ export default function Portal() {
       </div>
     );
   const plusPageFeature:Record<string,string>={business:'business_analytics','billing-automation':'billing_automation','staff-scheduling':'staff_scheduling',store:'shop'};
+  const plusFeatureMeta: Record<string, { name: string; detail: string }> = {
+    business_analytics: { name: 'Business reports & CSV/PDF exports', detail: 'Track multi-period attendance comparisons, care-fee collections, capacity utilization and occupancy trends.' },
+    billing_automation: { name: 'Scheduled billing automation', detail: 'Automatically generate monthly care-fee invoices and notify parents with upcoming and overdue reminders.' },
+    staff_scheduling: { name: 'Front-desk shift scheduling', detail: 'Manage recurring attendance and pickup shift templates, staff availability, leave reviews and substitute assignments.' },
+    shop: { name: 'Daycare shop & stock control', detail: 'Publish essential supplies, track stock movements, receive family orders and record cash returns.' },
+  };
   const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...nav.flatMap(group=>group.items.map(item=>item[0])),'dashboard','workspace','users'],available);
   const plusFeature=plusPageFeature[selected];
-  const pageComponent = plusFeature&&(preview||!visibleData.daycare?.features?.[plusFeature]) ? <Card title="Included with Plus"><p>{preview?'Open a live Plus daycare to manage these tools.':'Your current subscription does not include this feature. Essential care and existing records remain available.'}</p>{!staff&&!preview&&<Button onClick={()=>go('subscription')}>Review subscription</Button>}</Card> : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
+  const isExpiredPlus = visibleData.daycare?.package_code === 'premium' && visibleData.daycare?.subscription_active === false;
+  const lockedMeta = plusFeature ? plusFeatureMeta[plusFeature] : null;
+  const pageComponent = plusFeature&&(preview||!visibleData.daycare?.features?.[plusFeature]) ? (
+    <Card title={isExpiredPlus ? 'Plus subscription expired' : (lockedMeta?.name || 'Included with Ankelba Plus')}>
+      {preview ? (
+        <p>Open a live Plus daycare to manage {lockedMeta?.name?.toLowerCase() || 'these tools'}.</p>
+      ) : isExpiredPlus ? (
+        <p>Your Plus subscription period has ended. Essential child attendance, authorized pickup, health alerts, and existing invoice/order settlements stay available while Plus tools wait for renewal.</p>
+      ) : (
+        <>
+          <p>{lockedMeta?.detail || 'Your current plan does not include this tool.'}</p>
+          <p style={{ color: 'var(--muted)', fontSize: 14 }}>
+            Your center is on the <strong>{visibleData.daycare?.package_name || 'Standard'}</strong> plan (up to {visibleData.daycare?.max_children ?? 50} active children). Upgrade to <strong>Ankelba Plus</strong> for up to 150 active children alongside Daycare Shop, Business Reports, Billing Automation and Shift Scheduling.
+          </p>
+        </>
+      )}
+      {!staff&&!preview&&<Button onClick={()=>go('subscription')}>{isExpiredPlus ? 'Renew subscription' : 'Review subscription & plans'}</Button>}
+    </Card>
+  ) : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
     staff && ["reports","health","communication","events"].includes(selected) ? <CaregiverPage ctx={ctx} page={selected}/> : selected === "dashboard" ? (
       <>
         <DashboardAttention data={visibleData} date={date} preview={preview} go={go} />
@@ -1188,7 +1238,7 @@ export default function Portal() {
         </button>
         <Brand
           daycareName={actor?.daycare_name}
-          
+          planName={preview ? 'Preview' : (visibleData.daycare?.package_name || (visibleData.daycare?.subscription_plan === 'premium' ? 'Plus' : visibleData.daycare?.subscription_plan === 'standard' ? 'Standard' : undefined))}
         />
         {!staff && (
           <a href={base + "/dashboard"} className={"p-nav-link p-nav-overview " + (selected === "dashboard" ? "active" : "")}
@@ -1946,20 +1996,27 @@ function PortalModal({
               )}
             </div>
             {allergies.length > 0 ? (
-              allergies.map((a: any, i: number) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                  <Badge value="Allergy" tone="gold" />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#92400e" }}>{a.instruction_text}</span>
-                </div>
-              ))
+              <div className="p-care-list" style={{ maxWidth: "100%", flexDirection: "column", gap: 6 }}>
+                {allergies.map((a: any, i: number) => (
+                  <div key={a.id ?? i} className="p-care-item is-allergy">
+                    <span className="p-care-item-kind">Allergy:</span>
+                    <span>{a.instruction_text}</span>
+                  </div>
+                ))}
+              </div>
             ) : (
               <p style={{ fontSize: 14, color: "#166534", margin: "0 0 6px", fontWeight: 500 }}>✓ No known allergies recorded.</p>
             )}
-            {dietary.map((item: any) => <div key={item.id} className="p-notice"><Badge value="Dietary" /> {item.instruction_text}</div>)}
+            {dietary.map((item: any) => (
+              <div key={item.id} className="p-care-item is-dietary" style={{ marginTop: 6 }}>
+                <span className="p-care-item-kind">Dietary:</span>
+                <span>{item.instruction_text}</span>
+              </div>
+            ))}
             {generalInstructions.map((gi: any, i: number) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
-                <Badge value={gi.category} tone="quiet" />
-                <span style={{ fontSize: 14, color: "#334155" }}>{gi.instruction_text}</span>
+              <div key={gi.id ?? i} className="p-care-item is-medical" style={{ marginTop: 6 }}>
+                <span className="p-care-item-kind">{label(gi.category)}:</span>
+                <span>{gi.instruction_text}</span>
               </div>
             ))}
           </div>
