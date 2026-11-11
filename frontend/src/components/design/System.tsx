@@ -1,3 +1,4 @@
+import {usePackageFeatures} from '../../context/PackageFeaturesContext';
 import React, { ReactNode } from "react";
 import { MotionPressable, MotionView, useReducedMotion } from "./Motion";
 import {
@@ -699,7 +700,8 @@ export function BottomNavigation({
 }) {
   const nav = useNavigation<any>();
   const { user } = useAuth();
-  const visibleItems = items || tabsForRole(user?.role);
+  const {features}=usePackageFeatures();
+  const visibleItems = (items || tabsForRole(user?.role)).filter(item=>item.name!=="Shop"||features.shop);
   return (
     <SafeAreaView edges={["bottom"]} style={s.tabBar}>
       <View style={{ flexDirection: "row" }}>

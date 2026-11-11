@@ -36,6 +36,10 @@ const errorHandler = (err, req, res, next) => {
     return res.status(415).json({ error: err.message || 'Unsupported media type' });
   }
 
+  if (statusCode === 413) {
+    return res.status(413).json({ error: 'The uploaded file is too large.' });
+  }
+
   if (statusCode === 429) {
     res.set('Retry-After', '900');
     return res.status(429).json({ error: err.message || 'Too many authentication attempts' });
@@ -46,7 +50,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   if (statusCode === 403) {
-    return res.status(403).json({ error: err.message || 'Access denied' });
+    return res.status(403).json({ error: err.message || 'Access denied',...(err.code==='FEATURE_NOT_INCLUDED'?{code:err.code,feature:err.feature}:{}) });
   }
 
   if (statusCode === 404 || err.name === 'NotFoundError') {

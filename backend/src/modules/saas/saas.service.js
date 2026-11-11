@@ -12,7 +12,7 @@ const db = configuredDb.control || configuredDb;
 const childCountsSource = configuredDb.control ? 'platform_child_census()'
   : "(SELECT daycare_id,count(*) AS child_count,count(*) FILTER(WHERE enrollment_status='active') AS active_child_count FROM children GROUP BY daycare_id)";
 const logger = require('../../config/logger');
-const { termsFor } = require('./subscriptions.service');
+const { addBillingPeriod } = require('./subscriptions.service');
 const Joi = require('joi');
 
 
@@ -60,11 +60,13 @@ const registerDaycare = async (data) => {
     admin_phone: Joi.string().trim().max(50).allow('').optional(),
     adminPassword: Joi.string().min(4).max(72).optional(),
     admin_password: Joi.string().min(4).max(72).optional(),
-    requestedPlan: Joi.string().valid('trial', 'standard', 'premium').default('standard'),
-    requested_plan: Joi.string().valid('trial', 'standard', 'premium').optional(),
-    billingCycle: Joi.string().valid('monthly', 'annual').default('monthly'),
-    billing_cycle: Joi.string().valid('monthly', 'annual').optional(),
+    requestedPlan: Joi.string().valid('standard', 'premium').optional(),
+    requested_plan: Joi.string().valid('standard', 'premium').optional(),
+    billingCycle: Joi.string().valid('monthly', 'six_month', 'annual').optional(),
+    billing_cycle: Joi.string().valid('monthly', 'six_month', 'annual').optional(),
     termsVersion: Joi.number().integer().min(1).optional(),
+    payment_intent_id: Joi.string().guid().required(),
+    payment_token: Joi.string().min(20).max(256).required(),
   });
 
   const checked = schema.validate(data, { allowUnknown: true });
@@ -79,7 +81,6 @@ const registerDaycare = async (data) => {
   const adminEmail = checked.value.adminEmail || checked.value.admin_email;
   const adminPhone = checked.value.adminPhone || checked.value.admin_phone || contactPhone || 'N/A';
   const adminPassword = checked.value.adminPassword || checked.value.admin_password;
-  const requestedPlan = checked.value.requested_plan || checked.value.requestedPlan || 'standard';
 
   if (!daycareName || !daycareName.trim()) {
     throw Object.assign(new Error('Daycare name is required.'), { statusCode: 422, status: 422 });
@@ -117,7 +118,27 @@ const registerDaycare = async (data) => {
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
 
-  const insertRes = await db.query(
+  const client = await db.connect();
+  let app;
+  try {
+    await client.query('BEGIN');
+    const intent = (await client.query('SELECT * FROM subscription_payment_intents WHERE id=$1 FOR UPDATE', [checked.value.payment_intent_id])).rows[0];
+    const { verifySecret } = require('./subscription-payments.service');
+    if (!intent || !verifySecret(checked.value.payment_token, intent.secret_hash)) {
+      throw Object.assign(new Error('Payment session could not be verified.'), { statusCode: 403 });
+    }
+    if (intent.email.toLowerCase() !== normalizedAdminEmail) {
+      throw Object.assign(new Error('Administrator email must match the payment session email.'), { statusCode: 422 });
+    }
+    if (intent.status !== 'verified' || intent.application_id || intent.daycare_id) {
+      throw Object.assign(new Error('A verified, unused payment is required to submit this application.'), { statusCode: 409 });
+    }
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`application-email:${normalizedAdminEmail}`]);
+    const duplicate = await client.query(`SELECT 1 FROM users WHERE lower(email)=$1 UNION ALL
+      SELECT 1 FROM daycare_applications WHERE lower(admin_email)=$1 AND status='pending' LIMIT 1`, [normalizedAdminEmail]);
+    if (duplicate.rows.length) throw Object.assign(new Error('An account or pending application already uses this email.'), { statusCode: 409 });
+    const requestedPlan = intent.terms.code;
+    const insertRes = await client.query(
     `INSERT INTO daycare_applications (
       daycare_name, city_subcity, contact_email, contact_phone, license_number,
       admin_name, admin_email, admin_phone, password_hash, requested_plan, status
@@ -135,9 +156,14 @@ const registerDaycare = async (data) => {
       passwordHash,
       requestedPlan,
     ]
-  );
-
-  const app = insertRes.rows[0];
+    );
+    app = insertRes.rows[0];
+    await client.query("UPDATE subscription_payment_intents SET application_id=$2,status='consumed',updated_at=NOW(),version=version+1 WHERE id=$1", [intent.id,app.id]);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
   logger.info(`New daycare application staged: "${app.daycare_name}" (Application ID: ${app.id})`);
 
   return {
@@ -163,7 +189,19 @@ const registerDaycare = async (data) => {
  * Super Admin: Platform-wide summary KPIs.
  */
 const getPlatformStats = async () => {
-  const [daycaresCount, pendingCount, activeCount, suspendedCount, childrenCount, usersCount, trialCount, standardCount, premiumCount] = await Promise.all([
+  const [
+    daycaresCount,
+    pendingCount,
+    activeCount,
+    suspendedCount,
+    childrenCount,
+    usersCount,
+    trialCount,
+    standardCount,
+    premiumCount,
+    activeSubscriptionsCount,
+    overdueSubscriptionsCount,
+  ] = await Promise.all([
     db.query("SELECT COUNT(*)::int AS count FROM daycares d WHERE to_jsonb(d)->>'deleted_at' IS NULL"),
     db.query("SELECT (SELECT COUNT(*)::int FROM daycares WHERE status = 'pending') + (SELECT COUNT(*)::int FROM daycare_applications WHERE status = 'pending') AS count"),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'active'"),
@@ -173,6 +211,8 @@ const getPlatformStats = async () => {
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_status = 'trialing' AND status = 'active' AND trial_ends_at > NOW()"),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_plan = 'standard' AND status = 'active'"),
     db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE subscription_plan = 'premium' AND status = 'active'"),
+    db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'active' AND subscription_status = 'active' AND (subscription_ends_at IS NULL OR subscription_ends_at > NOW())"),
+    db.query("SELECT COUNT(*)::int AS count FROM daycares WHERE status = 'active' AND subscription_status = 'active' AND subscription_ends_at IS NOT NULL AND subscription_ends_at <= NOW()"),
   ]);
 
   return {
@@ -182,11 +222,13 @@ const getPlatformStats = async () => {
     suspended_daycares: suspendedCount.rows[0].count,
     total_children: childrenCount.rows[0].count,
     total_users: usersCount.rows[0].count,
-    active_trials: activeCount.rows[0].count,
+    active_trials: trialCount.rows[0].count,
+    active_subscriptions: activeSubscriptionsCount.rows[0].count,
+    overdue_subscriptions: overdueSubscriptionsCount.rows[0].count,
     plans: {
-      trial: 0,
-      standard: activeCount.rows[0].count,
-      premium: 0,
+      trial: trialCount.rows[0].count,
+      standard: standardCount.rows[0].count,
+      premium: premiumCount.rows[0].count,
     },
   };
 };
@@ -265,9 +307,9 @@ const listDaycares = async ({ status, search } = {}) => {
         requested_plan AS subscription_plan,
         requested_plan,
         NULL::timestamp with time zone AS trial_ends_at,
-        'monthly' AS billing_cycle,
+        COALESCE((SELECT i.terms->>'billing_cycle' FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id), 'monthly') AS billing_cycle,
         'pending' AS subscription_status,
-        NULL::jsonb AS subscription_terms,
+        (SELECT i.terms FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS subscription_terms,
         NULL::timestamp with time zone AS subscription_ends_at,
         100 AS max_children,
         created_at,
@@ -305,7 +347,10 @@ const listApplications = async ({ status = 'all', search } = {}) => {
     SELECT id, daycare_name, city_subcity, contact_email, contact_phone,
            license_number, admin_name, admin_email, admin_phone,
            requested_plan, status, rejection_reason, created_daycare_id,
-           reviewed_by, reviewed_at, created_at, updated_at
+           reviewed_by, reviewed_at, created_at, updated_at,
+           (SELECT i.terms FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS subscription_terms,
+           (SELECT i.payment_reference FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS payment_reference,
+           (SELECT i.status FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS payment_status
     FROM daycare_applications
   `;
   const params = [];
@@ -339,7 +384,10 @@ const getApplicationById = async (id) => {
     `SELECT id, daycare_name, city_subcity, contact_email, contact_phone,
             license_number, admin_name, admin_email, admin_phone,
             requested_plan, status, rejection_reason, created_daycare_id,
-            reviewed_by, reviewed_at, created_at, updated_at
+            reviewed_by, reviewed_at, created_at, updated_at,
+            (SELECT i.terms FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS subscription_terms,
+            (SELECT i.payment_reference FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS payment_reference,
+            (SELECT i.status FROM subscription_payment_intents i WHERE i.application_id=daycare_applications.id) AS payment_status
      FROM daycare_applications WHERE id = $1`,
     [id]
   );
@@ -353,7 +401,7 @@ const getApplicationById = async (id) => {
  * Super Admin: Approve staged application atomically.
  * Creates records in 'daycares' and 'users' only upon approval!
  */
-const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) => {
+const approveApplication = async (id, _options = {}, actorId) => {
   const client = await db.connect();
   try {
     await client.query('BEGIN');
@@ -363,12 +411,23 @@ const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) =>
     if (!app) {
       throw Object.assign(new Error('Daycare application not found.'), { statusCode: 404, status: 404 });
     }
+    if (app.status === 'approved' && app.created_daycare_id) {
+      const daycare = (await client.query('SELECT * FROM daycares WHERE id=$1', [app.created_daycare_id])).rows[0];
+      await client.query('COMMIT');
+      return { message:'Application already approved.', daycare, application:app, replayed:true };
+    }
     if (app.status !== 'pending') {
       throw Object.assign(new Error(`Application is no longer pending (current status: ${app.status}).`), { statusCode: 409, status: 409 });
     }
 
-    const assignedPlan = plan || app.requested_plan || 'standard';
-    const trialPeriod = Number(trialDays) || 30;
+    const payment = (await client.query(`SELECT * FROM subscription_payment_intents
+      WHERE application_id=$1 AND status='consumed' FOR UPDATE`, [id])).rows[0];
+    if (!payment || !payment.terms || !payment.payment_reference || payment.daycare_id) {
+      throw Object.assign(new Error('A confirmed payment linked to this application is required before approval.'), { statusCode:409 });
+    }
+    const terms = payment.terms;
+    const started = new Date();
+    const ends = addBillingPeriod(started, terms.billing_cycle);
 
     // Check if user email was registered in the meantime
     const existingUser = await client.query('SELECT id FROM users WHERE LOWER(email) = $1', [app.admin_email.toLowerCase()]);
@@ -389,8 +448,8 @@ const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) =>
       `INSERT INTO daycares (
         name, slug, contact_email, contact_phone, address, license_number,
         status, subscription_plan, requested_plan, subscription_status, trial_ends_at, billing_cycle,
-        subscription_terms, max_children, version
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', 'standard', 'standard', 'active', NULL, 'monthly', NULL, NULL, 1)
+        subscription_terms, max_children, subscription_ends_at, subscription_started_at, version
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'active', $7, $7, 'active', NULL, $8, $9, $10, $11, $12, 1)
       RETURNING *`,
       [
         app.daycare_name,
@@ -399,9 +458,16 @@ const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) =>
         app.contact_phone,
         app.city_subcity,
         app.license_number,
+        terms.code,
+        terms.billing_cycle,
+        JSON.stringify(terms),
+        terms.max_children,
+        ends,
+        started,
       ]
     );
     const newDaycare = daycareRes.rows[0];
+    await client.query('UPDATE subscription_payment_intents SET daycare_id=$2,updated_at=NOW(),version=version+1 WHERE id=$1', [payment.id,newDaycare.id]);
 
     // 2. Insert into users (Admin account, active)
     const userRes = await client.query(
@@ -435,8 +501,10 @@ const approveApplication = async (id, { trialDays = 30, plan } = {}, actorId) =>
     // 4. Record audit log & subscription event
     await client.query(
       `INSERT INTO subscription_events (daycare_id, actor_id, action, reason, details, request_key)
-       VALUES ($1, $2, 'trial_started', 'Daycare application approved', $3, $4)`,
-      [newDaycare.id, actorId || null, JSON.stringify({ trial_days: trialPeriod, plan: assignedPlan }), `app-approval-${id}`]
+       VALUES ($1, $2, 'subscription_started', 'Paid daycare application approved', $3, $4)`,
+      [newDaycare.id, actorId || newAdmin.id, JSON.stringify({ terms, payment_intent_id:payment.id,
+        payment_reference:payment.payment_reference, provider:payment.provider, amount:payment.amount,
+        currency:payment.currency, started_at:started, ends_at:ends }), `app-approval-${id}`]
     );
 
     await client.query(
@@ -503,6 +571,8 @@ const rejectApplication = async (id, reason, actorId) => {
  * Super Admin: Purge rejected application to prevent database bloat.
  */
 const purgeApplication = async (id, actorId) => {
+  const evidence = await db.query('SELECT 1 FROM subscription_payment_intents WHERE application_id=$1', [id]);
+  if (evidence.rows.length) throw Object.assign(new Error('Paid applications must be retained for payment reconciliation.'), {statusCode:409});
   const { rows } = await db.query(
     `DELETE FROM daycare_applications WHERE id = $1 AND status = 'rejected' RETURNING id, daycare_name`,
     [id]
@@ -562,62 +632,10 @@ const approveDaycare = async (id, { trialDays, plan } = {}, actorId) => {
     return result.daycare;
   }
 
-  // 2. Fallback to existing daycares table approval
-  const application = (await db.query('SELECT * FROM daycares WHERE id=$1', [id])).rows[0];
-  if (!application || application.status !== 'pending') throw Object.assign(new Error('This application is no longer pending.'), { statusCode: 409 });
+  // A legacy pending daycare has no application-linked payment evidence and
+  // cannot bypass the paid onboarding path.
+  throw Object.assign(new Error('Legacy applications require a new paid application before approval.'), { statusCode: 409 });
 
-  const client = await db.connect();
-  try {
-    await client.query('BEGIN');
-
-    const locked = (await client.query('SELECT * FROM daycares WHERE id=$1 FOR UPDATE', [id])).rows[0];
-    if (!locked || locked.status !== 'pending' || locked.version !== application.version) throw Object.assign(new Error('Application changed. Refresh before approval.'), { statusCode: 409 });
-
-    const daycareRes = await client.query(
-      `UPDATE daycares
-       SET status = 'active',
-           subscription_plan = 'standard',
-           subscription_status = 'active',
-           trial_ends_at = NULL,
-           max_children = NULL,
-           updated_at = NOW()
-       WHERE id = $1 AND status = 'pending'
-       RETURNING *`,
-      [id]
-    );
-
-    if (!daycareRes.rows[0]) {
-      const err = new Error('This application is no longer pending. Refresh before reviewing it again.');
-      err.status = 409;
-      throw err;
-    }
-
-    // Activate the Daycare Admin account
-    await client.query(
-      `UPDATE users 
-       SET status = 'active'
-       WHERE daycare_id = $1 AND role_id = 1 AND status = 'pending'`,
-      [id]
-    );
-
-    // Audit log
-    await client.query(`INSERT INTO subscription_events(daycare_id,actor_id,action,reason,details,request_key)
-      VALUES($1,$2,'daycare_activated','Daycare application approved and activated',$3,$4)`,[id,actorId,JSON.stringify({licensed:true}),`approval-${id}`]);
-    await client.query(
-      `INSERT INTO audit_logs (actor_id, action, target_table, target_id, daycare_id)
-       VALUES ($1, 'DAYCARE_APPROVED', 'daycares', $2, $2)`,
-      [actorId, id]
-    );
-
-    await client.query('COMMIT');
-    logger.info(`Daycare ${id} approved by Super Admin ${actorId}`);
-    return daycareRes.rows[0];
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
 };
 
 /**

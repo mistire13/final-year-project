@@ -56,6 +56,9 @@ const updateOrderStatusSchema = Joi.object({
     "cancelled",
   ),
   payment_status: Joi.string().valid("unpaid", "pending", "paid", "failed"),
+  amount_received: Joi.number().positive().max(99999999).precision(2),
+  payment_confirmed: Joi.boolean().valid(true),
+  payment_reason: Joi.string().trim().min(12).max(1000),
 }).or("order_status", "payment_status");
 
 const categorySchema = Joi.object({

@@ -49,7 +49,8 @@ test('essential security with separate restricted PostgreSQL logins', async t =>
       await assert.rejects(tenantRaw.query('SELECT * FROM platform_accounts'), { code: '42501' });
     });
     await db('roles').insert([{ id: 0, name: 'super_admin' }, { id: 1, name: 'admin' }, { id: 2, name: 'caregiver' }, { id: 3, name: 'parent' }]).onConflict('id').ignore();
-    const daycares = await db('daycares').insert(['a', 'b'].map(x => ({ name: `Center ${x}`, slug: `essential-${x}`, contact_email: `${x}@example.invalid`, status: 'active' }))).returning('*');
+    // These store/security scenarios explicitly exercise Plus-eligible tenants.
+    const daycares = await db('daycares').insert(['a', 'b'].map(x => ({ name: `Center ${x}`, slug: `essential-${x}`, contact_email: `${x}@example.invalid`, status: 'active', subscription_plan: 'premium' }))).returning('*');
     const password = 'Synthetic-essential-password!';
     const hash = await bcrypt.hash(password, 4);
     const [admin, caregiver, parent, otherParent, owner] = await db('users').insert([
@@ -149,7 +150,7 @@ test('essential security with separate restricted PostgreSQL logins', async t =>
     await t.test('control can update and audit package terms without accessing child evidence', async () => {
       const service = require('../src/modules/saas/subscriptions.service').createSubscriptions(control);
       const offer = (await service.catalog(true)).find(row => row.code==='standard');
-      const {code,updated_at,...input} = offer;
+      const {code,updated_at,features,feature_policy_version,...input} = offer;
       const saved = await service.updatePackage(code,{...input,reason:'Synthetic package audit regression'},owner.id);
       assert.equal(saved.version,offer.version+1);
       assert.equal((await control.query("SELECT id FROM audit_logs WHERE action='PACKAGE_UPDATED'")).rows.length,1);
@@ -269,7 +270,7 @@ test('essential security with separate restricted PostgreSQL logins', async t =>
       assert.equal((await update({version:retry.body.version,payment_status:'paid'})).status,409);
       assert.equal((await update({order_status:'cancelled'})).status,422);
       const second=await create('synthetic-order-status-0002');
-      let res=await request('PATCH',`/store/orders/${second.id}/status`,tokens[admin.id],{version:second.version,order_status:'confirmed',payment_status:'paid'});assert.equal(res.status,200,JSON.stringify(res.body));
+      let res=await request('PATCH',`/store/orders/${second.id}/status`,tokens[admin.id],{version:second.version,order_status:'confirmed',payment_status:'paid',amount_received:20,payment_confirmed:true,payment_reason:'Synthetic cash physically received'});assert.equal(res.status,200,JSON.stringify(res.body));
       assert.equal((await request('PATCH',`/store/orders/${second.id}/status`,tokens[admin.id],{version:res.body.version,order_status:'cancelled'})).status,409);
       assert.equal((await request('PATCH',`/store/orders/${second.id}/status`,tokens[admin.id],{version:res.body.version,payment_status:'unpaid'})).status,409);
       const orderVersion=res.body.version;

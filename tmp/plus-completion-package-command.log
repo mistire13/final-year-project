@@ -1,0 +1,29 @@
+✔ analytics validates real calendar dates, bounds ranges and keeps monetary comparisons exact (3.8116ms)
+✔ attendance groups actual recorded child-days across calendar weeks and months with clipped edges (0.6806ms)
+✔ Plus analytics reconcile actual periods, isolate tenants and record genuine occupancy changes (2842.3367ms)
+✔ billing fee calculations use exact cents, require positive fees and Addis Ababa calendar dates (16.4267ms)
+✔ Plus billing previews, concurrent invoice runs, reminders, opt-in, retries and isolation persist correctly (3211.7789ms)
+✔ billing email preference is private to an active parent in the authenticated daycare and preserves other notification choices (2.1106ms)
+✔ Plus capabilities are explicit, paid-period aware and cannot be added to Standard terms (1.7033ms)
+✔ Standard cannot create shop sales; existing orders retain audited cash settlement after downgrade (2826.7088ms)
+▶ cash refund records preserve original receipts, isolate tenants and restore stock once
+  ✔ wrong amount, receipt, confirmation, role, tenant and stale version write nothing (74.8717ms)
+  ✔ expired Standard preserves the refund obligation and receipt, with safe retry (115.112ms)
+  ✔ concurrent retries append one refund and one inventory restoration (114.2079ms)
+  ✔ competing orders cannot reuse a request key or external evidence and the loser rolls back (53.7094ms)
+  ✔ demo, online, pending and already-cancelled orders require separate reconciliation (29.6095ms)
+  ✔ inventory disposition is explicit and external evidence cannot be reused (63.9473ms)
+  ✔ owner and restricted roles cannot rewrite evidence; tenant reads fail closed (5.4805ms)
+  ✔ parent order reads expose only owned refund evidence and refunded orders stay closed (14.4666ms)
+✔ cash refund records preserve original receipts, isolate tenants and restore stock once (2997.5631ms)
+✔ weekly shifts use Addis Ababa time, bound overnight duration and detect conflicts (11.7497ms)
+✔ reviewed schedules, leave and substitutions preserve scoped duties and reject duplicate or cross-tenant changes (2900.017ms)
+✔ next-period terms preserve paid access, bind verified money, and activate once with current capacity/status checks (3125.3654ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19980.8557

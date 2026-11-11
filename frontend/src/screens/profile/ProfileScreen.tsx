@@ -1,3 +1,4 @@
+import {usePackageFeatures} from '../../context/PackageFeaturesContext';
 import React from "react";
 import { View, Switch, Pressable, Linking } from "react-native";
 import { PencilSimple } from "phosphor-react-native/src/icons/PencilSimple";
@@ -13,6 +14,8 @@ import { Globe } from "phosphor-react-native/src/icons/Globe";
 import { Question } from "phosphor-react-native/src/icons/Question";
 import { SignOut } from "phosphor-react-native/src/icons/SignOut";
 import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
+import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { CreditCard } from "phosphor-react-native/src/icons/CreditCard";
 import {
   Page,
   Text,
@@ -31,6 +34,7 @@ import { getWebPortalUrl } from "../../utils/host";
 
 export function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
+  const {features}=usePackageFeatures();
   const { preferences, togglePreference, persistenceError } = useDesign();
   const { selectedChild } = useChild();
 
@@ -246,29 +250,41 @@ export function ProfileScreen({ navigation }: any) {
         color="#747B87"
         style={{ letterSpacing: 0.8, marginTop: 28, marginBottom: 12 }}
       >
-        EXPLORE
+        FINANCE & ORDERS
       </Text>
       <Card style={{ paddingVertical: 0 }}>
         <MenuRow
-          title="Daycare Store"
-          icon={Package}
-          onPress={() => navigation.navigate("DaycareStore")}
+          title="Care Fees & Invoices"
+          icon={CreditCard}
+          onPress={() => navigation.navigate("ChildCareFees")}
         />
-        {[
-          ["Care Fees & Receipts", "ChildCareFees"],
-          ["Attendance History", "AttendanceHistory"],
-          ["Health & Incidents", "HealthNotices"],
-          ["Report Archive", "ReportsHistory"],
-          ["Pickup status", "PickupVerification"],
-          ["Shopping Cart", "ShoppingCart"],
-          ["Order History", "Orders"],
-          ["Calendar & Events", "CalendarPage"],
-          ["Notifications", "Notifications"],
-          ["AI Parent Guide", "AIGuide"],
-        ].map(([title, route]) => (
-          <MenuRow key={route} title={title} icon={CaretRight}
-            onPress={() => navigation.navigate(route)} />
-        ))}
+        {features.shop && (
+          <MenuRow
+            title="Store Orders & Receipts"
+            icon={Receipt}
+            onPress={() => navigation.navigate("Orders")}
+          />
+        )}
+      </Card>
+
+      <Text
+        size={13}
+        color="#747B87"
+        style={{ letterSpacing: 0.8, marginTop: 28, marginBottom: 12 }}
+      >
+        DAYCARE & SUPPORT
+      </Text>
+      <Card style={{ paddingVertical: 0 }}>
+        <MenuRow
+          title="Daycare Calendar & Events"
+          icon={CalendarBlank}
+          onPress={() => navigation.navigate("CalendarPage")}
+        />
+        <MenuRow
+          title="Notifications Inbox"
+          icon={SpeakerHigh}
+          onPress={() => navigation.navigate("Notifications")}
+        />
         <MenuRow
           title="Help & Support"
           icon={Question}

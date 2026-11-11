@@ -3,7 +3,7 @@ const path = require('path');
 const zlib = require('zlib');
 const toqr = require('toqr');
 
-const EXPO_URL = 'exp://192.168.100.201:8081';
+const EXPO_URL = 'exp://192.168.8.104:8081';
 
 function createPng(matrix, size, margin = 4, scale = 14) {
   const width = (size + margin * 2) * scale;

@@ -6,7 +6,10 @@
  */
 const db = require("../../config/db");
 const crypto = require("node:crypto");
+const {requireFeature}=require("../saas/package-features");
+const assertShop=(user,client=db)=>requireFeature(client,user?.daycare_id,"shop");
 const { auditedWrite, writeAudit } = require('../../utils/auditedWrite');
+const { transaction } = require('../auth/legacy-security');
 
 /**
  * List products catalog (Architecture Plan §6.2 Query 5).
@@ -17,6 +20,7 @@ const { auditedWrite, writeAudit } = require('../../utils/auditedWrite');
  * Uses idx_prod_available partial index.
  */
 const listProducts = async (query = {}, user) => {
+  await assertShop(user);
   const categoryId = query.category_id ? parseInt(query.category_id, 10) : null;
   const availableOnly = query.available_only !== "false";
   const isSuper = user && user.role === "super_admin";
@@ -53,8 +57,10 @@ const listProducts = async (query = {}, user) => {
  * Create a new product in the store (Admin only).
  */
 const createProduct = async (body, user) => {
-  await assertCategory(body.category_id, user);
+  await assertShop(user);
   return auditedWrite(user,'PRODUCT_CREATED','products',async client=>{
+  await assertShop(user,client);
+  await assertCategory(body.category_id,user,client);
   const daycareId =
     user.role === "super_admin" ? body.daycare_id || null : user.daycare_id;
   const { rows } = await client.query(
@@ -81,10 +87,12 @@ const createProduct = async (body, user) => {
  * Update product details or stock (Admin only).
  */
 const updateProduct = async (productIdParam, body, user) => {
-  await assertCategory(body.category_id, user);
+  return transaction(db,async client=>{
+  await assertShop(user,client);
+  await assertCategory(body.category_id,user,client);
   const productId = parseInt(productIdParam, 10);
 
-  const { rows: existingRows } = await db.query(
+  const { rows: existingRows } = await client.query(
     `SELECT id, daycare_id, version FROM products WHERE id = $1`,
     [productId],
   );
@@ -146,7 +154,7 @@ const updateProduct = async (productIdParam, body, user) => {
   fields.push(`updated_at = NOW()`);
   vals.push(productId, body.version);
 
-  const { rows } = await db.query(
+  const { rows } = await client.query(
     `UPDATE products SET ${fields.join(", ")} WHERE id = $${idx} AND version = $${idx + 1} RETURNING *`,
     vals,
   );
@@ -156,15 +164,18 @@ const updateProduct = async (productIdParam, body, user) => {
       statusCode: 409,
     });
   return rows[0];
+  });
 };
 
 /**
  * Place order with transactional inventory check & snapshot pricing.
  */
 const placeOrder = async (body, user) => {
+  await assertShop(user);
   const client = await db.connect();
   try {
     await client.query("BEGIN");
+    await assertShop(user,client);
 
     const items = [...body.items].sort(
       (a, b) => Number(a.product_id) - Number(b.product_id),
@@ -341,7 +352,11 @@ const listMyOrders = async (user) => {
   const { rows: orders } = await db.query(
     `SELECT o.id, o.total, o.order_status, o.payment_status, o.created_at, o.daycare_id, o.note, o.version,
        (SELECT method FROM payments WHERE order_id=o.id) AS payment_method,
-       (SELECT gateway_ref FROM payments WHERE order_id=o.id) AS payment_reference
+       (SELECT gateway_ref FROM payments WHERE order_id=o.id) AS payment_reference,
+       (SELECT verification_source FROM payments WHERE order_id=o.id) AS verification_source,
+       (SELECT daycare_payment_request_id FROM payments WHERE order_id=o.id) AS daycare_payment_request_id,
+       (SELECT json_build_object('id',r.id,'amount',r.amount,'refund_reference',r.refund_reference,'original_payment_reference',r.original_payment_reference,'refunded_at',r.refunded_at,'recorded_at',r.recorded_at,'stock_disposition',r.stock_disposition,'reason',r.reason)
+         FROM shop_order_refunds r WHERE r.order_id=o.id AND r.daycare_id=o.daycare_id AND r.parent_id=o.parent_id) AS refund
      FROM orders o
      WHERE o.parent_id = $1
        AND ($2::boolean = TRUE OR o.daycare_id = $3)
@@ -371,9 +386,13 @@ const listAllOrders = async (query = {}, user) => {
   const daycareId = user?.daycare_id || null;
 
   const { rows: orders } = await db.query(
-    `SELECT o.id, o.parent_id, u.name AS parent_name, o.total, o.order_status, o.payment_status, o.created_at, o.daycare_id, o.note, o.version
+    `SELECT o.id, o.parent_id, u.name AS parent_name, o.total, o.order_status, o.payment_status, o.created_at, o.daycare_id, o.note, o.version,
+      p.method AS payment_method,p.gateway_ref AS payment_reference,p.verification_source,p.daycare_payment_request_id,
+      (SELECT json_build_object('id',r.id,'amount',r.amount,'refund_reference',r.refund_reference,'original_payment_reference',r.original_payment_reference,'refunded_at',r.refunded_at,'recorded_at',r.recorded_at,'stock_disposition',r.stock_disposition,'reason',r.reason)
+       FROM shop_order_refunds r WHERE r.order_id=o.id AND r.daycare_id=o.daycare_id) AS refund
      FROM orders o
      JOIN users u ON u.id = o.parent_id
+     LEFT JOIN payments p ON p.order_id=o.id
      WHERE ($1::boolean = TRUE OR o.daycare_id = $2)
      ORDER BY o.created_at DESC`,
     [isSuper, daycareId],
@@ -410,6 +429,7 @@ const updateOrderStatus = async (orderIdParam, body, user) => {
 
     const failure = (message, statusCode = 409) =>
       Object.assign(new Error(message), { statusCode });
+    if(existing.payment_status==='refunded')throw failure('This refunded order is closed. Its original payment and refund evidence are preserved.');
     if (body.version === undefined) throw failure("Reload the order before saving.", 422);
     if (body.version !== undefined) {
       if (!Number.isSafeInteger(body.version) || body.version < 1)
@@ -440,6 +460,13 @@ const updateOrderStatus = async (orderIdParam, body, user) => {
       throw failure(
         "Recorded payments cannot be reversed here. A refund workflow is required.",
       );
+    if(nextPayment==='paid'&&existing.payment_status!=='paid'){
+      const amount=Number(body.amount_received);
+      if(!Number.isFinite(amount)||amount<=0||Math.round(amount*100)!==Math.round(Number(existing.total)*100)||body.payment_confirmed!==true||typeof body.payment_reason!=='string'||body.payment_reason.trim().length<12){
+        throw failure('Confirm the exact cash amount received and record a reason before marking this order paid.',422);
+      }
+      if(existing.payment_status==='pending')throw failure('Resolve the pending payment before recording another payment.');
+    }
     if (nextStatus === "collected" && nextPayment !== "paid")
       throw failure("Record payment before collecting this order.");
     if (nextStatus === "cancelled" && ["paid", "pending"].includes(nextPayment) && Number(existing.total) !== 0)
@@ -498,10 +525,13 @@ const updateOrderStatus = async (orderIdParam, body, user) => {
       body.payment_status !== existing.payment_status
     ) {
       const verifiedAt = body.payment_status === "paid" ? new Date() : null;
-      await client.query(
-        `UPDATE payments SET status = $1, verified_at = $2 WHERE order_id = $3`,
-        [body.payment_status, verifiedAt, orderId],
+      const paymentRecord = await client.query(
+        `UPDATE payments SET status=$1::varchar,verified_at=$2,method=CASE WHEN $1::varchar='paid' THEN 'pay_at_daycare' ELSE method END,
+          verification_source=CASE WHEN $1::varchar='paid' THEN 'cash_confirmed' ELSE verification_source END,
+          gateway_ref=CASE WHEN $1::varchar='paid' THEN $3 ELSE gateway_ref END WHERE order_id=$4`,
+        [body.payment_status,verifiedAt,`CASH-${existing.daycare_id}-${orderId}`,orderId],
       );
+      if(body.payment_status==='paid'&&paymentRecord.rowCount!==1)throw failure('This order requires payment-record reconciliation before settlement.');
     }
 
     await client.query(
@@ -517,6 +547,8 @@ const updateOrderStatus = async (orderIdParam, body, user) => {
             payment_status: existing.payment_status,
           },
           after: { order_status: nextStatus, payment_status: nextPayment },
+          amount_received:body.amount_received,payment_confirmed:body.payment_confirmed,payment_reason:body.payment_reason,
+          receipt_reference:nextPayment==='paid'&&existing.payment_status!=='paid'?`CASH-${existing.daycare_id}-${orderId}`:undefined,
           stock_restored:
             nextStatus === "cancelled" && existing.order_status !== "cancelled",
         }),
@@ -547,10 +579,10 @@ function categoryActor(user) {
   }
   return user.daycare_id;
 }
-async function assertCategory(id, user) {
+async function assertCategory(id, user, client=db) {
   if (id == null) return;
   const tenant = categoryActor(user);
-  const { rows } = await db.query(
+  const { rows } = await client.query(
     "SELECT id FROM product_categories WHERE id=$1 AND (daycare_id=$2 OR daycare_id IS NULL)",
     [id, tenant],
   );
@@ -558,6 +590,7 @@ async function assertCategory(id, user) {
     throw Object.assign(new Error("Category not found"), { statusCode: 404 });
 }
 const listCategories = async (user) => {
+  await assertShop(user);
   const tenant = categoryActor(user);
   const { rows } = await db.query(
     `SELECT c.id,c.name,c.daycare_id,COUNT(p.id)::int AS product_count
@@ -570,12 +603,13 @@ const listCategories = async (user) => {
 const createCategory = async (body, user) => {
   const tenant = categoryActor(user);
   try {
-    return (
-      await db.query(
+    return await transaction(db,async client=>{
+      await assertShop(user,client);
+      return (await client.query(
         "INSERT INTO product_categories(name,daycare_id) VALUES($1,$2) RETURNING *",
         [body.name.trim(), tenant],
-      )
-    ).rows[0];
+      )).rows[0];
+    });
   } catch (error) {
     if (error.code === "23505")
       throw Object.assign(
@@ -588,7 +622,9 @@ const createCategory = async (body, user) => {
 const updateCategory = async (id, body, user) => {
   const tenant = categoryActor(user);
   try {
-    const { rows } = await db.query(
+    return await transaction(db,async client=>{
+    await assertShop(user,client);
+    const { rows } = await client.query(
       "UPDATE product_categories SET name=$1 WHERE id=$2 AND daycare_id=$3 RETURNING *",
       [body.name.trim(), id, tenant],
     );
@@ -598,6 +634,7 @@ const updateCategory = async (id, body, user) => {
         { statusCode: 404 },
       );
     return rows[0];
+    });
   } catch (error) {
     if (error.code === "23505")
       throw Object.assign(
@@ -609,8 +646,8 @@ const updateCategory = async (id, body, user) => {
 };
 const deleteCategory = async (id, user) => {
   const tenant = categoryActor(user);
-  const { transaction } = require("../auth/legacy-security");
   return transaction(db, async (client) => {
+    await assertShop(user,client);
     const { rows } = await client.query(
       "SELECT id FROM product_categories WHERE id=$1 AND daycare_id=$2 FOR UPDATE",
       [id, tenant],

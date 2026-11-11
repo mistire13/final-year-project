@@ -1,3 +1,4 @@
+import {usePackageFeatures} from '../../context/PackageFeaturesContext';
 import React, { useState, useEffect, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { LockKey } from "phosphor-react-native/src/icons/LockKey";
@@ -21,8 +22,10 @@ import { apiClient } from "../../api/client";
 import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { getMyOrders, OrderRecord } from "../../api/parentApi";
 import { formatMoney } from "../store/catalog";
+import {paymentProvenanceLabel} from '../../types/daycarePayments';
 
 export function OrdersScreen({ navigation }: any) {
+  const {features}=usePackageFeatures();
   const {
     data: orders,
     loading,
@@ -156,13 +159,12 @@ export function OrdersScreen({ navigation }: any) {
             color="#7E8793"
             style={{ textAlign: "center", marginTop: 8, marginBottom: 20 }}
           >
-            Browse uniforms, books, diapers, and supplies available in the
-            daycare store.
+            {features.shop?'Browse uniforms, books, diapers, and supplies available in the daycare store.':'Your existing daycare orders and receipts will appear here.'}
           </Text>
-          <Button
+          {features.shop&&<Button
             title="Visit Store"
             onPress={() => navigation.navigate("DaycareStore")}
-          />
+          />}
         </Card>
       )}
 
@@ -246,6 +248,8 @@ export function OrdersScreen({ navigation }: any) {
           ) : null}
           {selectedOrder.payment_method==='demo' && <Notice>SIMULATED PAYMENT · No money transferred. Reference: {selectedOrder.payment_reference}</Notice>}
           {selectedOrder.payment_method==='no_charge' && <Notice>No payment required for this zero-total order.</Notice>}
+          {selectedOrder.payment_status==='paid'&&selectedOrder.payment_method!=='demo'&&selectedOrder.payment_method!=='no_charge'&&<Notice>{paymentProvenanceLabel(selectedOrder.verification_source)}. Original receipt: {selectedOrder.payment_reference||'Available from daycare'}</Notice>}
+          {selectedOrder.refund&&<Card><Text weight="bold">Cash return recorded by your daycare</Text><Text>{formatMoney(Number(selectedOrder.refund.amount))} · {new Date(selectedOrder.refund.refunded_at).toLocaleString('en-GB',{timeZone:'Africa/Addis_Ababa'})} (Addis Ababa)</Text><Text>Return receipt: {selectedOrder.refund.refund_reference}</Text><Text>Original receipt: {selectedOrder.refund.original_payment_reference}</Text><Text>{selectedOrder.refund.reason}</Text><Text>This records cash returned outside Ankelba. The app did not transfer money.</Text></Card>}
           <View style={{ marginBottom: 14 }}>
             <Text size={12} color="#6B7280" style={{ lineHeight: 17 }}>
               {selectedOrder.order_status==='cancelled'?'This order was cancelled. No collection is due.':selectedOrder.order_status==='collected'?'Collection recorded by your daycare.':selectedOrder.order_status==='ready_for_pickup'?`Present Order #ANK-${selectedOrder.id} at the daycare office during collection hours.`:'Awaiting daycare preparation. Check the order status before visiting to collect.'}
@@ -260,7 +264,7 @@ export function OrdersScreen({ navigation }: any) {
             >
               Payment status: {selectedOrder.payment_status.toUpperCase()}
               {selectedOrder.order_status==='cancelled' ? ' (Order cancelled)' : selectedOrder.payment_status !== "paid"
-                ? " (Pay at the daycare)"
+                ? " (Not settled; check payment options)"
                 : selectedOrder.order_status==='collected' ? " (Collection recorded)" : selectedOrder.order_status==='ready_for_pickup' ? " (Ready for collection)" : " (Awaiting preparation)"}
             </Text>
           </View>

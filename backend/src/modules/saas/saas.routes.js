@@ -17,8 +17,10 @@ const limited = require('express-rate-limit')({windowMs:15*60*1000,max:20,standa
 const run = fn => async (req,res,next) => { try {res.json(await fn(req));} catch(e){next(e);} };
 const owner = [auth,allowRoles('super_admin')];
 const admin = [auth,allowRoles('admin')];
+router.use(require('./subscription-payments.routes'));
 router.delete('/super-admin/daycares/:id', ...owner, run(req => saasController.deleteDaycare(req)));
 router.get('/packages',run(()=>subscriptions.catalog()));
+router.get('/features',auth,allowRoles('admin','caregiver','parent'),run(req=>{if(req.user.is_impersonating)throw Object.assign(new Error('Daycare account required'),{statusCode:403});return require('./package-features').getDaycareFeatures(configuredDb.control||configuredDb,req.user.daycare_id);}));
 router.post('/application-status',limited,run(req=>subscriptions.applicationStatus(req.body)));
 router.get('/super-admin/packages',...owner,run(()=>subscriptions.catalog(true)));
 router.patch('/super-admin/packages/:code',...owner,run(req=>subscriptions.updatePackage(req.params.code,req.body,req.user.id)));

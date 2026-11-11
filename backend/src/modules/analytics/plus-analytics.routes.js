@@ -1,0 +1,11 @@
+'use strict';
+const router=require('express').Router();
+const auth=require('../../middleware/auth');
+const {allowRoles}=require('../../middleware/rbac');
+const db=require('../../config/db');
+const {createAnalyticsService,csv}=require('./plus-analytics.service');
+const service=createAnalyticsService(db);
+router.use(auth,allowRoles('admin'));
+router.get('/',async(req,res,next)=>{try{res.set('Cache-Control','no-store');res.json(await service.report(req.user,req.query));}catch(error){next(error);}});
+router.get('/export.csv',async(req,res,next)=>{try{const data=await service.report(req.user,req.query);res.set('Cache-Control','no-store');res.type('text/csv');res.set('Content-Disposition',`attachment; filename="ankelba-management-${data.filters.from}-${data.filters.to}.csv"`);res.send(csv(data));}catch(error){next(error);}});
+module.exports=router;

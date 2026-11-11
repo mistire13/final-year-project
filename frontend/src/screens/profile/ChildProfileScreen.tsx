@@ -345,13 +345,20 @@ export function ChildProfileScreen({ route, navigation }: any) {
               </Text>
             )}
 
-            <Button
-              title="View Authorized Pickups"
-              icon={UsersThree}
-              variant="outline"
-              onPress={() => navigation.navigate("AuthorizedGuardians")}
-              style={{ marginTop: 20 }}
-            />
+            <View style={{ gap: 10, marginTop: 20 }}>
+              <Button
+                title="View Authorized Pickups"
+                icon={UsersThree}
+                variant="outline"
+                onPress={() => navigation.navigate("AuthorizedGuardians")}
+              />
+              <Button
+                title="Pickup Status & Biometrics"
+                icon={ShieldCheck}
+                variant="outline"
+                onPress={() => navigation.navigate("PickupVerification")}
+              />
+            </View>
           </Card>
         </>
       )}

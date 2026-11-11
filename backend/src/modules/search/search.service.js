@@ -4,6 +4,7 @@
  * Global Search Service — multi-entity search scoped to user role permissions.
  */
 const db = require('../../config/db');
+const {getDaycareFeatures}=require('../saas/package-features');
 
 const globalSearch = async (searchTerm, user) => {
   const q = (searchTerm || '').trim();
@@ -77,7 +78,9 @@ const globalSearch = async (searchTerm, user) => {
     results.users = rows;
   }
 
+  const featureAccess=await getDaycareFeatures(db,daycareId);
   // 3. Products search (Tenant scoped)
+  if(featureAccess.features.shop){
   const { rows: prodRows } = await db.query(
     `SELECT p.id, p.name, p.price, p.stock_qty, p.available, c.name AS category_name
      FROM products p
@@ -89,6 +92,7 @@ const globalSearch = async (searchTerm, user) => {
     [term, user.role, isSuper, daycareId]
   );
   results.products = prodRows;
+  }
 
   // 4. Events search (Tenant scoped)
   const { rows: eventRows } = await db.query(

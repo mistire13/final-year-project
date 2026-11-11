@@ -1,0 +1,293 @@
+import ShopAccess from './ShopAccess';
+import React, { useState } from "react";
+import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform, Linking } from "react-native";
+import { ShoppingCart } from "phosphor-react-native/src/icons/ShoppingCart";
+import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
+import { Plus } from "phosphor-react-native/src/icons/Plus";
+import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { Receipt } from "phosphor-react-native/src/icons/Receipt";
+import {
+  Page,
+  Text,
+  Card,
+  Button,
+  Field,
+  Badge,
+  IconButton,
+  s,
+} from "../../components/design/System";
+import { useChild } from "../../context/ChildContext";
+import { useAuth } from "../../context/AuthContext";
+import { Package } from "phosphor-react-native/src/icons/Package";
+import { colors } from "../../theme/tokens";
+import { getStoreProducts, StoreProduct } from "../../api/parentApi";
+import { getWebPortalUrl } from "../../utils/host";
+import { useRemoteResource } from '../../hooks/useRemoteResource';
+
+export const formatMoney = (value: number) =>
+  value.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ETB";
+
+function DaycareStoreScreenContent({ navigation, route }: any) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const { cart, cartItemCount, cartTotal, addToCart } = useChild();
+  const {data: products, loading, error: loadError, refresh: loadProducts} = useRemoteResource<StoreProduct[]>('store-products', getStoreProducts, []);
+  const [search, setSearch] = useState("");
+
+
+  const inCart = (id: number) =>
+    cart.find((item) => item.product.id === id)?.quantity || 0;
+
+  const filtered = products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+
+  return (
+    <Page
+      contentStyle={{ paddingHorizontal: 24 }}
+      footer={
+        cartItemCount > 0 ? (
+          <View
+            style={[
+              s.between,
+              {
+                backgroundColor: "#0B2035",
+                borderRadius: 30,
+                padding: 10,
+                paddingLeft: 18,
+              },
+            ]}
+          >
+            <View style={s.row}>
+              <ShoppingCart size={23} color="white" />
+              <View>
+                <Text size={13} color="#B9C5D1">
+                  {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
+                </Text>
+                <Text size={15} weight="semibold" color="white">
+                  {formatMoney(cartTotal)}
+                </Text>
+              </View>
+            </View>
+            <Button
+              title="View Cart"
+              variant="secondary"
+              onPress={() => navigation.navigate("ShoppingCart")}
+              style={{
+                backgroundColor: "white",
+                minHeight: 38,
+                paddingVertical: 9,
+              }}
+            />
+          </View>
+        ) : undefined
+      }
+    >
+      <View style={[s.between, { marginBottom: 16 }]}>
+        {route?.name !== 'Shop' && <IconButton
+          icon={ArrowLeft}
+          label={route?.name === "Shop" ? "Go to Home" : "Go back"}
+          onPress={() => route?.name === "Shop" ? navigation.navigate("Home") : navigation.goBack()}
+        />}
+        <Text size={26} weight="bold" accessibilityRole="header" style={{ flex: 1 }}>
+          Shop
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View>
+            <IconButton
+              icon={ShoppingCart}
+              label="Shopping cart"
+              onPress={() => navigation.navigate("ShoppingCart")}
+            />
+            {cartItemCount > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  backgroundColor: "#D7443E",
+                  borderRadius: 9,
+                  width: 18,
+                  height: 18,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text size={13} color="white" weight="bold">
+                  {cartItemCount}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {isAdmin && (
+        <Card tint="#EBF5FA" style={{ marginBottom: 16, padding: 14 }}>
+          <View style={s.between}>
+            <View style={{ flex: 1, paddingRight: 10 }}>
+              <Text size={13} weight="bold" color="#006579" style={{ letterSpacing: 0.6 }}>
+                👑 DAYCARE ADMINISTRATOR
+              </Text>
+              <Text size={13} color="#2B4657" style={{ marginTop: 3, lineHeight: 18 }}>
+                Manage catalog items, stock quantities, and customer order fulfillment in your workspace portal.
+              </Text>
+            </View>
+            <Button
+              title="Admin Portal"
+              variant="outline"
+              onPress={() => {
+                if (Platform.OS === "web") {
+                  window.location.assign("/admin/store");
+                } else {
+                  Linking.openURL(getWebPortalUrl("/admin/store"));
+                }
+              }}
+              style={{ minHeight: 34, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: "#FFFFFF" }}
+            />
+          </View>
+        </Card>
+      )}
+
+      {!!loadError && <Card><Text>{loadError}</Text><Button title="Retry store" onPress={loadProducts} style={{marginTop:12}} /></Card>}
+      <Field
+        icon={MagnifyingGlass}
+        placeholder="Search supplies, uniforms, books…"
+        value={search}
+        onChangeText={setSearch}
+      />
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Order history"
+        onPress={() => navigation.navigate("Orders")}
+        style={{ minHeight: 44,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: "#F3F7FC",
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          marginTop: 12,
+          borderWidth: 1,
+          borderColor: "#DCE9FF",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Receipt size={18} color="#24476D" />
+          <Text size={13} weight="medium" color="#24476D">
+            Track past purchases & receipts
+          </Text>
+        </View>
+        <Text size={13} weight="bold" color="#2064D8">
+          Order History →
+        </Text>
+      </Pressable>
+
+      <Text size={22} weight="semibold" style={{ marginVertical: 18 }}>
+        {search ? "Search Results" : "Daycare Products"}
+      </Text>
+
+      {loading ? (
+        <View style={{ alignItems: "center", paddingVertical: 40 }}>
+          <ActivityIndicator color="#061224" />
+          <Text size={13} color={colors.textSecondary} style={{ marginTop: 10 }}>Loading products catalog…</Text>
+        </View>
+      ) : loadError ? null : filtered.length > 0 ? (
+        <View style={s.grid}>
+          {filtered.map((p) => {
+            const stock = p.stock_quantity ?? 0;
+            const priceNum = Number(p.price);
+            const qtyInCart = inCart(p.id);
+            const isOutOfStock = stock <= 0;
+            const isMaxedOut = qtyInCart >= stock;
+
+            return (
+              <Card
+                key={p.id}
+                style={{ width: "48%", padding: 0, overflow: "hidden", marginBottom: 14 }}
+              >
+                <View style={{ width: "100%", aspectRatio: 1 }}>
+                  {p.image_url ? <Image accessibilityLabel={p.name}
+                    source={{ uri: p.image_url }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                    : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgMuted, gap: 8 }}>
+                      <Package size={36} color={colors.textSecondary} />
+                      <Text size={13} color={colors.textSecondary}>No product photo</Text>
+                    </View>}
+
+                  <View style={{ position: "absolute", top: 10, left: 8 }}>
+                    <Badge
+                      title={
+                        isOutOfStock
+                          ? "OUT OF STOCK"
+                          : isMaxedOut
+                            ? "ALL IN CART"
+                            : stock <= 3
+                              ? "LOW STOCK"
+                              : "IN STOCK"
+                      }
+                      tone={isOutOfStock ? "red" : stock <= 3 ? "gold" : "green"}
+                    />
+                  </View>
+                </View>
+                <View style={{ padding: 13 }}>
+                  <Text
+                    size={14}
+                    weight="semibold"
+                    numberOfLines={2}
+                    style={{ minHeight: 40 }}
+                  >
+                    {p.name}
+                  </Text>
+                  <View style={[s.between, { marginTop: 8 }]}>
+                    <Text size={14} weight="semibold" color="#516A8B">
+                      {formatMoney(priceNum)}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={"Add " + p.name + " to cart"}
+                      disabled={isOutOfStock || isMaxedOut}
+                      onPress={() =>
+                        addToCart({
+                          id: p.id,
+                          name: p.name,
+                          image_url: p.image_url || undefined,
+                          price: priceNum,
+                          stock_quantity: stock,
+                          in_stock: !isOutOfStock,
+                        })
+                      }
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 19,
+                        opacity: isOutOfStock || isMaxedOut ? 0.35 : 1,
+                        backgroundColor: "#DCE9FF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Plus size={20} color="#24476D" />
+                    </Pressable>
+                  </View>
+                </View>
+              </Card>
+            );
+          })}
+        </View>
+      ) : (
+        <Card style={{ padding: 24, alignItems: "center" }}>
+          <Text size={15} weight="medium">No products found</Text>
+          <Text size={13} color={colors.textSecondary} style={{ marginTop: 6 }}>
+            {search ? "Try searching with a different term." : "No store items are available at this time."}
+          </Text>
+        </Card>
+      )}
+    </Page>
+  );
+}
+
+export function DaycareStoreScreen(props:any){return <ShopAccess><DaycareStoreScreenContent {...props}/></ShopAccess>;}

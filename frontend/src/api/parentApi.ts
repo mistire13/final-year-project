@@ -289,7 +289,9 @@ export interface OrderItemRecord {
 }
 
 export interface OrderRecord {
-  payment_method?: 'demo' | 'no_charge' | 'pay_at_daycare' | 'digital';
+  refund?: {id:number;amount:string|number;refund_reference:string;original_payment_reference:string;refunded_at:string;recorded_at?:string;stock_disposition:string;reason:string}|null;
+  payment_method?: 'demo' | 'no_charge' | 'pay_at_daycare' | 'digital' | 'bank_transfer';
+  verification_source?:string;
   payment_reference?: string | null;
   id: number;
   parent_id?: number;
@@ -388,6 +390,7 @@ export const updateMyProfile = async (data: UpdateMyProfileInput): Promise<any> 
 
 /** Daycare Child Care Fee Invoices & Payment Receipts (FR-ECM-01 to FR-ECM-16) */
 export interface ParentPaymentReceipt {
+  verification_source?:string;
   id: number;
   amount_paid: string | number;
   payment_method: string;

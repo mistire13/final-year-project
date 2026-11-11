@@ -1,0 +1,399 @@
+▶ essential security with separate restricted PostgreSQL logins
+  ✔ flow migration can roll back and reapply without dropping stored columns (54.9211ms)
+  ✔ startup rejects privileged logins and verifies restricted roles (289.3377ms)
+  ✔ unscoped reads fail closed and concurrent tenants stay isolated (91.3326ms)
+  ✔ one physical connection clears scope after commits, failures and background jobs (88.7587ms)
+  ✔ startup catches policy and control-grant regressions beyond core tables (192.3973ms)
+  ✖ evidence migration refuses inconsistent history and can roll back and reapply (113.0198ms)
+  ✖ database constrains biometric, pickup and audit actors even for maintenance SQL (7.4763ms)
+  ✖ control can update and audit package terms without accessing child evidence (38.8305ms)
+02:56:26 [[32minfo[39m]: User 4 (parent) authenticated
+02:56:26 [[32minfo[39m]: User 5 (parent) authenticated
+02:56:26 [[32minfo[39m]: User 2 (admin) authenticated
+02:56:26 [[32minfo[39m]: User 3 (caregiver) authenticated
+02:56:26 [[32minfo[39m]: User 6 (super_admin) authenticated
+02:56:27 [[31merror[39m]: Error: Child not linked to this account.
+    at assertParentOwnsChild (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.parent.service.js:30:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getMyChild (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.parent.service.js:70:5)
+  ✔ restricted HTTP login and parent profile loading work (244.1192ms)
+02:56:27 [[31merror[39m]: Error: Child profile not found
+    at Object.createReport (C:\Users\Mistire\Desktop\final year project\backend\src\modules\reports\reports.service.js:25:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createReport (C:\Users\Mistire\Desktop\final year project\backend\src\modules\reports\reports.controller.js:10:20)
+  ✔ staff can operate within their daycare and parents cannot open staff APIs (183.6878ms)
+02:56:27 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+    at conflict (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:3:38)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:21:100
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (C:\Users\Mistire\Desktop\final year project\backend\src\utils\auditedWrite.js:28:22)
+    at async addContact (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.controller.js:13:79)
+02:56:27 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+    at conflict (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:3:38)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:21:100
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (C:\Users\Mistire\Desktop\final year project\backend\src\utils\auditedWrite.js:28:22)
+    at async addContact (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.controller.js:13:79)
+02:56:27 [[31merror[39m]: Error: Profile changed. Reload it before saving.
+    at fail (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.profile-save.js:7:53)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.profile-save.js:71:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\auth\legacy-security.js:62:20)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.profile-save.js:102:18
+  ✔ parent and admin care writers invalidate each other and serialize concurrent edits (134.2242ms)
+02:56:27 [[31merror[39m]: Error: No active front-desk assignment for this child and action.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at assertScope (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:34:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:78:16
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:9:49)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:51
+02:56:27 [[31merror[39m]: Error: Child must be checked in before pickup.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:85:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:9:49)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:51
+  ✖ assigned caregiver check-in and verified manual pickup commit with scoped evidence (68.826ms)
+  ✔ announcement details enforce audience, expiry and tenant boundaries (79.4704ms)
+02:56:27 [[31merror[39m]: Error: This feature requires an active Plus subscription.
+    at requireFeature (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\package-features.js:25:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.createProduct (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:59:3)
+    at async createProduct (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:19:20)
+02:56:27 [[31merror[39m]: ValidationError: "items[0].product_id" is required
+02:56:27 [[31merror[39m]: ValidationError: "items[0].product_id" is required
+  ✖ checkout retries preserve one order, notes and inventory; changed payload conflicts (22.7537ms)
+02:56:27 [[31merror[39m]: Error: Event changed. Reload before saving.
+    at Object.updateEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.service.js:142:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.controller.js:28:20)
+02:56:27 [[31merror[39m]: Error: Center settings changed. Reload before saving.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:185:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:9:49)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:51
+  ✔ event and center settings edits reject stale versions (52.7579ms)
+02:56:27 [[31merror[39m]: Error: This feature requires an active Plus subscription.
+    at requireFeature (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\package-features.js:25:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async Object.createProduct (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:59:3)
+    at async createProduct (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:19:20)
+02:56:27 [[31merror[39m]: ValidationError: "items[0].product_id" is required
+02:56:27 [[31merror[39m]: ValidationError: "version" is required
+02:56:27 [[31merror[39m]: ValidationError: "version" is required
+  ✖ order edits reject stale writes and cancellation returns stock once (21.0242ms)
+02:56:27 [[31merror[39m]: Error: Event changed. Reload before cancelling.
+    at Object.cancelEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.service.js:179:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async cancelEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.controller.js:37:20)
+02:56:27 [[31merror[39m]: ValidationError: "version" is required
+  ✔ event cancellation conflicts with stale edits and stays tenant scoped (38.9548ms)
+02:56:27 [[31merror[39m]: Error: Event unavailable
+    at Object.save (C:\Users\Mistire\Desktop\final year project\backend\src\modules\notifications\preferences.js:66:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\notifications\notifications.routes.js:13:72
+  ✔ preferences and reminders persist per account; health notify sends one parent message (144.9121ms)
+02:56:27 [[31merror[39m]: Error: Subscription changes require platform approval. Contact platform support.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at Object.renewPlan (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:192:9)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:20:65
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:57
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at middleware (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\rbac.js:32:3)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:119:3)
+02:56:27 [[31merror[39m]: Error: Platform operators cannot impersonate daycare accounts.
+    at Object.impersonateDaycare (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\saas.service.js:721:23)
+    at impersonateDaycare (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\saas.controller.js:132:39)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at middleware (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\rbac.js:32:3)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at auth (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\auth.js:68:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+  ✔ self-renewal and impersonation fail without changing subscription (16.6433ms)
+  ✔ platform governance works using aggregates while private APIs stay denied (859.7118ms)
+✖ essential security with separate restricted PostgreSQL logins (8622.4354ms)
+✔ webhook rejects {"tx_ref":"synthetic-existing-reference"} before accessing payment data (3.8481ms)
+✔ webhook rejects {"tx_ref":"synthetic-existing-reference","status":"success"} before accessing payment data (0.3977ms)
+✔ webhook rejects {"gateway_ref":"synthetic-existing-reference","status":"failed"} before accessing payment data (0.5185ms)
+✔ webhook rejects {} before accessing payment data (0.4093ms)
+✔ webhook rejects null before accessing payment data (2.1584ms)
+✔ digital initiation cannot create a checkout or reset a paid order (0.5366ms)
+✔ pay_at_daycare initiation cannot create a checkout or reset a paid order (0.3697ms)
+✔ existing payment status remains readable by its parent (1.3479ms)
+✔ reading a payment still rejects another parent (0.4829ms)
+✔ mounted endpoints return unavailable instead of acknowledging a payment (446.7866ms)
+▶ phase two: daycare isolation and permission enforcement
+  ✔ admin A only sees users from daycare A and never super_admin (25.925ms)
+  ✔ admin A cannot get, update, or deactivate user from daycare B (9.7399ms)
+  ✔ owner-only admin appointment: tenant admin cannot create another admin (B07) (0.3247ms)
+  ✔ tenant admin creating caregiver stamps actor daycare_id (B04) (65.9873ms)
+  ✔ admin A only lists children from daycare A (6.8263ms)
+  ✔ admin A cannot get or update child from daycare B (1.7029ms)
+  ✔ admin A cannot assign caregiver or group from daycare B to child A (2.2301ms)
+  ✔ admin A cannot link parent B to child A (1.1615ms)
+  ✔ admin A cannot add, update or delete emergency contacts or care instructions on child B (2.3124ms)
+  ✔ parent A cannot self-authorize pickup or change classroom group (B08) (104.778ms)
+  ✔ admin A only sees daycare A groups and cannot modify group B (3.1063ms)
+  ✔ health records stamp daycare_id and reject cross-daycare access and unassigned caregivers (14.9792ms)
+  ✔ announcements stamp daycare_id and isolate across tenants (10.3766ms)
+  ✔ direct messages reject cross-daycare recipients (0.9341ms)
+  ✔ alerts reject targeting users from another daycare (0.5874ms)
+  ✔ daily reports stamp daycare_id and isolate across tenants (8.1598ms)
+  ✖ store products and orders enforce strict daycare isolation (2.0832ms)
+  ✔ calendar events stamp daycare_id and isolate across tenants (18.6534ms)
+  ✖ global search results never leak records from another daycare (7.8818ms)
+  ✖ admin dashboard statistics only aggregate for own daycare (64.5932ms)
+  ✔ audit logs stamp daycare_id and isolate across tenants (14.5367ms)
+  ▶ restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+    ✔ un-contexted queries fail closed and return 0 rows under RLS (23.0836ms)
+    ✔ queries with Daycare A context return only Daycare A rows without WHERE clause (2.4157ms)
+    ✔ direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy (1.742ms)
+    ✔ direct SQL insert into dependent table for cross-tenant child is rejected by RLS (1.4666ms)
+    ✔ direct SQL update targeting Daycare B record under Daycare A context affects 0 rows (1.292ms)
+    ✔ queries with Daycare B context return only Daycare B rows (0.935ms)
+    ✔ tenant connection pool isolates context, prevents leakage across checkouts, and fails closed (98.1558ms)
+  ✔ restricted non-superuser role enforces RLS, fails closed without context, and isolates data (473.8223ms)
+✖ phase two: daycare isolation and permission enforcement (4656.2099ms)
+ℹ tests 61
+ℹ suites 0
+ℹ pass 50
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8949.6507
+
+✖ failing tests:
+
+test at scripts\essential-security.test.cjs:117:13
+✖ evidence migration refuses inconsistent history and can roll back and reapply (113.0198ms)
+  error: SELECT pg_get_serial_sequence('public.' || quote_ident(c.relname), 'id') AS sequence
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r'
+        AND has_table_privilege('ankelba_tenant', c.oid, 'INSERT') - column "id" of relation "billing_automation_settings" does not exist
+      at parseErrorMessage (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\parser.js:306:11)
+      at Parser.handlePacket (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\parser.js:143:27)
+      at Parser.parse (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\parser.js:37:38)
+      at Socket.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\index.js:12:42)
+      at Socket.emit (node:events:508:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+    length: 139,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'ruleutils.c',
+    line: '2861',
+    routine: 'pg_get_serial_sequence'
+  }
+
+test at scripts\essential-security.test.cjs:128:13
+✖ database constrains biometric, pickup and audit actors even for maintenance SQL (7.4763ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:131:7)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:128:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: { code: '23503' },
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at scripts\essential-security.test.cjs:149:13
+✖ control can update and audit package terms without accessing child evidence (38.8305ms)
+  Error: "features" is not allowed. "feature_policy_version" is not allowed
+      at fail (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\subscriptions.service.js:6:59)
+      at validate (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\subscriptions.service.js:9:20)
+      at Object.updatePackage (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\subscriptions.service.js:100:19)
+      at TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:153:35)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:149:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    statusCode: 422
+  }
+
+test at scripts\essential-security.test.cjs:212:13
+✖ assigned caregiver check-in and verified manual pickup commit with scoped evidence (68.826ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  undefined !== 2
+  
+      at TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:220:46)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:212:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts\essential-security.test.cjs:234:13
+✖ checkout retries preserve one order, notes and inventory; changed payload conflicts (22.7537ms)
+  AssertionError [ERR_ASSERTION]: {"error":"Validation failed","fields":[{"field":"product_id","message":"\"items[0].product_id\" is required"}]}
+  
+  422 !== 201
+  
+      at C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:238:33
+      at Array.forEach (<anonymous>)
+      at TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:238:15)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:234:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at scripts\essential-security.test.cjs:255:13
+✖ order edits reject stale writes and cancellation returns stock once (21.0242ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   422,
+  +   422
+  -   200,
+  -   409
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:261:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\essential-security.test.cjs:255:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 422, 422 ],
+    expected: [ 200, 409 ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at scripts\phase2-daycare-isolation.test.cjs:420:13
+✖ store products and orders enforce strict daycare isolation (2.0832ms)
+  error: column "deleted_at" does not exist
+      at C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async getDaycareFeatures (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\package-features.js:20:14)
+      at async requireFeature (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\package-features.js:24:16)
+      at async Object.createProduct (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:59:3)
+      at async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:421:18)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:420:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:138:3) {
+    length: 110,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '18',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3859',
+    routine: 'errorMissingColumn'
+  }
+
+test at scripts\phase2-daycare-isolation.test.cjs:505:13
+✖ global search results never leak records from another daycare (7.8818ms)
+  error: column "deleted_at" does not exist
+      at C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async getDaycareFeatures (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\package-features.js:20:14)
+      at async Object.globalSearch (C:\Users\Mistire\Desktop\final year project\backend\src\modules\search\search.service.js:81:23)
+      at async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:507:26)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:505:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:138:3)
+      at async Test.run (node:internal/test_runner/test:1125:7) {
+    length: 110,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '18',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3859',
+    routine: 'errorMissingColumn'
+  }
+
+test at scripts\phase2-daycare-isolation.test.cjs:529:13
+✖ admin dashboard statistics only aggregate for own daycare (64.5932ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:542:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:529:5
+      at async withIsolatedDatabase (C:\Users\Mistire\Desktop\final year project\backend\scripts\helpers\auth-test-database.cjs:74:5)
+      at async TestContext.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\scripts\phase2-daycare-isolation.test.cjs:138:3)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

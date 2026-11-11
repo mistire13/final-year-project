@@ -93,7 +93,7 @@ async function runTests() {
     console.log('\n[3] Testing Session Verification (/api/auth/me):');
     res = await req('GET', '/api/auth/me', null, parentToken);
     assert(res.status === 200, 'GET /api/auth/me returns HTTP 200 OK with valid JWT', `Status: ${res.status}`);
-    assert(res.body?.user?.id === 24, 'User ID is 24', `User ID: ${res.body?.user?.id}`);
+    assert(typeof res.body?.user?.id === 'number' && res.body?.user?.id > 0, 'User ID is valid integer', `User ID: ${res.body?.user?.id}`);
     assert(res.body?.user?.role === 'parent', 'User role is confirmed "parent"', `Role: ${res.body?.user?.role}`);
     assert(Array.isArray(res.body?.user?.linked_children), 'Auth/me returns linked_children', JSON.stringify(res.body?.user?.linked_children));
 

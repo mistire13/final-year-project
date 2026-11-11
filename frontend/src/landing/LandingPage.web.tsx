@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./landing.css";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
-import { portalApi, apiError } from "../portal/api";
+import { motion, useReducedMotion } from "motion/react";
 import { Icon } from "../portal/ui.web";
 import HeroAtmosphere from "./HeroAtmosphere.web";
 import AppShowcase from "./AppShowcase.web";
 import LandingExperience from "./LandingExperience.web";
 import LandingFooter from "./LandingFooter.web";
+import PublicNavMenu from "./PublicNavMenu.web";
 
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
 
@@ -22,43 +22,25 @@ function NurseryBackdrop() {
   );
 }
 
-interface RegisterFormState {
-  daycareName: string;
-  citySubcity: string;
-  contactEmail: string;
-  contactPhone: string;
-  licenseNumber: string;
-  adminName: string;
-  adminEmail: string;
-  adminPhone: string;
-  adminPassword: string;
-  requestedPlan: "standard" | "premium";
-}
-
-const initialForm: RegisterFormState = {
-  daycareName: "",
-  citySubcity: "",
-  contactEmail: "",
-  contactPhone: "",
-  licenseNumber: "",
-  adminName: "",
-  adminEmail: "",
-  adminPhone: "",
-  adminPassword: "",
-  requestedPlan: "standard",
-};
-
 export default function LandingPage() {
   const reduce = useReducedMotion();
   const scrollRoot = useRef<HTMLDivElement>(null);
   const hero = useRef<HTMLElement>(null);
   const navigation = useRef<HTMLElement>(null);
   const [overHero, setOverHero] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<RegisterFormState>(initialForm);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [submittedSuccess, setSubmittedSuccess] = useState(false);
+
+  useEffect(() => {
+    let frame = 0;
+    const alignSection = () => {
+      const id = window.location.hash.slice(1);
+      if (!["why-ankelba", "features", "a-day-together"].includes(id)) return;
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "instant", block: "start" }));
+    };
+    alignSection();
+    window.addEventListener("hashchange", alignSection);
+    return () => { window.cancelAnimationFrame(frame); window.removeEventListener("hashchange", alignSection); };
+  }, []);
 
   useEffect(() => {
     const root = scrollRoot.current;
@@ -86,54 +68,15 @@ export default function LandingPage() {
     };
   }, []);
 
-  // Close modal on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && modalOpen) setModalOpen(false);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [modalOpen]);
-
   const navigateTo = (path: string) => {
     window.history.pushState({}, "", path);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
-
-  const openRegisterModal = (plan: "standard" | "premium" = "standard") => {
-    setError(null);
-    setSubmittedSuccess(false);
-    setForm((prev) => ({ ...prev, requestedPlan: plan }));
-    setModalOpen(true);
-  };
-
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      await portalApi.registerDaycare({
-        daycareName: form.daycareName,
-        licenseNumber: form.licenseNumber || "N/A",
-        contactEmail: form.contactEmail,
-        contactPhone: form.contactPhone,
-        address: form.citySubcity,
-        adminName: form.adminName,
-        adminEmail: form.adminEmail,
-        adminPassword: form.adminPassword,
-        requestedPlan: form.requestedPlan,
-        billingCycle: "monthly",
-        termsVersion: 1,
-      });
-
-      setSubmittedSuccess(true);
-      setForm(initialForm);
-    } catch (err: any) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
+  const openPricing = (daycareName = "") => {
+    if (daycareName) {
+      try { window.sessionStorage.setItem("ankelba_daycare_name", daycareName); } catch {}
     }
+    navigateTo("/pricing");
   };
 
   // Motion animation presets
@@ -156,13 +99,7 @@ export default function LandingPage() {
           </div>
         </a>
 
-        <nav className="ankelba-home-menu" aria-label="Main Navigation">
-          <a href="#why-ankelba">Why Ankelba</a>
-          <a href="#features">Features</a>
-          <a href="#a-day-together">How it works</a>
-
-          <a href="/application-status">Check Status</a>
-        </nav>
+        <PublicNavMenu activePage="home" />
 
         <div className="ankelba-home-nav-actions">
           <motion.button
@@ -188,7 +125,7 @@ export default function LandingPage() {
             whileTap={reduce ? undefined : { scale: 0.98 }}
             type="button"
             className="btn-pill btn-pill-primary"
-            onClick={() => openRegisterModal()}
+            onClick={() => openPricing()}
           >
             Register Daycare <Icon name="arrow" size={16} />
           </motion.button>
@@ -216,7 +153,7 @@ export default function LandingPage() {
               whileTap={reduce ? undefined : { scale: 0.98 }}
               type="button"
               className="btn-pill btn-pill-primary"
-              onClick={() => openRegisterModal()}
+              onClick={() => openPricing()}
               style={{ padding: "0.85rem 1.75rem", fontSize: "1rem" }}
             >
               Register your daycare <Icon name="arrow" size={18} />
@@ -274,210 +211,13 @@ export default function LandingPage() {
           { question: "Who is Ankelba for?", answer: "Ankelba connects parents and guardians with caregivers and daycare administrators. Families use the parent app, while staff manage their responsibilities through the daycare portal." },
           { question: "How do parents get connected?", answer: "Your daycare needs to be registered with Ankelba. Ask the daycare team about getting your parent account connected to your child’s profile, then sign in through the parent app." },
           { question: "What can families follow during the day?", answer: "Caregivers can record meals, sleep, learning, play, mood and observations. Parents can review the reports shared by their daycare and use messages to keep the conversation going." },
-          { question: "How does a daycare get started?", answer: "Select Register Daycare to submit your center’s details and a director account. You can check the application’s progress using the application status page." },
+          { question: "How does a daycare get started?", answer: "Choose Standard or Plus, select a billing period, and confirm your payment. Then submit your daycare application for review and follow its progress on the application status page." },
         ].map(item => <details key={item.question}><summary>{item.question}<span aria-hidden="true">+</span></summary><p>{item.answer}</p></details>)}</div>
       </section>
       <LandingFooter
-        onRegister={daycareName => {
-          openRegisterModal();
-          setForm(previous => ({ ...previous, daycareName }));
-        }}
+        onRegister={daycareName => openPricing(daycareName)}
         onBackToTop={() => scrollRoot.current?.scrollTo({ top: 0, behavior: reduce ? "instant" : "smooth" })}
       />
-      <AnimatePresence>
-        {modalOpen && (
-          <motion.div
-            className="modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setModalOpen(false)}
-          >
-            <motion.div
-              className="register-dialog"
-              initial={reduce ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 16 }}
-              transition={{ duration: 0.25 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button className="dialog-close" onClick={() => setModalOpen(false)} aria-label="Close dialog">
-                <Icon name="close" size={16} />
-              </button>
-
-              <div className="dialog-header">
-                <h3>Register Your Daycare</h3>
-                <p>Submit your application to launch your center on the Ankelba platform.</p>
-              </div>
-
-              {error && (
-                <div role="alert" style={{ background: "#FDECEE", color: "#C2185B", padding: "0.85rem 1.15rem", borderRadius: "12px", marginBottom: "1.25rem", border: "1px solid #F8D2DA", fontSize: "0.92rem", fontWeight: 600 }}>
-                  {error}
-                </div>
-              )}
-
-              {submittedSuccess ? (
-                <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--pastel-green)", color: "var(--pastel-green-text)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.25rem" }}>
-                    <Icon name="check" size={28} />
-                  </div>
-                  <h4 style={{ fontSize: "1.4rem", fontWeight: 800, margin: "0 0 0.5rem 0", color: "var(--ankelba-navy)" }}>Application Submitted!</h4>
-                  <p style={{ color: "var(--ankelba-muted)", maxWidth: 440, margin: "0 auto 1.5rem" }}>
-                    Your registration has been forwarded to the Platform Operator for verification. You can track your approval status anytime.
-                  </p>
-                  <motion.button
-                    whileHover={{ y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="button"
-                    className="btn-pill btn-pill-primary"
-                    onClick={() => {
-                      setModalOpen(false);
-                      navigateTo("/application-status");
-                    }}
-                  >
-                    Track Application Status →
-                  </motion.button>
-                </div>
-              ) : (
-                <form onSubmit={handleRegisterSubmit}>
-                  <div className="form-grid-two">
-                    <div className="form-group">
-                      <label htmlFor="daycareName">Daycare Center Name *</label>
-                      <input
-                        id="daycareName"
-                        type="text"
-                        required
-                        placeholder="e.g. Bright Stars Daycare"
-                        value={form.daycareName}
-                        onChange={(e) => setForm({ ...form, daycareName: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="citySubcity">City & Subcity *</label>
-                      <input
-                        id="citySubcity"
-                        type="text"
-                        required
-                        placeholder="e.g. Bole Subcity, Addis Ababa"
-                        value={form.citySubcity}
-                        onChange={(e) => setForm({ ...form, citySubcity: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-grid-two">
-                    <div className="form-group">
-                      <label htmlFor="contactEmail">Daycare Official Email *</label>
-                      <input
-                        id="contactEmail"
-                        type="email"
-                        required
-                        placeholder="contact@brightstars.com"
-                        value={form.contactEmail}
-                        onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="contactPhone">Official Phone Number *</label>
-                      <input
-                        id="contactPhone"
-                        type="tel"
-                        required
-                        placeholder="+251 91 123 4567"
-                        value={form.contactPhone}
-                        onChange={(e) => setForm({ ...form, contactPhone: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group full">
-                    <label htmlFor="licenseNumber">Trade / Educational License Number</label>
-                    <input
-                      id="licenseNumber"
-                      type="text"
-                      placeholder="e.g. BL-2026-8849"
-                      value={form.licenseNumber}
-                      onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-grid-two">
-                    <div className="form-group">
-                      <label htmlFor="adminName">Director / Admin Name *</label>
-                      <input
-                        id="adminName"
-                        type="text"
-                        required
-                        placeholder="e.g. Selamawit Tadesse"
-                        value={form.adminName}
-                        onChange={(e) => setForm({ ...form, adminName: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="adminEmail">Director Sign-In Email *</label>
-                      <input
-                        id="adminEmail"
-                        type="email"
-                        required
-                        placeholder="director@brightstars.com"
-                        value={form.adminEmail}
-                        onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-grid-two">
-                    <div className="form-group">
-                      <label htmlFor="adminPassword">Admin Account Password *</label>
-                      <input
-                        id="adminPassword"
-                        type="password"
-                        required
-                        minLength={6}
-                        placeholder="At least 6 characters"
-                        value={form.adminPassword}
-                        onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="requestedPlan">Subscription Plan Choice</label>
-                      <select
-                        id="requestedPlan"
-                        value={form.requestedPlan}
-                        onChange={(e) => setForm({ ...form, requestedPlan: e.target.value as "standard" | "premium" })}
-                      >
-                        <option value="standard">Standard Plan</option>
-                        <option value="premium">Premium Plan</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
-                    <button
-                      type="button"
-                      className="btn-pill btn-pill-ghost"
-                      onClick={() => setModalOpen(false)}
-                      disabled={loading}
-                    >
-                      Cancel
-                    </button>
-                    <motion.button
-                      whileHover={{ y: -1 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={loading}
-                      className="btn-pill btn-pill-primary"
-                      style={{ padding: "0.75rem 1.75rem" }}
-                    >
-                      {loading ? "Submitting Application..." : "Submit Application →"}
-                    </motion.button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

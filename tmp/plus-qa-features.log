@@ -1,0 +1,49 @@
+✔ analytics validates real calendar dates, bounds ranges and keeps monetary comparisons exact (2.7264ms)
+✔ Plus analytics reconcile actual periods, isolate tenants and record genuine occupancy changes (2676.5261ms)
+✔ billing fee calculations use exact cents, require positive fees and Addis Ababa calendar dates (14.0048ms)
+✔ Plus billing previews, concurrent invoice runs, reminders, opt-in, retries and isolation persist correctly (2613.7753ms)
+✔ Plus capabilities are explicit, paid-period aware and cannot be added to Standard terms (1.375ms)
+✖ Standard cannot create shop sales; existing orders retain audited cash settlement after downgrade (2609.4057ms)
+✔ weekly shifts use Addis Ababa time, bound overnight duration and detect conflicts (8.6917ms)
+✔ reviewed schedules, leave and substitutions preserve scoped duties and reject duplicate or cross-tenant changes (2601.967ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3022.538
+
+✖ failing tests:
+
+test at scripts\plus-package-access.test.cjs:23:1
+✖ Standard cannot create shop sales; existing orders retain audited cash settlement after downgrade (2609.4057ms)
+  error: insert into "users" ("daycare_id", "email", "name", "password_hash", "role_id", "status") values ($1, $2, $3, $4, $5, $6) returning * - insert or update on table "users" violates foreign key constraint "users_role_id_foreign"
+      at parseErrorMessage (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\parser.js:306:11)
+      at Parser.handlePacket (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\parser.js:143:27)
+      at Parser.parse (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\parser.js:37:38)
+      at Socket.<anonymous> (C:\Users\Mistire\Desktop\final year project\backend\node_modules\pg-protocol\dist\index.js:12:42)
+      at Socket.emit (node:events:508:28)
+      at addChunk (node:internal/streams/readable:563:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)
+      at Readable.push (node:internal/streams/readable:394:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23) {
+    length: 248,
+    severity: 'ERROR',
+    code: '23503',
+    detail: 'Key (role_id)=(1) is not present in table "roles".',
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: 'public',
+    table: 'users',
+    column: undefined,
+    dataType: undefined,
+    constraint: 'users_role_id_foreign',
+    file: 'ri_triggers.c',
+    line: '2783',
+    routine: 'ri_ReportViolation'
+  }

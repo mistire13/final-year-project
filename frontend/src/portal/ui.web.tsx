@@ -362,6 +362,7 @@ export type FieldSpec = {
   hint?: string;
   min?: string;
   max?: string;
+  step?: string;
 };
 export function openDataUrlSafe(dataUrl?: string | null, fileName = "document") {
   if (!dataUrl) return;
@@ -793,7 +794,7 @@ export function RecordForm({
                 required={field.required}
                 min={field.min}
                 max={field.max}
-                step={field.type === "number" ? "any" : undefined}
+                step={field.step ?? (field.type === "number" ? "any" : undefined)}
                 value={values[field.key] ?? ""}
                 onChange={(e) => change(field.key, e.target.value)}
               />

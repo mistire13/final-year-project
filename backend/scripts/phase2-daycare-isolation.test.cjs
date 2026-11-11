@@ -45,8 +45,8 @@ async function fixture(db) {
 
   // Create two daycares
   const [daycareA, daycareB] = await db('daycares').insert([
-    { name: `Daycare A ${suffix}`, slug: `daycare-a-${suffix}`, contact_email: `daycare-a-${suffix}@example.invalid`, status: 'active' },
-    { name: `Daycare B ${suffix}`, slug: `daycare-b-${suffix}`, contact_email: `daycare-b-${suffix}@example.invalid`, status: 'active' },
+    { name: `Daycare A ${suffix}`, slug: `daycare-a-${suffix}`, contact_email: `daycare-a-${suffix}@example.invalid`, status: 'active', subscription_plan: 'premium' },
+    { name: `Daycare B ${suffix}`, slug: `daycare-b-${suffix}`, contact_email: `daycare-b-${suffix}@example.invalid`, status: 'active', subscription_plan: 'premium' },
   ]).returning('*');
 
   const passwordHash = await bcrypt.hash(password, 4);
@@ -142,6 +142,21 @@ test('phase two: daycare isolation and permission enforcement', async (t) => {
     await require('../src/db/migrations/033_child_and_classroom_edit_versions').up(db);
     await require('../src/db/migrations/039_child_registration_documents').up(db);
     await db.schema.alterTable('children', t => t.decimal('monthly_care_fee',10,2).defaultTo(3500));
+    // Preserve the pre-RLS upgrade scenario while supplying current entitlement fields.
+    await db.schema.alterTable('daycares', t => {
+      t.timestamp('deleted_at', { useTz: true });
+      t.jsonb('subscription_terms');
+      t.timestamp('subscription_ends_at', { useTz: true });
+      t.timestamp('legacy_shop_access_until', { useTz: true });
+    });
+    // Current read models include refund evidence. Keep this original pre-RLS
+    // isolation scenario; the full ledger constraints are tested on latest DBs.
+    await db.schema.createTable('shop_order_refunds',t=>{
+      t.increments('id');t.integer('order_id');t.integer('daycare_id');t.integer('parent_id');t.decimal('amount',10,2);
+      t.text('refund_reference');t.text('original_payment_reference');t.timestamp('refunded_at',{useTz:true});
+      t.timestamp('recorded_at',{useTz:true});t.text('stock_disposition');t.text('reason');
+    });
+    await db.schema.alterTable('payments',t=>{t.text('verification_source').defaultTo('manual_recorded');t.uuid('daycare_payment_request_id');});
     const f = await fixture(db);
     const mod = setupContext(pool);
 
@@ -469,16 +484,19 @@ test('phase two: daycare isolation and permission enforcement', async (t) => {
     // ─────────────────────────────────────────────────────────────────────────
     let eventA, eventB;
     await t.test('calendar events stamp daycare_id and isolate across tenants', async () => {
+      // Derive future dates from PostgreSQL's clock, which also controls the
+      // default upcoming-events filter; fixed dates eventually become stale.
+      const { rows: [dates] } = await db.raw('SELECT (CURRENT_DATE + 1)::text AS first, (CURRENT_DATE + 2)::text AS second');
       eventA = await mod.eventsService.createEvent({
         title: 'Daycare A Parent Meeting',
-        event_date: '2026-11-01',
+        event_date: dates.first,
         event_type: 'meeting',
       }, f.adminA);
       assert.equal(eventA.daycare_id, f.daycareA.id);
 
       eventB = await mod.eventsService.createEvent({
         title: 'Daycare B Field Trip',
-        event_date: '2026-11-02',
+        event_date: dates.second,
         event_type: 'activity_day',
       }, f.adminB);
       assert.equal(eventB.daycare_id, f.daycareB.id);

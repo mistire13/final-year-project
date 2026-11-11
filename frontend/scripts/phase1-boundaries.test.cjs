@@ -21,7 +21,19 @@ function load(relative, modules = {}, globals = {}) {
     module, exports: module.exports, console, process, URL, __DEV__: true,
     require: (name) => {
       if (Object.hasOwn(modules, name)) return modules[name];
-      if (name === "./previewPolicy") return load("../src/portal/previewPolicy.ts");
+      if (name.startsWith("phosphor-react-native")) return modules["phosphor-react-native"] || {};
+      if (name === "./previewPolicy") return load("../src/portal/previewPolicy.ts", modules, globals);
+      if (name === "./workspaceRoutes" || name === "./workspaceRoutes.ts") return load("../src/portal/workspaceRoutes.ts", modules, globals);
+      if (name.includes("WebMotion")) return {
+        WebMotionProvider: ({ children }) => children,
+        PageTransition: ({ children }) => children,
+      };
+      if (name.includes("SurfaceBoundary")) return {
+        SurfaceBoundary: ({ children }) => children,
+      };
+      if (name.endsWith(".css")) return {};
+      if (name.endsWith(".web") || name.endsWith(".web.tsx") || name.includes(".web")) return () => null;
+      if (name === "../utils/host" || name === "../../utils/host") return { getApiBaseUrl: () => "http://localhost:5000/api", getWebPortalUrl: () => "http://localhost:5000" };
       return localRequire(name);
     },
     ...globals,
@@ -69,7 +81,9 @@ test("an expired saved session is cleared without a fallback login", async () =>
   const fixture = apiFixture("/staff/workspace", "expired-synthetic-token");
   fixture.portalClient.defaults.adapter = async (config) => {
     fixture.requests.push(config);
-    throw new Error("Expired session");
+    const err = new Error("Expired session");
+    err.response = { status: 401 };
+    throw err;
   };
   assert.equal(await fixture.portalApi.session(), null);
   assert.deepEqual(fixture.requests.map((request) => [request.method, request.url]), [["get", "/auth/me"]]);
@@ -139,7 +153,7 @@ function elements(tree) {
 function portalFixture(pathname) {
   const state = hooks();
   const calls = [];
-  const portalApi = Object.fromEntries(["session", "login", "logout", "snapshot", "save", "ensureDevSession"].map((method) => [method, async () => { calls.push(method); return null; }]));
+  const portalApi = Object.fromEntries(["session", "login", "logout", "snapshot", "save", "ensureDevSession", "getBroadcast"].map((method) => [method, async () => { calls.push(method); return null; }]));
   const stubs = Object.fromEntries(["Analytics", "Attendance", "Children", "Duties", "Groups", "Monitoring", "Overview", "Registry", "Reports", "Badge", "Button", "Card", "Icon", "Modal", "Person", "RecordForm"].map((name) => [name, function Stub() {}]));
   const window = browser(pathname, "real-session-must-not-be-read");
   const Portal = load("../src/portal/Portal.web.tsx", {
@@ -179,7 +193,7 @@ test("normal portal mount checks the current session and then requires explicit 
   await fixture.state.effects();
   const tree = fixture.render();
   assert.ok(elements(tree).some((element) => element.type === "form"));
-  assert.deepEqual(fixture.calls, ["session"]);
+  assert.deepEqual(fixture.calls, ["session", "getBroadcast"]);
 });
 
 test("production preview routes cannot mount a live portal, and development route modes use separate state", () => {
@@ -187,7 +201,7 @@ test("production preview routes cannot mount a live portal, and development rout
   const renderGate = (pathname, development) => {
     const state = hooks();
     const Gate = load("../src/portal/PortalGate.web.tsx", {
-      react: state.react, "./Portal.web": PortalStub,
+      react: state.react, "./Portal.web": PortalStub, "../admin/DaycareAdmin.web": PortalStub,
       "./LandingPage.web": () => null, "./SuperAdmin.web": () => null,
     }, { window: browser(pathname), __DEV__: development }).default;
     return Gate({ children: null });

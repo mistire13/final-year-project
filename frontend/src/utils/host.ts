@@ -1,11 +1,15 @@
 import { NativeModules, Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-const FALLBACK_HOST = '192.168.100.201';
+// Current machine local Wi-Fi IP address
+const FALLBACK_HOST = '192.168.8.104';
 
 /**
  * Resolves the host IP or domain of the dev server / host machine.
- * In React Native / Expo Go, `NativeModules.SourceCode.scriptURL` contains
- * the exact host the JS bundle was downloaded from (e.g. 192.168.100.236).
+ * 1. Web: Uses window.location.hostname (works on desktop and mobile browser)
+ * 2. Expo Go (Mobile): Uses Constants.expoConfig.hostUri or manifest debuggerHost
+ * 3. React Native NativeModules: Uses SourceCode.scriptURL
+ * 4. Fallback: Uses active LAN IP
  */
 export const getDevServerHost = (): string => {
   if (Platform.OS === 'web') {
@@ -17,10 +21,22 @@ export const getDevServerHost = (): string => {
     return 'localhost';
   }
 
+  // 1. In modern Expo Go, hostUri contains the exact IP Metro runs on (e.g. "192.168.8.104:8081")
+  const hostUri = Constants?.expoConfig?.hostUri 
+    || (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost 
+    || (Constants as any)?.manifest?.debuggerHost;
+
+  if (hostUri && typeof hostUri === 'string') {
+    const host = hostUri.replace(/^[a-z]+:\/\//i, '').split('/')[0].split(':')[0];
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return host;
+    }
+  }
+
+  // 2. Try NativeModules scriptURL
   const scriptURL = NativeModules?.SourceCode?.scriptURL as string | undefined;
   if (scriptURL) {
     try {
-      // Formats: "http://192.168.100.236:8081/index.bundle?platform=..."
       const parts = scriptURL.split('://');
       if (parts.length > 1) {
         const hostWithPort = parts[1].split('/')[0];
@@ -45,6 +61,12 @@ export const getApiBaseUrl = (): string => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
   if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      const host = window.location.hostname;
+      if (host && host !== 'localhost' && host !== '127.0.0.1') {
+        return `http://${host}:5000/api`;
+      }
+    }
     return 'http://localhost:5000/api';
   }
   const host = getDevServerHost();

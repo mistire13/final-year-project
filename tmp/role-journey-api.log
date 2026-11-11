@@ -1,0 +1,74 @@
+Prepared owned disposable Standard and expired-role fixtures.
+PASS admin real password login
+PASS admin authenticated identity
+PASS caregiver real password login
+PASS caregiver authenticated identity
+PASS parent real password login
+PASS parent authenticated identity
+PASS operator real password login
+PASS operator authenticated identity
+PASS other_parent real password login
+PASS other_parent authenticated identity
+PASS standard_admin real password login
+PASS standard_admin authenticated identity
+PASS standard_caregiver real password login
+PASS standard_caregiver authenticated identity
+PASS standard_parent real password login
+PASS standard_parent authenticated identity
+PASS expired_admin real password login
+PASS expired_admin authenticated identity
+PASS expired_caregiver real password login
+PASS expired_caregiver authenticated identity
+PASS expired_parent real password login
+PASS expired_parent authenticated identity
+PASS parent denied administrator finance
+PASS caregiver denied administrator finance
+PASS operator denied administrator finance
+PASS parent denied platform governance
+PASS caregiver denied platform governance
+PASS admin denied platform governance
+PASS other daycare cannot read child reports
+PASS other daycare cannot read child health
+PASS caregiver cannot create invoice
+PASS parent cannot create care report
+PASS standard existing invoice remains readable
+PASS standard parent care bills remain readable
+PASS standard caregiver safety workspace remains readable
+PASS standard parent can start existing bill verification
+PASS standard Plus business analytics denied
+PASS standard new shop product denied
+PASS standard cannot allocate another tenant invoice
+PASS expired existing invoice remains readable
+PASS expired parent care bills remain readable
+PASS expired caregiver safety workspace remains readable
+PASS expired parent can start existing bill verification
+PASS expired Plus business analytics denied
+PASS expired new shop product denied
+PASS expired cannot allocate another tenant invoice
+PASS expired subscription blocks new invoice
+PASS caregiver records a health observation
+PASS parent reads caregiver health observation
+PASS admin publishes internal disposable parent announcement
+PASS parent reads targeted announcement
+PASS other daycare cannot see targeted announcement
+PASS parent sends internal disposable caregiver message
+PASS caregiver receives linked parent message
+PASS parent cannot message unrelated tenant
+PASS invalid invoice amount rejected visibly by API
+PASS admin creates a registration fee invoice
+PASS admin records real-path synthetic cash receipt
+PASS parent receives settled cash bill and receipt
+PASS anonymous cannot read private bills
+PASS admin test session logout
+PASS caregiver test session logout
+PASS parent test session logout
+PASS operator test session logout
+PASS other_parent test session logout
+PASS standard_admin test session logout
+PASS standard_caregiver test session logout
+PASS standard_parent test session logout
+PASS expired_admin test session logout
+PASS expired_caregiver test session logout
+PASS expired_parent test session logout
+PASS logged-out parent cannot reuse token
+Role journey API acceptance: 72 passed.

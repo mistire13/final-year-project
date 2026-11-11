@@ -1,0 +1,9 @@
+{
+  "fixture_database_removed": true,
+  "fixture_credentials_removed": true,
+  "backend_health": 200,
+  "parent_app": 200,
+  "pricing": 200,
+  "web_bundle": 200,
+  "disposable_api_in_normal_bundle": false
+}

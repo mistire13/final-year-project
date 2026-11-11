@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { MessageOversight } from './MessageOversight.web';
+import { paymentProvenanceLabel } from '../types/daycarePayments';
 import {
   Dataset,
   Row,
@@ -2121,15 +2122,13 @@ export function Monitoring(ctx: PageContext & { page: string }) {
             {
               key: "payment_status",
               title: "Payment",
-              render: (r) => <div><Badge value={r.payment_status}/>{r.payment_method==='demo' && <small> DEMO · no money transferred<br/>{r.payment_reference}</small>}{r.payment_method==='no_charge' && <small> No charge</small>}</div>,
+              render: (r) => <div><Badge value={r.payment_status}/>{r.payment_method==='demo' && <small> DEMO · no money transferred<br/>{r.payment_reference}</small>}{r.payment_method==='no_charge' && <small> No charge</small>}{r.payment_method==='pay_at_daycare'&&['paid','refunded'].includes(r.payment_status)&&<small> {paymentProvenanceLabel(r.verification_source)}<br/>{r.payment_reference}</small>}{r.payment_method==='bank_transfer'&&r.payment_status==='paid'&&<small>{paymentProvenanceLabel(r.verification_source)}<br/>{r.payment_reference}<br/>Bank refunds require independent reconciliation.</small>}{r.refund&&<small> Cash return recorded: {Number(r.refund.amount).toLocaleString()} ETB<br/>{r.refund.refund_reference}<br/>{localDay(r.refund.refunded_at)} · {localTime(r.refund.refunded_at)}<br/>No app transfer</small>}</div>,
             },
             {
               key: "actions",
               title: "Manage",
               render: (r) => (
-                <Button variant="quiet" onClick={() => open("order", r)}>
-                  Update status
-                </Button>
+                <>{r.payment_status!=='refunded'&&<Button variant="quiet" onClick={() => open("order", r)}>Update status</Button>}{r.payment_status==='paid'&&r.payment_method==='pay_at_daycare'&&r.order_status!=='cancelled'&&<Button variant="quiet" onClick={()=>open('refund-order',r)}>Record cash returned</Button>}{r.refund&&<span>Refund evidence preserved</span>}</>
               ),
             },
           ]}

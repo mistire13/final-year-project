@@ -30,5 +30,8 @@ router.get('/orders', auth, allowRoles('admin'), c.listAllOrders);
 router.get('/orders/my', auth, allowRoles('parent'), c.listMyOrders);
 router.post('/orders', auth, allowRoles('parent'), validate(placeOrderSchema), c.placeOrder);
 router.patch('/orders/:id/status', auth, allowRoles('admin'), validate(updateOrderStatusSchema), c.updateOrderStatus);
+router.post('/orders/:id/refund', auth, allowRoles('admin'), async(req,res,next)=>{
+  try{res.json(await require('./store-refunds.service').createRefundService(require('../../config/db')).record(req.params.id,req.user,req.body));}catch(error){next(error);}
+});
 
 module.exports = router;

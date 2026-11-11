@@ -76,45 +76,49 @@ async function run() {
     check('Has care_instructions', Array.isArray(childDetail.body.child?.care_instructions));
     check('Has emergency_contacts', Array.isArray(childDetail.body.child?.emergency_contacts));
 
-    // ── Test 5: PUT care instructions ─────────────────────────────────────────
-    console.log(`\n[5] PUT /api/parent/children/${child.id}/care`);
-    const careRes = await req('PUT', `/parent/children/${child.id}/care`, {
-      instructions: [
+    // ── Test 5: GET versioned care profile ─────────────────────────────────────
+    console.log(`\n[5] GET /api/parent/children/${child.id}/care-profile`);
+    const cpGet = await req('GET', `/parent/children/${child.id}/care-profile`, null, pToken);
+    check('HTTP 200', cpGet.status === 200, `Got ${cpGet.status}: ${JSON.stringify(cpGet.body)}`);
+    check('Has version hash', typeof cpGet.body.version === 'string' && cpGet.body.version.length === 64);
+    const version = cpGet.body.version;
+
+    // ── Test 6: PATCH atomic care-profile (care + contacts + complete) ─────────
+    console.log(`\n[6] PATCH /api/parent/children/${child.id}/care-profile`);
+    const carePayload = {
+      version,
+      care_instructions: [
         { category: 'allergy', instruction_text: 'Peanut allergy — severe, use EpiPen' },
         { category: 'allergy', instruction_text: 'Dairy intolerance — causes stomach upset' },
         { category: 'medication', instruction_text: 'Cetirizine 5mg | Dosage: 1 tablet | When: After lunch daily' },
-        { category: 'diet', instruction_text: 'No spicy food. Prefers soft textures.' },
+        { category: 'dietary', instruction_text: 'No spicy food. Prefers soft textures.' },
         { category: 'routine', instruction_text: 'Nap: 1 hour after lunch, sleeps on right side.' },
         { category: 'note', instruction_text: 'Comfort: Blue stuffed elephant named Ellie' },
       ],
-    }, pToken);
-    check('HTTP 200', careRes.status === 200, `Got ${careRes.status}: ${JSON.stringify(careRes.body)}`);
-    check('care_instructions saved', Array.isArray(careRes.body.care_instructions) && careRes.body.care_instructions.length === 6);
-
-    // ── Test 6: PUT emergency contacts ────────────────────────────────────────
-    console.log(`\n[6] PUT /api/parent/children/${child.id}/emergency-contacts`);
-    const ecRes = await req('PUT', `/parent/children/${child.id}/emergency-contacts`, {
-      contacts: [
+      emergency_contacts: [
         { name: 'Almaz Bekele', relationship: 'Aunt', phone: '+251912345678' },
         { name: 'Tadesse Haile', relationship: 'Uncle', phone: '+251987654321' },
       ],
-    }, pToken);
-    check('HTTP 200', ecRes.status === 200, `Got ${ecRes.status}: ${JSON.stringify(ecRes.body)}`);
-    check('emergency_contacts saved', Array.isArray(ecRes.body.emergency_contacts) && ecRes.body.emergency_contacts.length === 2);
+      complete_profile: true,
+    };
+    const cpSave = await req('PATCH', `/parent/children/${child.id}/care-profile`, carePayload, pToken);
+    check('HTTP 200', cpSave.status === 200, `Got ${cpSave.status}: ${JSON.stringify(cpSave.body)}`);
+    check('care_instructions saved', Array.isArray(cpSave.body.child?.care_instructions) && cpSave.body.child?.care_instructions?.length === 6);
+    check('emergency_contacts saved', Array.isArray(cpSave.body.child?.emergency_contacts) && cpSave.body.child?.emergency_contacts?.length === 2);
+    check('profile_complete=true in response', cpSave.body.parent?.profile_complete === true);
 
     // ── Test 7: Verify data was saved ─────────────────────────────────────────
     console.log(`\n[7] Verify data persisted — GET /api/parent/children/${child.id}`);
     const verify = await req('GET', `/parent/children/${child.id}`, null, pToken);
     check('care_instructions count=6', verify.body.child?.care_instructions?.length === 6, `Got ${verify.body.child?.care_instructions?.length}`);
     check('emergency_contacts count=2', verify.body.child?.emergency_contacts?.length === 2, `Got ${verify.body.child?.emergency_contacts?.length}`);
-    check('allergy category present', verify.body.child?.care_instructions?.some(c => c.category === 'allergy'));
+    check('allergy category present', verify.body.child?.child?.care_instructions?.some(c => c.category === 'allergy') || verify.body.child?.care_instructions?.some(c => c.category === 'allergy'));
   }
 
-  // ── Test 8: Profile complete endpoint ─────────────────────────────────────
-  console.log('\n[8] PATCH /api/parent/profile-complete');
+  // ── Test 8: Legacy endpoint returns 428 Precondition Required ────────────
+  console.log('\n[8] Legacy endpoint returns 428 Precondition Required');
   const pcRes = await req('PATCH', '/parent/profile-complete', {}, pToken);
-  check('HTTP 200', pcRes.status === 200, `Got ${pcRes.status}: ${JSON.stringify(pcRes.body)}`);
-  check('profile_complete=true in response', pcRes.body.profile_complete === true);
+  check('HTTP 428', pcRes.status === 428, `Got ${pcRes.status}: ${JSON.stringify(pcRes.body)}`);
 
   // ── Test 9: Auth/me returns profile_complete ───────────────────────────────
   console.log('\n[9] GET /api/auth/me — profile_complete in response');

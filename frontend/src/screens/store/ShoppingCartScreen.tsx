@@ -1,3 +1,4 @@
+import ShopAccess from './ShopAccess';
 import React from "react";
 import { View, Image, Pressable } from "react-native";
 import { Plus } from "phosphor-react-native/src/icons/Plus";
@@ -14,7 +15,7 @@ import {
 } from "../../components/design/System";
 import { useChild } from "../../context/ChildContext";
 import { catalog, formatMoney } from "./catalog";
-export function ShoppingCartScreen({ navigation }: any) {
+function ShoppingCartScreenContent({ navigation }: any) {
   const { cart, cartTotal, removeFromCart, updateQuantity } = useChild();
   return (
     <Page
@@ -151,3 +152,5 @@ export function ShoppingCartScreen({ navigation }: any) {
     </Page>
   );
 }
+
+export function ShoppingCartScreen(props:any){return <ShopAccess><ShoppingCartScreenContent {...props}/></ShopAccess>;}

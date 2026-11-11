@@ -5,6 +5,7 @@
  * SRS Refs: FR-ECM-07–10, TBD-02 (Chapa), NFR-REL-03
  */
 const db = require('../../config/db');
+const {requireFeature}=require('../saas/package-features');
 const { transaction } = require('../auth/legacy-security');
 const { writeAudit } = require('../../utils/auditedWrite');
 
@@ -15,6 +16,7 @@ const capabilities = () => ({ demo_enabled: demoEnabled(), online_enabled: false
 const simulatePayment = async (body, user) => {
   if (!demoEnabled()) throw Object.assign(new Error('Demo payments are disabled.'), { statusCode: 503 });
   return transaction(db, async client => {
+    await requireFeature(client,user?.daycare_id,'shop');
     const {rows:[order]} = await client.query(
       'SELECT * FROM orders WHERE id=$1 AND daycare_id=$2 AND parent_id=$3 FOR UPDATE',
       [body.order_id,user.daycare_id,user.id]);

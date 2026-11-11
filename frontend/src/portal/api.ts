@@ -58,6 +58,14 @@ portalClient.interceptors.request.use((config) => {
 
 export const portalApi = {
   async packages() { return (await portalClient.get('/saas/packages')).data; },
+  async publicPaymentSettings() { return (await portalClient.get('/saas/payment-settings')).data; },
+  async createPaymentIntent(body: unknown) { return (await portalClient.post('/saas/payment-intents',body)).data; },
+  async verifyPaymentIntent(id: number | string, body: unknown) { return (await portalClient.post(`/saas/payment-intents/${id}/verify`,body,{timeout:90000})).data; },
+  async paymentIntentStatus(id: number | string, token: string) { return (await portalClient.post(`/saas/payment-intents/${id}/status`,{token})).data; },
+  async extractReceiptReference(id: number | string, token: string, file: File) { return (await portalClient.post(`/saas/payment-intents/${id}/ocr`,file,{headers:{'Content-Type':file.type,'x-payment-token':token},timeout:90000})).data; },
+  async createRenewalIntent(provider:'telebirr'|'cbe'|'abyssinia') { return (await portalClient.post('/saas/subscription/payment-intents',{provider})).data; },
+  async resumeRenewalIntent(id: number | string, token: string) { return (await portalClient.post(`/saas/subscription/payment-intents/${id}/resume`,{token})).data; },
+  async applyRenewalIntent(id: number | string, token: string) { return (await portalClient.post(`/saas/subscription/payment-intents/${id}/apply`,{token})).data; },
   async applicationStatus(email: string, password: string) { return (await portalClient.post('/saas/application-status',{email,password})).data; },
   async subscription() { return (await portalClient.get('/saas/subscription')).data; },
   async session() {
@@ -110,7 +118,7 @@ export const portalApi = {
     return data;
   },
   async registerDaycare(payload: any) {
-    const { data } = await portalClient.post("/saas/register-daycare", payload);
+    const { data } = await portalClient.post("/saas/applications", payload);
     return data;
   },
   async getSuperAdminStats() {
@@ -239,9 +247,19 @@ export const operatorApi={
   async activateDaycare(id:number){return (await operatorClient.patch(`/super-admin/daycares/${id}/activate`)).data;},
   async deleteDaycare(id:number,body:{version:number;confirmation:string;reason:string}){return (await operatorClient.delete(`/super-admin/daycares/${id}`,{data:body})).data;},
   async packages(){return (await operatorClient.get('/super-admin/packages')).data;},
+  async paymentIntents(params: {search?:string;limit?:number;offset?:number} = {}){return (await operatorClient.get('/saas/super-admin/payment-intents',{params})).data;},
+  async reviewPaymentIntent(id:number|string,body:unknown){return (await operatorClient.post(`/saas/super-admin/payment-intents/${id}/review`,body)).data;},
+  async resolvePaymentIntent(id:number|string,body:unknown){return (await operatorClient.post(`/saas/super-admin/payment-intents/${id}/resolve`,body)).data;},
+  async recoverPaymentIntent(id:number|string,body:unknown){return (await operatorClient.post(`/saas/super-admin/payment-intents/${id}/recover`,body)).data;},
+  async applyPaymentIntent(id:number|string,body:unknown){return (await operatorClient.post(`/saas/super-admin/payment-intents/${id}/apply`,body)).data;},
+  async subscriptionPaymentSettings(){return (await operatorClient.get('/saas/super-admin/subscription-payment-settings')).data;},
+  async saveSubscriptionPaymentSettings(body:unknown){return (await operatorClient.patch('/saas/super-admin/subscription-payment-settings',body)).data;},
   async savePackage(code:string,body:any){return (await operatorClient.patch(`/super-admin/packages/${code}`,body)).data;},
   async subscription(id:number){return (await operatorClient.get(`/super-admin/daycares/${id}/subscription`)).data;},
   async subscriptionAction(id:number,body:any){return (await operatorClient.post(`/super-admin/daycares/${id}/subscription`,body)).data;},
+  async authorizeRenewalRestart(id:number,body:{version:number;reason:string;acknowledge_restart:true}){
+    return (await operatorClient.post(`/super-admin/daycares/${id}/renewal-restart`,body)).data;
+  },
 };
 
 export function apiError(error: any) {

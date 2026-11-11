@@ -6,6 +6,7 @@ import { operatorApi as portalApi, apiError } from "./api";
 
 import { Badge, Button, Card, Icon, Modal } from "./ui.web";
 import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
+import { OperatorSubscriptions } from "./SubscriptionViews.web";
 
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
 
@@ -20,6 +21,8 @@ interface DaycareItem {
   status: "pending" | "active" | "suspended" | "rejected";
   subscription_plan: "trial" | "standard" | "premium";
   subscription_terms?: any;
+  payment_status?: string | null;
+  payment_reference?: string | null;
   subscription_status?: string;
   billing_cycle?: string;
   subscription_ends_at?: string | null;
@@ -44,6 +47,8 @@ interface PlatformStats {
   total_children: number;
   total_users: number;
   active_trials: number;
+  active_subscriptions?: number;
+  overdue_subscriptions?: number;
 }
 
 interface PlatformUser {
@@ -97,6 +102,7 @@ type SuperAdminPage =
   | "overview"
   | "daycares"
   | "applications"
+  | "subscriptions"
   | "users"
   | "audit"
   | "health"
@@ -819,6 +825,9 @@ export default function SuperAdmin() {
                 </span>
               )}
             </a>
+            <a href="#subscriptions" className={"p-nav-link " + (activePage === "subscriptions" ? "active" : "")} onClick={(e) => { e.preventDefault(); setActivePage("subscriptions"); setMobileMenuOpen(false); }}>
+              <Icon name="file" size={18} /> Subscriptions &amp; payments
+            </a>
           </nav>
         </div>
 
@@ -998,6 +1007,7 @@ export default function SuperAdmin() {
               {activePage === "overview" && "Executive Overview"}
               {activePage === "daycares" && "Daycare Directory"}
               {activePage === "applications" && "Applications Review Queue"}
+              {activePage === "subscriptions" && "Subscriptions & Payments"}
               {activePage === "users" && "Global User Accounts"}
               {activePage === "audit" && "Platform Audit Trail"}
               {activePage === "health" && "System Telemetry & Health"}
@@ -1041,6 +1051,7 @@ export default function SuperAdmin() {
         {/* Content Container */}
         <div style={{ padding: "30px 36px", maxWidth: 1400, margin: "0 auto" }}>
         <PageTransition page={activePage} className="">
+          {activePage === "subscriptions" && <OperatorSubscriptions daycares={daycares} initialId={subscriptionId} onChanged={loadAllPlatformData} />}
           
           {/* Active Global Broadcast Banner */}
           {broadcast.active && broadcast.message && (
@@ -1220,18 +1231,20 @@ export default function SuperAdmin() {
                     borderRadius: 16,
                     padding: "20px 22px",
                     border: "1px solid #eeece6",
-                    borderLeft: "4px solid #f4a261",
+                    borderLeft: "4px solid #2a9d8f",
                     boxShadow: "0 2px 8px rgba(16, 38, 59, 0.04)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                    <div style={{ fontSize: 32, fontWeight: 800, color: "#166534", lineHeight: 1 }}>
-                      {daycares.filter((d) => d.status === "active").length}
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#2a9d8f", lineHeight: 1 }}>
+                      {stats?.active_subscriptions ?? daycares.filter((d) => d.subscription_status === "active").length}
                     </div>
-                    <span style={{ color: "#166534" }}><Icon name="building" size={22} /></span>
+                    <span style={{ color: "#2a9d8f" }}><Icon name="award" size={22} /></span>
                   </div>
-                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Active Centers</div>
-                  <div style={{ fontSize: 11, color: "#166534", marginTop: 4 }}>Licensed and operational</div>
+                  <div style={{ fontSize: 13, color: "#76818b", fontWeight: 700 }}>Paid Subscriptions</div>
+                  <div style={{ fontSize: 11, color: stats?.overdue_subscriptions ? "#e07a5f" : "#2a9d8f", marginTop: 4 }}>
+                    {stats?.overdue_subscriptions ? `${stats.overdue_subscriptions} overdue renewal${stats.overdue_subscriptions > 1 ? "s" : ""}` : "Standard & Plus"}
+                  </div>
                 </div>
 
                 <div
@@ -1670,6 +1683,10 @@ export default function SuperAdmin() {
                           <div style={{ fontSize: 14, fontWeight: 700, textTransform: "capitalize", color: "#e07a5f" }}>
                             {d.requested_plan || "Not recorded on this older application"}
                           </div>
+                          {d.subscription_terms && <div style={{ fontSize: 13 }}>
+                            {d.subscription_terms.price} {d.subscription_terms.currency} · {String(d.subscription_terms.billing_cycle || '').replaceAll('_', ' ')} · {d.subscription_terms.max_children} children
+                          </div>}
+                          {d.payment_status && <div style={{ fontSize: 13 }}>Payment: {d.payment_status.replaceAll('_', ' ')}{d.payment_reference ? ` · ${d.payment_reference}` : ''}</div>}
                           <div style={{ fontSize: 11, color: "#76818B" }}>
                             Submitted: {new Date(d.created_at).toLocaleDateString()}
                           </div>
@@ -2387,7 +2404,7 @@ export default function SuperAdmin() {
             <div className="journey j-panel" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
               <p style={{ margin: "0 0 8px" }}>Approve <strong>{approveModal.daycare.name}</strong> for administrator <strong>{approveModal.daycare.admin_email}</strong>.</p>
               <p style={{ margin: "0 0 8px", color: "#64748B", fontSize: 13 }}>License Number: <strong>{approveModal.daycare.license_number || "Standard Registration"}</strong> · Location: <strong>{approveModal.daycare.address || "Addis Ababa"}</strong></p>
-              <p style={{ margin: 0, color: "#166534", fontSize: 13, fontWeight: 600 }}>Approval activates the daycare center workspace and administrator account immediately.</p>
+              <p style={{ margin: 0, color: "#166534", fontSize: 13, fontWeight: 600 }}>Approval activates the daycare workspace and starts the paid period. A confirmed payment is required.</p>
             </div>
             {actionError && <p role="alert" style={{color:'#9d3028'}}>{actionError}</p>}
 
@@ -2454,7 +2471,7 @@ export default function SuperAdmin() {
               </button>
             </div>
             <p style={{ color: "#76818B", fontSize: 14, margin: "0 0 18px" }}>
-              Rejecting <strong>{rejectModal.daycare.name}</strong> will mark the application as rejected and deactivate the applicant administrator's account.
+              Rejecting <strong>{rejectModal.daycare.name}</strong> will mark the application as rejected. Review and resolve any confirmed payment separately.
             </p>
 
             <div style={{ marginBottom: 24 }}>

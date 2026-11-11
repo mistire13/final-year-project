@@ -1,0 +1,25 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),ts=require('../frontend/node_modules/typescript');
+const f=JSON.parse(fs.readFileSync(path.join(__dirname,'subscription-backups/plus-ui-acceptance/fixture.json'),'utf8'));
+assert.equal(f.purpose,'Disposable local acceptance ONLY');assert.match(f.api,/^http:\/\/localhost:\d+\/api$/);assert.match(f.database,new RegExp(`^ankelba_auth_test_${f.pid}_\\d+_[a-f0-9]{8}$`));
+const moduleFixture={exports:{}};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,'../frontend/src/utils/careProfileSections.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{module:moduleFixture,exports:moduleFixture.exports});
+(async()=>{
+  const login=await fetch(f.api+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:f.accounts.parent,password:f.password})});assert.equal(login.status,200);const {token}=await login.json();
+  const headers={'Content-Type':'application/json',Authorization:`Bearer ${token}`};
+  const url=f.api+`/parent/children/${f.child_id}/care-profile`;
+  const request=async(method,body)=>{const response=await fetch(url,{method,headers,...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};};
+  const before=await request('GET');assert.equal(before.status,200);
+  const saved=[{category:'medical_note',instruction_text:'Synthetic preserved medical note'}, {category:'general',instruction_text:'Synthetic preserved routine'}, {category:'allergy',instruction_text:'Old synthetic allergy'}];
+  const seed=await request('PATCH',{version:before.data.version,care_instructions:saved});assert.equal(seed.status,200,JSON.stringify(seed.data));
+  const edited=moduleFixture.exports.replaceCareSection(2,seed.data.child.care_instructions.map(({category,instruction_text})=>({category,instruction_text})),[{category:'allergy',instruction_text:'Updated synthetic allergy'}]);
+  const updated=await request('PATCH',{version:seed.data.version,care_instructions:edited});assert.equal(updated.status,200,JSON.stringify(updated.data));
+  assert.equal(updated.data.child.care_instructions.find(row=>row.category==='medical_note').instruction_text,saved[0].instruction_text);
+  assert.equal(updated.data.child.care_instructions.find(row=>row.category==='general').instruction_text,saved[1].instruction_text);
+  assert.equal(updated.data.child.care_instructions.find(row=>row.category==='allergy').instruction_text,'Updated synthetic allergy');
+  assert.equal(updated.data.child.pickup_authorized,before.data.child.pickup_authorized);assert.equal(updated.data.child.group_id,before.data.child.group_id);
+  assert.deepEqual(updated.data.child.emergency_contacts,before.data.child.emergency_contacts);
+  const stale=await request('PATCH',{version:seed.data.version,care_instructions:[]});assert.equal(stale.status,409);
+  const prefs=await fetch(f.api+'/notifications/preferences',{headers});assert.equal(prefs.status,200);const preferences=await prefs.json();assert.ok(preferences.read_announcement_ids?.length>0,'Browser opening persisted an announcement acknowledgement.');
+  console.log('PASS: section edits retain medical/routine notes, contacts and daycare-owned permissions; stale saves return 409; browser read acknowledgement persisted.');
+})().catch(error=>{console.error(error.message);process.exitCode=1;});

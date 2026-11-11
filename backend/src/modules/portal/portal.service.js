@@ -1,5 +1,6 @@
 'use strict';
 const db = require('../../config/db');
+const {getDaycareFeatures}=require('../saas/package-features');
 const { failure, shiftError, transitionError } = require('./policy');
 const zoneDay = "(event_time AT TIME ZONE 'Africa/Addis_Ababa')::date";
 const queryRows = async (client, sql, values=[]) => (await client.query(sql,values)).rows;
@@ -47,6 +48,10 @@ async function saveDuty(body,user) {
   }
   const overlap=await queryRows(client,"SELECT id FROM front_desk_assignments WHERE staff_id=$1 AND status='active' AND starts_at<$3 AND ends_at>$2",[body.staff_id,body.starts_at,body.ends_at]);
   if(overlap.length)throw failure('This staff member already has an overlapping shift.',409);
+  // Share the caregiver lock with scheduling/leave approval so this legacy
+  // assignment path cannot grant care permissions during approved leave.
+  const leave=await queryRows(client,"SELECT id FROM staff_leave_requests WHERE daycare_id=$1 AND staff_id=$2 AND status='approved' AND starts_at<$4 AND ends_at>$3",[actor.daycare_id,body.staff_id,body.starts_at,body.ends_at]);
+  if(leave.length)throw failure('This staff member has approved leave during this shift.',409);
   const dutyDaycareId = actor.daycare_id;
   const [duty]=await queryRows(client,'INSERT INTO front_desk_assignments(staff_id,group_id,starts_at,ends_at,can_attendance,can_pickup,assigned_by,daycare_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[body.staff_id,body.group_id||null,body.starts_at,body.ends_at,body.can_attendance,body.can_pickup,user.id,dutyDaycareId]);
   await audit(client,actor,'FRONT_DESK_ASSIGNED','front_desk_assignments',duty.id,{staff_id:body.staff_id},dutyDaycareId);return duty;
@@ -125,6 +130,8 @@ async function snapshot(date,days,user,staffOnly=false) {
   const guardianRequests=await queryRows(client,"SELECT * FROM pickup_guardians WHERE child_id=ANY($1::int[]) ORDER BY created_at DESC",[ids]);
   const verifications=await queryRows(client,"SELECT v.id,v.child_id,v.guardian_user_id,v.pickup_guardian_id,COALESCE(p.name,u.name) AS guardian_name,v.verified_by,v.result,v.method,v.verified_at,v.attendance_id FROM guardian_verification_events v LEFT JOIN pickup_guardians p ON p.id=v.pickup_guardian_id LEFT JOIN users u ON u.id=v.guardian_user_id WHERE v.child_id=ANY($1::int[]) AND (v.verified_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $2::date-($3::int-1) AND $2::date",[ids,date,days]);
   const [daycare] = daycareId ? await queryRows(client, 'SELECT id, name, slug, contact_email, contact_phone, address, license_number, status, subscription_plan, trial_ends_at, max_children, version, created_at FROM daycares WHERE id=$1', [daycareId]) : [null];
+  const featureAccess=await getDaycareFeatures(client,daycareId);
+  if(daycare){daycare.features=featureAccess.features;daycare.package_name=featureAccess.package_name;}
   async function attachReportDetails(rList) {
     if (!rList || !rList.length) return rList;
     const rIds = rList.map(r => r.id);
@@ -150,8 +157,8 @@ async function snapshot(date,days,user,staffOnly=false) {
     health:await queryRows(client,"SELECT * FROM health_records WHERE ($3::integer IS NULL OR daycare_id=$3) AND (recorded_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date",[date,days,daycareId]),
     events:await queryRows(client,'SELECT * FROM events WHERE ($2::integer IS NULL OR daycare_id=$2) AND event_date >= $1::date-30 ORDER BY event_date',[date,daycareId]),
     announcements:await queryRows(client,'SELECT * FROM announcements WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY created_at DESC LIMIT 100',[daycareId]),
-    products:await queryRows(client,'SELECT * FROM products WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY name',[daycareId]),
-    orders:await queryRows(client,"SELECT o.*,p.method AS payment_method,p.gateway_ref AS payment_reference FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.daycare_id=$3 AND (o.created_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date ORDER BY o.created_at DESC",[date,days,daycareId]),
+    products:featureAccess.features.shop?await queryRows(client,'SELECT * FROM products WHERE ($1::integer IS NULL OR daycare_id=$1) ORDER BY name',[daycareId]):[],
+    orders:await queryRows(client,"SELECT o.*,p.method AS payment_method,p.gateway_ref AS payment_reference,p.verification_source,p.daycare_payment_request_id,(SELECT json_build_object('id',r.id,'amount',r.amount,'refund_reference',r.refund_reference,'original_payment_reference',r.original_payment_reference,'refunded_at',r.refunded_at,'stock_disposition',r.stock_disposition,'reason',r.reason) FROM shop_order_refunds r WHERE r.order_id=o.id AND r.daycare_id=o.daycare_id) AS refund FROM orders o LEFT JOIN payments p ON p.order_id=o.id WHERE o.daycare_id=$3 AND (o.created_at AT TIME ZONE 'Africa/Addis_Ababa')::date BETWEEN $1::date-($2::int-1) AND $1::date ORDER BY o.created_at DESC",[date,days,daycareId]),
     audit:await queryRows(client,'SELECT a.*,u.name AS actor_name FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_id WHERE a.daycare_id=$1 ORDER BY a.created_at DESC LIMIT 200',[daycareId]),
     messages:await queryRows(client,'SELECT m.id,m.subject,m.body,m.sender_id,m.recipient_id,m.read_at,m.created_at FROM messages m WHERE sender_id=$1 OR recipient_id=$1 ORDER BY created_at DESC LIMIT 100',[actor.id])};
  }).then(async data=>staffOnly?{...data,announcements:(await require('../communication/communication.service').listAnnouncements({},user)).data}:data);

@@ -1,0 +1,52 @@
+'use strict';
+const assert=require('node:assert/strict'),crypto=require('node:crypto');
+const {withCurrentDatabase}=require('../scripts/helpers/auth-test-database.cjs');
+const {createDaycarePayments}=require('../src/modules/daycare-payments/service');
+const {createPaymentService,secretHash}=require('../src/modules/saas/subscription-payments.service');
+const {createTenantPool,withTenant}=require('../src/db/tenant-pool');
+(async()=>{await withCurrentDatabase(async({db,pool})=>{
+ await db('roles').insert([{id:1,name:'admin'},{id:3,name:'parent'}]).onConflict('id').ignore();
+ const [dc]=await db('daycares').insert({name:'Security isolated QA',slug:'security-isolated-qa',contact_email:'security-qa@example.invalid',status:'active',subscription_plan:'standard'}).returning('*');
+ const [a,p]=await db('users').insert([{name:'QA Admin',email:'security-admin@example.invalid',role_id:1},{name:'QA Parent',email:'security-parent@example.invalid',role_id:3}].map(u=>({...u,daycare_id:dc.id,password_hash:'synthetic',status:'active'}))).returning('*');
+ const admin={...a,role:'admin'},parent={...p,role:'parent'};
+ const [child]=await db('children').insert({full_name:'QA Child',dob:'2023-01-01',daycare_id:dc.id}).returning('*');
+ await db('guardian_links').insert({daycare_id:dc.id,child_id:child.id,user_id:p.id,relationship:'Parent',created_by:a.id,pickup_authorized:true});
+ const settings={version:0,reason:'Synthetic reviewed receiving settings',accounts:{cbe:{enabled:true,account_holder:'QA Receiver',account_number:'1000000001'},abyssinia:{enabled:false,account_holder:'',account_number:''},telebirr:{enabled:false,account_holder:'',account_number:''}}};
+ const lookup=async input=>({available:true,result:{success:true,data:{status:'completed',reference:new URL(input.reference).pathname.slice(1),amount:100,currency:'ETB',receiverName:'QA Receiver',receiverAccount:'1000000001',transactionDate:new Date(Date.now()-3600000).toISOString(),payerName:p.name}}});
+ const client=await pool.connect();
+ try{
+ await client.query('SET ROLE ankelba_tenant');
+ const tenantPool=createTenantPool({connect:async()=>({query:client.query.bind(client),release(){}})});
+ const svc=createDaycarePayments(tenantPool,{lookup});
+ await withTenant(dc.id,async()=>{
+ await svc.saveSettings(settings,admin);
+ const invoice=async serial=>(await db('child_invoices').insert({daycare_id:dc.id,child_id:child.id,parent_id:p.id,invoice_type:'custom',billing_period:'2026-'+String(serial).padStart(2,'0'),title:'Security QA '+serial,amount:100,amount_paid:0,due_date:'2026-12-01',status:'pending',created_at:new Date(Date.now()-86400000)}).returning('*'))[0];
+ const first=await invoice(1),request=await svc.create({purpose:'invoice',target_id:first.id,provider:'cbe',request_key:crypto.randomUUID()},parent);
+ const applied=await svc.verify(request.id,{version:request.version,reference:'https://mbreciept.cbe.com.et/RuntimeTenantProof'},parent);
+ assert.equal(applied.status,'applied');console.log('PASS tenant runtime can verify/apply using protected shared claims');
+ const second=await invoice(2),held=await svc.create({purpose:'invoice',target_id:second.id,provider:'cbe',request_key:crypto.randomUUID()},parent);
+ await db('users').where({id:a.id}).update({status:'inactive'});
+ const result=await svc.verify(held.id,{version:held.version,reference:'https://mbreciept.cbe.com.et/NoActiveAdminProof'},parent);
+ const stored=await db('daycare_payment_requests').where({id:held.id}).first(),claims=await db('payment_reference_claims').where({owner_id:held.id});
+ assert.equal(result.status,'verified_unapplied');assert.equal(stored.status,'verified_unapplied');assert.ok(stored.verified_at);assert.equal(claims.length,2);
+ console.log('PASS matched receipt with no active admin retains verified evidence and two reference claims');
+ });
+ await client.query('RESET ROLE');await client.query('SET ROLE ankelba_control');
+ for(const table of ['daycare_payment_settings','daycare_payment_requests','daycare_payment_resolutions','payment_reference_claims'])await assert.rejects(client.query('SELECT * FROM '+table),e=>e.code==='42501');
+ console.log('PASS control role cannot read daycare receipts, settings, resolutions or global claims');
+ const controlIntent=crypto.randomUUID();
+ await db('subscription_payment_intents').insert({id:controlIntent,email:'security-control-ledger@example.invalid',secret_hash:'synthetic-unused',terms:{},status:'verified',amount:100,currency:'ETB',recipient:'1000000002',provider:'cbe',expires_at:new Date(Date.now()+86400000)});
+ await client.query("INSERT INTO subscription_payment_references(provider,reference,intent_id,source) VALUES('cbe','ControlRuntimeProof',$1,'synthetic_security_qa')",[controlIntent]);
+ assert.equal((await db('payment_reference_claims').where({reference_key:'ControlRuntimeProof'}).first()).owner_id,controlIntent);
+ await assert.rejects(client.query("INSERT INTO subscription_payment_references(provider,reference,intent_id,source) VALUES('cbe','RuntimeTenantProof',$1,'synthetic_security_qa')",[controlIntent]),e=>e.code==='23505');
+ console.log('PASS control-role SaaS ledger inserts claim globally and reject existing daycare reference');
+ await client.query('RESET ROLE');
+ const oldId=crypto.randomUUID(),nextId=crypto.randomUUID(),token=crypto.randomBytes(32).toString('base64url');
+ for(const [id,status]of [[oldId,'verified'],[nextId,'pending']])await db('subscription_payment_intents').insert({id,email:'security-cbe-case@example.invalid',secret_hash:secretHash(token),terms:{recipient_provider:'cbe',recipient_name:'QA Platform Receiver'},status,amount:100,currency:'ETB',recipient:'1000000002',provider:'cbe',expires_at:new Date(Date.now()+86400000)});
+ await db('subscription_payment_references').insert({provider:'cbe',reference:'DistinctModernCbeCase',intent_id:oldId,source:'synthetic_security_qa'});
+ let providerCalls=0;
+ const saas=createPaymentService(pool,{fetch:async()=>{providerCalls++;throw Error('Synthetic provider must not be reached for this preflight reproduction');}});
+ const pending=await saas.verify(nextId,{token,provider:'cbe',reference:'https://mbreciept.cbe.com.et/distinctmoderncbecase'});
+ assert.equal(pending.status,'verification_pending');assert.equal(providerCalls,1);console.log('PASS modern case-distinct CBE token reaches synthetic transport instead of false duplicate rejection');
+ }finally{await client.query('RESET ROLE');client.release();}
+ });})().catch(e=>{console.error(e);process.exitCode=1;});

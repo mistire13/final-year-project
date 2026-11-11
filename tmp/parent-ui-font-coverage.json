@@ -1,0 +1,32 @@
+[
+  {
+    "font": "Quicksand_300Light.ttf",
+    "latinA": true,
+    "ethiopicU1200": false,
+    "ethiopicU12A0": false
+  },
+  {
+    "font": "Quicksand_400Regular.ttf",
+    "latinA": true,
+    "ethiopicU1200": false,
+    "ethiopicU12A0": false
+  },
+  {
+    "font": "Quicksand_500Medium.ttf",
+    "latinA": true,
+    "ethiopicU1200": false,
+    "ethiopicU12A0": false
+  },
+  {
+    "font": "Quicksand_600SemiBold.ttf",
+    "latinA": true,
+    "ethiopicU1200": false,
+    "ethiopicU12A0": false
+  },
+  {
+    "font": "Quicksand_700Bold.ttf",
+    "latinA": true,
+    "ethiopicU1200": false,
+    "ethiopicU12A0": false
+  }
+]

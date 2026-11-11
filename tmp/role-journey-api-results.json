@@ -1,0 +1,365 @@
+{
+  "scope": "Owned disposable fixture; no live provider/email",
+  "checks": [
+    {
+      "label": "admin real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "admin authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "parent real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "parent authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "operator real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "operator authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "other_parent real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "other_parent authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_admin real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_admin authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_caregiver real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_caregiver authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_parent real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_parent authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_admin real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_admin authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_caregiver real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_caregiver authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_parent real password login",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_parent authenticated identity",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "parent denied administrator finance",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver denied administrator finance",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "operator denied administrator finance",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "parent denied platform governance",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver denied platform governance",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "admin denied platform governance",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "other daycare cannot read child reports",
+      "status": 404,
+      "result": "passed"
+    },
+    {
+      "label": "other daycare cannot read child health",
+      "status": 404,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver cannot create invoice",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "parent cannot create care report",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "standard existing invoice remains readable",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard parent care bills remain readable",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard caregiver safety workspace remains readable",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard parent can start existing bill verification",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard Plus business analytics denied",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "standard new shop product denied",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "standard cannot allocate another tenant invoice",
+      "status": 404,
+      "result": "passed"
+    },
+    {
+      "label": "expired existing invoice remains readable",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired parent care bills remain readable",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired caregiver safety workspace remains readable",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired parent can start existing bill verification",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired Plus business analytics denied",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "expired new shop product denied",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "expired cannot allocate another tenant invoice",
+      "status": 404,
+      "result": "passed"
+    },
+    {
+      "label": "expired subscription blocks new invoice",
+      "status": 403,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver records a health observation",
+      "status": 201,
+      "result": "passed"
+    },
+    {
+      "label": "parent reads caregiver health observation",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "admin publishes internal disposable parent announcement",
+      "status": 201,
+      "result": "passed"
+    },
+    {
+      "label": "parent reads targeted announcement",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "other daycare cannot see targeted announcement",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "parent sends internal disposable caregiver message",
+      "status": 201,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver receives linked parent message",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "parent cannot message unrelated tenant",
+      "status": 404,
+      "result": "passed"
+    },
+    {
+      "label": "invalid invoice amount rejected visibly by API",
+      "status": 422,
+      "result": "passed"
+    },
+    {
+      "label": "admin creates a registration fee invoice",
+      "status": 201,
+      "result": "passed"
+    },
+    {
+      "label": "admin records real-path synthetic cash receipt",
+      "status": 201,
+      "result": "passed"
+    },
+    {
+      "label": "parent receives settled cash bill and receipt",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "anonymous cannot read private bills",
+      "status": 401,
+      "result": "passed"
+    },
+    {
+      "label": "admin test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "caregiver test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "parent test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "operator test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "other_parent test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_admin test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_caregiver test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "standard_parent test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_admin test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_caregiver test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "expired_parent test session logout",
+      "status": 200,
+      "result": "passed"
+    },
+    {
+      "label": "logged-out parent cannot reuse token",
+      "status": 401,
+      "result": "passed"
+    }
+  ]
+}

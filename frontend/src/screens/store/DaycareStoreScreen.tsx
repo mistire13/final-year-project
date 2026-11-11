@@ -1,9 +1,11 @@
+import ShopAccess from './ShopAccess';
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform, Linking } from "react-native";
 import { ShoppingCart } from "phosphor-react-native/src/icons/ShoppingCart";
 import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
 import { Plus } from "phosphor-react-native/src/icons/Plus";
 import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { Receipt } from "phosphor-react-native/src/icons/Receipt";
 import {
   Page,
   Text,
@@ -23,7 +25,7 @@ import { getWebPortalUrl } from "../../utils/host";
 export const formatMoney = (value: number) =>
   value.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ETB";
 
-export function DaycareStoreScreen({ navigation, route }: any) {
+function DaycareStoreScreenContent({ navigation, route }: any) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const { cart, cartItemCount, cartTotal, addToCart } = useChild();
@@ -112,31 +114,38 @@ export function DaycareStoreScreen({ navigation, route }: any) {
         <Text size={26} weight="bold" style={{ flex: 1, marginLeft: 12 }}>
           Daycare Store
         </Text>
-        <View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <IconButton
-            icon={ShoppingCart}
-            label="Shopping cart"
-            onPress={() => navigation.navigate("ShoppingCart")}
+            icon={Receipt}
+            label="My Orders"
+            onPress={() => navigation.navigate("Orders")}
           />
-          {cartItemCount > 0 && (
-            <View
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                backgroundColor: "#D7443E",
-                borderRadius: 9,
-                width: 18,
-                height: 18,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text size={10} color="white" weight="bold">
-                {cartItemCount}
-              </Text>
-            </View>
-          )}
+          <View>
+            <IconButton
+              icon={ShoppingCart}
+              label="Shopping cart"
+              onPress={() => navigation.navigate("ShoppingCart")}
+            />
+            {cartItemCount > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  backgroundColor: "#D7443E",
+                  borderRadius: 9,
+                  width: 18,
+                  height: 18,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text size={10} color="white" weight="bold">
+                  {cartItemCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
@@ -173,6 +182,32 @@ export function DaycareStoreScreen({ navigation, route }: any) {
         value={search}
         onChangeText={setSearch}
       />
+
+      <Pressable
+        onPress={() => navigation.navigate("Orders")}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          backgroundColor: "#F3F7FC",
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          marginTop: 12,
+          borderWidth: 1,
+          borderColor: "#DCE9FF",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Receipt size={18} color="#24476D" />
+          <Text size={13} weight="medium" color="#24476D">
+            Track past purchases & receipts
+          </Text>
+        </View>
+        <Text size={13} weight="bold" color="#2064D8">
+          Order History →
+        </Text>
+      </Pressable>
 
       <Text size={22} weight="semibold" style={{ marginVertical: 18 }}>
         {search ? "Search Results" : "Daycare Products"}
@@ -273,3 +308,5 @@ export function DaycareStoreScreen({ navigation, route }: any) {
     </Page>
   );
 }
+
+export function DaycareStoreScreen(props:any){return <ShopAccess><DaycareStoreScreenContent {...props}/></ShopAccess>;}

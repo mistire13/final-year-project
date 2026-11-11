@@ -65,7 +65,8 @@ exports.up = async knex => {
     FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public' AND c.relkind = 'r'
-      AND has_table_privilege('ankelba_tenant', c.oid, 'INSERT')`);
+      AND has_table_privilege('ankelba_tenant', c.oid, 'INSERT')
+      AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='id' AND a.attnum>0 AND NOT a.attisdropped)`);
   for (const row of rows.filter(row => row.sequence)) {
     await knex.raw(`GRANT USAGE,SELECT ON SEQUENCE ${row.sequence} TO ankelba_tenant`);
   }

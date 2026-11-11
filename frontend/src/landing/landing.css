@@ -1242,3 +1242,11 @@
 .centered-home-experiment .ankelba-home-nav { transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease; }
 .centered-home-experiment .ankelba-home-nav[data-over-hero="true"] { background-color: transparent; border-color: transparent; box-shadow: none; }
 .centered-home-experiment { background-image: linear-gradient(var(--ankelba-cream), var(--ankelba-cream)); background-repeat: no-repeat; background-size: 100% 120px; }
+
+/* Keep registration stable while an asynchronous submission is in flight. */
+.registration-backdrop { z-index: 1200; overflow: auto; overscroll-behavior: contain; }
+.registration-fields { min-width: 0; padding: 0; margin: 0; border: 0; }
+.registration-fields:disabled { opacity: .75; }
+.registration-progress { color: var(--ankelba-muted); font-size: 13px; margin: 20px 0 0; }
+.registration-backdrop .dialog-close:disabled { cursor: wait; opacity: .45; transform: none; }
+.registration-backdrop button:disabled { cursor: wait; }

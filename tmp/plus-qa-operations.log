@@ -1,0 +1,10 @@
+✔ numeric receipt references are extracted for independent verification (0.8187ms)
+✔ reminder queue and platform statistics use persisted subscription state (2249.0566ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2590.473

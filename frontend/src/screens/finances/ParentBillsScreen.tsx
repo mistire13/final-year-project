@@ -20,6 +20,10 @@ import {
 } from "../../components/design/System";
 import { getMyBills, ParentBill, ParentPaymentReceipt } from "../../api/parentApi";
 import { formatMoney } from "../store/catalog";
+import BillingReminderPreferences from "./BillingReminderPreferences";
+import ReceiptPaymentCard from '../payments/ReceiptPaymentCard';
+import {paymentProvenanceLabel} from '../../types/daycarePayments';
+import {invoiceIsOverdue} from '../../utils/billingDates';
 
 export function ParentBillsScreen({ navigation }: any) {
   const [bills, setBills] = useState<ParentBill[]>([]);
@@ -31,6 +35,7 @@ export function ParentBillsScreen({ navigation }: any) {
   } | null>(null);
 
   const [activeTab, setActiveTab] = useState<"active" | "paid">("active");
+  const [bankBill,setBankBill]=useState<number|null>(null);
 
   const loadBills = useCallback(async () => {
     setLoading(true);
@@ -65,6 +70,7 @@ export function ParentBillsScreen({ navigation }: any) {
 
   return (
     <Page title="Care Fees & Receipts" back tabs activeTab="Profile">
+      <BillingReminderPreferences />
       {/* Overview Card */}
       <Card
         style={{
@@ -112,6 +118,8 @@ export function ParentBillsScreen({ navigation }: any) {
       {/* Segmented Filter Buttons */}
       <View style={[s.row, { marginBottom: 16, gap: 10 }]}>
         <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{selected:activeTab==='active'}}
           onPress={() => setActiveTab("active")}
           style={{
             flex: 1,
@@ -133,6 +141,8 @@ export function ParentBillsScreen({ navigation }: any) {
         </Pressable>
 
         <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{selected:activeTab==='paid'}}
           onPress={() => setActiveTab("paid")}
           style={{
             flex: 1,
@@ -183,8 +193,7 @@ export function ParentBillsScreen({ navigation }: any) {
       ) : (
         displayedBills.map((b) => {
           const bal = parseFloat(String(b.balance_remaining)) || 0;
-          const isOverdue =
-            b.status !== "paid" && String(b.due_date).slice(0,10) < new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+          const isOverdue = invoiceIsOverdue(b.due_date, b.status);
 
           return (
             <Card key={b.id} style={{ marginBottom: 14, padding: 18 }}>
@@ -253,6 +262,8 @@ export function ParentBillsScreen({ navigation }: any) {
 
                 {b.payments && b.payments.length > 0 && (
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`View receipt ${b.payments[0].receipt_number}`}
                     onPress={() => setSelectedReceipt({ receipt: b.payments[0], bill: b })}
                     style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
                   >
@@ -265,6 +276,7 @@ export function ParentBillsScreen({ navigation }: any) {
               </View>
 
               {/* If multiple receipts exist */}
+              {Number(b.balance_remaining)>0&&b.status!=='cancelled'&&<View style={{gap:12,marginVertical:12}}><Button title={bankBill===b.id?'Hide bank payment details':'Pay this bill by bank transfer'} variant="outline" onPress={()=>setBankBill(current=>current===b.id?null:b.id)}/>{bankBill===b.id&&<ReceiptPaymentCard purpose="invoice" targetId={b.id} onApplied={loadBills}/>}</View>}
               {b.payments && b.payments.length > 1 && (
                 <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#F0EEE6" }}>
                   <Text size={11} color="#7E8490" weight="semibold" style={{ marginBottom: 6 }}>
@@ -273,6 +285,8 @@ export function ParentBillsScreen({ navigation }: any) {
                   {b.payments.map((p) => (
                     <Pressable
                       key={p.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`View receipt ${p.receipt_number}`}
                       onPress={() => setSelectedReceipt({ receipt: p, bill: b })}
                       style={[s.between, { paddingVertical: 4 }]}
                     >
@@ -304,7 +318,7 @@ export function ParentBillsScreen({ navigation }: any) {
           <View style={{ flex: 1 }}>
             <Text size={13} weight="semibold">1. Cash at Front Reception Desk</Text>
             <Text size={12} color="#7E8490" style={{ marginTop: 2 }}>
-              Pay directly at the daycare reception office. Staff will instantly issue an official digital receipt.
+              Pay directly at reception. Staff record the cash payment and issue a digital receipt.
             </Text>
           </View>
         </View>
@@ -314,9 +328,9 @@ export function ParentBillsScreen({ navigation }: any) {
             <DeviceMobile size={18} color="#D96500" weight="fill" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text size={13} weight="semibold">2. Telebirr Mobile Transfer</Text>
+            <Text size={13} weight="semibold">2. Bank or Telebirr transfer</Text>
             <Text size={12} color="#7E8490" style={{ marginTop: 2 }}>
-              Send payment to the daycare's merchant/account. Share the transaction reference code with front desk.
+              Open a bill's bank payment details to see the enabled accounts, exact recipient and amount. Submit the CBE receipt link, or the supported bank or Telebirr reference, after transferring.
             </Text>
           </View>
         </View>
@@ -326,9 +340,9 @@ export function ParentBillsScreen({ navigation }: any) {
             <CurrencyDollar size={18} color="#5E35B1" weight="fill" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text size={13} weight="semibold">3. Commercial Bank of Ethiopia (CBE)</Text>
+            <Text size={13} weight="semibold">3. Check a delayed payment</Text>
             <Text size={12} color="#7E8490" style={{ marginTop: 2 }}>
-              Transfer via CBE Birr or CBE Mobile Banking. Retain the receipt transaction number for verification.
+              Reopen the bill to recover your saved proof and status. If checking is unavailable or needs review, contact your daycare. Do not transfer again for the same bill.
             </Text>
           </View>
         </View>
@@ -423,6 +437,8 @@ export function ParentBillsScreen({ navigation }: any) {
                       {selectedReceipt.receipt.payment_method?.replace(/_/g, " ")}
                     </Text>
                   </View>
+
+                  <Text size={12}>{paymentProvenanceLabel(selectedReceipt.receipt.verification_source)}</Text>
 
                   <View style={[s.between, { marginBottom: 6 }]}>
                     <Text size={12} color="#777">Reference Code:</Text>

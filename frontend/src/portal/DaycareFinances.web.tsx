@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { portalApi, apiError } from "./api";
 import { Badge, Button, Card, Icon, Modal, Person } from "./ui.web";
 import { money } from "./model";
+import DaycarePaymentManagement from './DaycarePaymentManagement.web';
+import {paymentProvenanceLabel} from '../types/daycarePayments';
+import {invoiceIsOverdue} from '../utils/billingDates';
 
 interface Invoice {
   id: number;
@@ -27,6 +30,8 @@ interface Invoice {
 }
 
 interface PaymentRecord {
+  verification_source?:string;
+  daycare_payment_request_id?:string|null;
   id: number;
   invoice_id: number;
   amount_paid: number | string;
@@ -168,7 +173,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
     try {
       const res = await portalApi.recordInvoicePayment(payingInvoice.id, {
         amount_paid: Number(submitted.get("amount_paid")),
-        payment_method: String(submitted.get("payment_method")),
+        payment_method: 'cash_at_daycare',
         reference_code: String(submitted.get("reference_code") || "") || undefined,
         notes: String(submitted.get("notes") || "") || undefined,
       });
@@ -197,6 +202,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
 
   return (
     <div className="daycare-finances-container" style={{ display: "flex", flexDirection: "column", gap: 24, padding: "8px 0" }}>
+      {!ctx?.preview&&<DaycarePaymentManagement onSettled={loadData}/>}
       {/* Top Header & Actions */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
         <div>
@@ -395,7 +401,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 {invoices.map((inv) => {
                   const remaining = parseFloat(String(inv.balance_remaining)) || 0;
                   const isPaid = inv.status === "paid";
-                  const isOverdue = inv.status === "overdue" || (new Date(inv.due_date) < new Date() && !isPaid);
+                  const isOverdue = invoiceIsOverdue(inv.due_date, inv.status);
 
                   return (
                     <tr key={inv.id} style={{ borderBottom: "1px solid #f0eee6" }}>
@@ -601,9 +607,6 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #dcd7cc", fontSize: 13 }}
               >
                 <option value="cash_at_daycare">Cash at Daycare Front Desk (ጥሬ ገንዘብ)</option>
-                <option value="telebirr_transfer">Telebirr Mobile Transfer (ቴሌብር)</option>
-                <option value="cbe_transfer">CBE Mobile / Bank Transfer (የኢትዮጵያ ንግድ ባንክ)</option>
-                <option value="digital_gateway">Digital Payment Gateway</option>
               </select>
             </label>
 
@@ -664,7 +667,7 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                 {viewReceipt.daycare_name || "Ankelba Daycare Center"}
               </div>
               <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
-                Official Child Care Fee Receipt
+                Child Care Fee Receipt · {paymentProvenanceLabel(viewReceipt.verification_source)}
               </div>
               <div style={{ display: "inline-block", marginTop: 8, background: "#e8f5e9", color: "var(--green)", padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 800 }}>
                 RECEIPT #{viewReceipt.receipt_number}
@@ -799,6 +802,8 @@ export function DaycareFinances({ ctx }: { ctx?: any }) {
                             payment_method: p.payment_method,
                             reference_code: p.reference_code,
                             verified_at: p.verified_at,
+                            verification_source: p.verification_source,
+                            daycare_payment_request_id: p.daycare_payment_request_id,
                           });
                         }}
                         style={{

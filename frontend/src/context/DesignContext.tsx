@@ -14,7 +14,7 @@ export type Guardian = {
 export type PreviewOrder = {
   reference: string;
   total: number;
-  method: "pay_at_daycare" | "digital" | "demo";
+  method: "pay_at_daycare" | "digital" | "demo" | "bank_transfer";
   items: { name: string; quantity: number; price: number }[];
   note: string;
   payment_status?: string;

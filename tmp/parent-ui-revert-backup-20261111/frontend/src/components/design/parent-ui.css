@@ -1,0 +1,8 @@
+#ankelba-parent-app :is([role="button"], [role="tab"], button, a, input, textarea, [role="switch"]):focus-visible {
+  outline: 2px solid #061224 !important;
+  outline-offset: 3px;
+}
+#ankelba-parent-app input, #ankelba-parent-app textarea { caret-color: #061224; }
+@media (prefers-reduced-motion: reduce) {
+  #ankelba-parent-app * { scroll-behavior: auto !important; }
+}

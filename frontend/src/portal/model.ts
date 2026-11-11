@@ -36,6 +36,7 @@ export const money = (value: number | string) =>
     Number(value) || 0,
   ) + " ETB";
 export const label = (value: unknown) =>
+  value === "premium" ? "Plus" :
   String(value ?? "—")
     .replaceAll("_", " ")
     .replace(/^\w/, (c) => c.toUpperCase());

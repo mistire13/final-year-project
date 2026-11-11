@@ -38,6 +38,9 @@ const notificationsRoutes = require('./modules/notifications/notifications.route
 const searchRoutes = require('./modules/search/search.routes');
 const saasRoutes = require('./modules/saas/saas.routes');
 const financesRoutes = require('./modules/finances/finances.routes');
+const subscriptionDb = require('./config/db');
+const subscriptionAccess = require('./middleware/subscription-access')
+  .createSubscriptionAccess(subscriptionDb.control || subscriptionDb);
 
 const app = express();
 
@@ -68,7 +71,7 @@ app.use(cors({
   },
   credentials: true,             // allow HttpOnly cookies to be passed
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', ...(daycareAuthConfig.enabled ? ['X-CSRF-Token'] : [])],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Payment-Token', ...(daycareAuthConfig.enabled ? ['X-CSRF-Token'] : [])],
 }));
 
 // ──────────────────────────────────────────────
@@ -84,11 +87,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Stricter limiter for auth endpoints (NFR-SEC-04)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 20 : 100,
-  message: { error: 'Too many login attempts, please try again later.' },
-});
+const authLimiter = require('./middleware/auth-rate-limit')();
 
 // ──────────────────────────────────────────────
 // 4. Body parsing
@@ -155,13 +154,13 @@ app.use([
   '/api/messages', '/api/contacts', '/api/alerts', '/api/ai', '/api/biometric',
   '/api/store', '/api/events', '/api/groups', '/api/dashboard',
   '/api/notifications', '/api/search', '/api/users', '/api/audit',
-  '/api/finances',
+  '/api/finances', '/api/plus', '/api/billing-automation', '/api/staff-scheduling', '/api/daycare-payments',
 ], require('./middleware/auth'), (req, res, next) => {
   if (!req.user?.daycare_id || !['admin', 'caregiver', 'parent'].includes(req.user.role) || req.user.is_impersonating) {
     return res.status(403).json({ error: 'Daycare account required' });
   }
   next();
-});
+}, subscriptionAccess);
 app.use('/api/portal', require('./modules/portal/portal.routes'));
 app.use('/api/auth', authLimiter, authRoutes);
 if (daycareAuthConfig.enabled) {
@@ -178,8 +177,22 @@ app.use('/api', communicationRoutes);
 app.use('/api/ai', aiGuideRoutes);
 app.use('/api/biometric', biometricRoutes);
 app.use('/api/store', storeRoutes);
-app.use('/api/payments', paymentsRoutes);
+// Store callbacks are unauthenticated; customer-initiated writes are subject
+// to the same subscription policy as the rest of the daycare workspace.
+app.use('/api/payments', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/webhook') return next();
+  return require('./middleware/auth')(req, res, () => {
+    if (!req.user?.daycare_id || !['admin', 'caregiver', 'parent'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Daycare account required' });
+    }
+    return subscriptionAccess(req, res, next);
+  });
+}, paymentsRoutes);
 app.use('/api/finances', financesRoutes);
+app.use('/api/daycare-payments', require('./modules/daycare-payments/routes'));
+app.use('/api/plus/analytics',require('./modules/analytics/plus-analytics.routes'));
+app.use('/api/billing-automation',require('./modules/billing-automation/routes'));
+app.use('/api/staff-scheduling',require('./modules/staff-scheduling/staff-scheduling.routes'));
 app.use('/api/events', eventsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/groups', groupsRoutes);

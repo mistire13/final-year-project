@@ -18,6 +18,10 @@ import { Clock } from "phosphor-react-native/src/icons/Clock";
 import { Heart } from "phosphor-react-native/src/icons/Heart";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
 import { X } from "phosphor-react-native/src/icons/X";
+import { CreditCard } from "phosphor-react-native/src/icons/CreditCard";
+import { CaretRight } from "phosphor-react-native/src/icons/CaretRight";
+import { MotionPressable } from "../../components/design/Motion";
+import { colors, radii } from "../../theme/tokens";
 import {
   Page,
   Text,
@@ -29,6 +33,7 @@ import {
   Button,
   s,
   Notice,
+  IconButton,
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 import { apiClient } from "../../api/client";
@@ -185,6 +190,12 @@ export function HomeScreen({ navigation }: any) {
       bg: "#FDEBD5",
       run: () => navigation.navigate("CalendarPage"),
     },
+    {
+      label: "Tuition",
+      Icon: CreditCard,
+      bg: "#E8F0FE",
+      run: () => navigation.navigate("ChildCareFees"),
+    },
   ];
 
   // Dynamic Highlights built from database records
@@ -290,56 +301,41 @@ export function HomeScreen({ navigation }: any) {
       {/* Latest Center Announcement Notification Card */}
       {latestAnnouncement && !dismissedAnnouncements.includes(latestAnnouncement.id) && (
         <Card
-          tint="#FFFBEA"
+          tint={colors.pastelYellow}
           style={{
-            borderColor: "#F6E4AC",
-            borderWidth: 1.5,
+            borderWidth: 1,
+            borderColor: `${colors.pastelYellowText}66`,
             marginBottom: 20,
-            padding: 16,
-            borderRadius: 20,
-            shadowColor: "#9C6B10",
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 10,
+            padding: 8,
+            borderRadius: radii.card,
+            shadowOpacity: 0.025,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 1,
           }}
-          onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: latestAnnouncement.id })}
         >
-          <View style={[s.between, { marginBottom: 6 }]}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <SpeakerHigh size={18} color="#9C6B10" weight="fill" />
-              <Text size={11} color="#855B09" weight="bold" style={{ letterSpacing: 0.8, marginLeft: 6 }}>
-                DAYCARE ANNOUNCEMENT
-              </Text>
-              <View style={{ backgroundColor: "#BD4264", paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 10, marginLeft: 8 }}>
-                <Text size={9} color="#fff" weight="bold">NEW</Text>
-              </View>
-            </View>
-            <Pressable
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <MotionPressable
               accessibilityRole="button"
-              accessibilityLabel="Dismiss announcement"
-              hitSlop={12}
-              onPress={(e: any) => {
-                e?.stopPropagation?.();
-                dismissAnnouncement(latestAnnouncement.id);
-              }}
-              style={{ padding: 4 }}
+              accessibilityLabel={`Open announcement: ${latestAnnouncement.title}`}
+              accessibilityHint="Opens the full announcement"
+              onPress={() => navigation.navigate("AnnouncementDetail", { announcementId: latestAnnouncement.id })}
+              style={{ flex: 1, minWidth: 0, minHeight: 68, flexDirection: "row", alignItems: "center", gap: 10, padding: 8, borderRadius: radii.subcard }}
             >
-              <X size={16} color="#855B09" />
-            </Pressable>
-          </View>
-          <Text size={16} weight="bold" color="#10263D">
-            {latestAnnouncement.title}
-          </Text>
-          <Text size={13} color="#454D57" numberOfLines={2} style={{ marginTop: 4, lineHeight: 18 }}>
-            {latestAnnouncement.body}
-          </Text>
-          <View style={[s.between, { marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderColor: "#EFE0BF" }]}>
-            <Text size={11} color="#855B09">
-              Posted by {latestAnnouncement.author_name || "Center Administration"}
-            </Text>
-            <Text size={11} color="#855B09" weight="bold">
-              Read announcement →
-            </Text>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.bgSurface, alignItems: "center", justifyContent: "center" }}>
+                <SpeakerHigh size={18} color={colors.textPrimary} weight="regular" />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text size={11} weight="medium" color={colors.textSecondary} style={{ marginBottom: 3 }}>
+                  {latestAnnouncement.announcement_type === "alert" ? "Important notice" : latestAnnouncement.announcement_type === "meal_plan" ? "Meal plan" : "Announcement"}
+                </Text>
+                <Text size={14} weight="semibold" color={colors.textPrimary} numberOfLines={2} ellipsizeMode="tail" style={{ lineHeight: 20 }}>
+                  {latestAnnouncement.title}
+                </Text>
+              </View>
+              <CaretRight size={14} color={colors.textSecondary} />
+            </MotionPressable>
+            <IconButton icon={X} size={16} color={colors.textSecondary} label="Dismiss announcement" onPress={() => dismissAnnouncement(latestAnnouncement.id)} />
           </View>
         </Card>
       )}
@@ -448,6 +444,48 @@ export function HomeScreen({ navigation }: any) {
           </Pressable>
         ))}
       </View>
+
+      {/* Monthly Tuition & Care Fees Card */}
+      <Card
+        style={{
+          marginTop: 20,
+          padding: 16,
+          backgroundColor: "#F7F9FC",
+          borderColor: "#E2E8F0",
+          borderWidth: 1,
+        }}
+      >
+        <View style={s.between}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#EBF3FF",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <CreditCard size={22} color="#1E56A0" weight="fill" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text size={15} weight="semibold" color="#1E293B">
+                Care Fees & Tuition
+              </Text>
+              <Text size={12} color="#64748B" style={{ marginTop: 2 }}>
+                Monthly tuition invoices & verified receipts
+              </Text>
+            </View>
+          </View>
+          <Button
+            title="Invoices"
+            variant="outline"
+            onPress={() => navigation.navigate("ChildCareFees")}
+            style={{ minHeight: 34, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: "#FFFFFF" }}
+          />
+        </View>
+      </Card>
 
       {/* Highlights Section */}
       <Section title="Today’s Highlights" action="View All" onPress={report} />

@@ -1,0 +1,209 @@
+▶ essential security with separate restricted PostgreSQL logins
+  ✔ flow migration can roll back and reapply without dropping stored columns (95.8153ms)
+  ✔ startup rejects privileged logins and verifies restricted roles (370.0268ms)
+  ✔ unscoped reads fail closed and concurrent tenants stay isolated (106.6744ms)
+  ✔ one physical connection clears scope after commits, failures and background jobs (95.6802ms)
+  ✔ startup catches policy and control-grant regressions beyond core tables (202.6337ms)
+  ✔ evidence migration refuses inconsistent history and can roll back and reapply (130.4604ms)
+  ✔ database constrains biometric, pickup and audit actors even for maintenance SQL (30.7607ms)
+  ✔ control can update and audit package terms without accessing child evidence (121.4114ms)
+02:59:27 [[32minfo[39m]: User 4 (parent) authenticated
+02:59:27 [[32minfo[39m]: User 5 (parent) authenticated
+02:59:27 [[32minfo[39m]: User 2 (admin) authenticated
+02:59:27 [[32minfo[39m]: User 3 (caregiver) authenticated
+02:59:27 [[32minfo[39m]: User 6 (super_admin) authenticated
+02:59:27 [[31merror[39m]: Error: Child not linked to this account.
+    at assertParentOwnsChild (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.parent.service.js:30:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async getMyChild (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.parent.service.js:70:5)
+  ✔ restricted HTTP login and parent profile loading work (268.7574ms)
+02:59:28 [[31merror[39m]: Error: Child profile not found
+    at Object.createReport (C:\Users\Mistire\Desktop\final year project\backend\src\modules\reports\reports.service.js:25:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async createReport (C:\Users\Mistire\Desktop\final year project\backend\src\modules\reports\reports.controller.js:10:20)
+  ✔ staff can operate within their daycare and parents cannot open staff APIs (143.9422ms)
+02:59:28 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+    at conflict (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:3:38)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:21:100
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (C:\Users\Mistire\Desktop\final year project\backend\src\utils\auditedWrite.js:28:22)
+    at async addContact (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.controller.js:13:79)
+02:59:28 [[31merror[39m]: Error: This child’s care details changed in another view. Refresh the profile before saving again.
+    at conflict (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:3:38)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.care.service.js:21:100
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async run (C:\Users\Mistire\Desktop\final year project\backend\src\utils\auditedWrite.js:28:22)
+    at async addContact (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.controller.js:13:79)
+02:59:28 [[31merror[39m]: Error: Profile changed. Reload it before saving.
+    at fail (C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.profile-save.js:7:53)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.profile-save.js:71:49
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\auth\legacy-security.js:62:20)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\children\children.profile-save.js:102:18
+  ✔ parent and admin care writers invalidate each other and serialize concurrent edits (117.84ms)
+02:59:28 [[31merror[39m]: Error: No active front-desk assignment for this child and action.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at assertScope (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:34:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:82:16
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:9:49)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:51
+02:59:28 [[31merror[39m]: Error: Child must be checked in before pickup.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:89:78
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:9:49)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:51
+  ✔ assigned caregiver check-in and verified manual pickup commit with scoped evidence (65.5576ms)
+  ✔ announcement details enforce audience, expiry and tenant boundaries (87.7716ms)
+02:59:28 [[31merror[39m]: Error: This checkout was already submitted with different items. Start a new checkout.
+    at Object.placeOrder (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:202:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async placeOrder (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:37:20)
+02:59:28 [[31merror[39m]: Error: Product ID 1 is not available
+    at Object.placeOrder (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:231:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async placeOrder (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:37:20)
+02:59:28 [[31merror[39m]: Error: Product changed. Reload before saving.
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:163:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\auth\legacy-security.js:62:20)
+    at async updateProduct (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:28:20)
+  ✔ checkout retries preserve one order, notes and inventory; changed payload conflicts (101.5554ms)
+02:59:28 [[31merror[39m]: Error: Event changed. Reload before saving.
+    at Object.updateEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.service.js:142:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.controller.js:28:20)
+02:59:28 [[31merror[39m]: Error: Center settings changed. Reload before saving.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:189:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async transaction (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:9:49)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:51
+  ✔ event and center settings edits reject stale versions (41.7239ms)
+02:59:28 [[31merror[39m]: Error: Order changed. Reload before saving.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:423:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:429:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+02:59:28 [[31merror[39m]: Error: This order status transition is not allowed.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:423:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:444:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+02:59:28 [[31merror[39m]: Error: A cancelled order cannot accept payment.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:423:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:449:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+02:59:28 [[31merror[39m]: ValidationError: "version" is required
+02:59:28 [[31merror[39m]: Error: Resolve payment or refund before cancelling this order.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:423:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:464:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+02:59:28 [[31merror[39m]: Error: Recorded payments cannot be reversed here. A refund workflow is required.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:423:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:451:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+02:59:28 [[31merror[39m]: Error: This order status transition is not allowed.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:423:21)
+    at Object.updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.service.js:444:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateOrderStatus (C:\Users\Mistire\Desktop\final year project\backend\src\modules\store\store.controller.js:64:20)
+  ✔ order edits reject stale writes and cancellation returns stock once (172.1325ms)
+02:59:28 [[31merror[39m]: Error: Event changed. Reload before saving.
+    at Object.updateEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.service.js:142:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async updateEvent (C:\Users\Mistire\Desktop\final year project\backend\src\modules\events\events.controller.js:28:20)
+02:59:28 [[31merror[39m]: ValidationError: "version" is required
+  ✔ event cancellation conflicts with stale edits and stays tenant scoped (44.4991ms)
+02:59:28 [[31merror[39m]: Error: Event unavailable
+    at Object.save (C:\Users\Mistire\Desktop\final year project\backend\src\modules\notifications\preferences.js:66:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async C:\Users\Mistire\Desktop\final year project\backend\src\modules\notifications\notifications.routes.js:13:72
+  ✔ preferences and reminders persist per account; health notify sends one parent message (141.4502ms)
+02:59:28 [[31merror[39m]: Error: Subscription changes require platform approval. Contact platform support.
+    at failure (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\policy.js:1:55)
+    at Object.renewPlan (C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.service.js:196:9)
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:20:65
+    at C:\Users\Mistire\Desktop\final year project\backend\src\modules\portal\portal.routes.js:7:57
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at middleware (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\rbac.js:32:3)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:119:3)
+02:59:28 [[31merror[39m]: Error: Platform operators cannot impersonate daycare accounts.
+    at Object.impersonateDaycare (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\saas.service.js:721:23)
+    at impersonateDaycare (C:\Users\Mistire\Desktop\final year project\backend\src\modules\saas\saas.controller.js:132:39)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at middleware (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\rbac.js:32:3)
+    at Layer.handle [as handle_request] (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\Users\Mistire\Desktop\final year project\backend\node_modules\express\lib\router\route.js:149:13)
+    at auth (C:\Users\Mistire\Desktop\final year project\backend\src\middleware\auth.js:68:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+  ✔ self-renewal and impersonation fail without changing subscription (20.1ms)
+  ✔ platform governance works using aggregates while private APIs stay denied (1212.5863ms)
+✔ essential security with separate restricted PostgreSQL logins (6605.7178ms)
+✔ webhook rejects {"tx_ref":"synthetic-existing-reference"} before accessing payment data (1.7906ms)
+✔ webhook rejects {"tx_ref":"synthetic-existing-reference","status":"success"} before accessing payment data (0.2143ms)
+✔ webhook rejects {"gateway_ref":"synthetic-existing-reference","status":"failed"} before accessing payment data (0.1769ms)
+✔ webhook rejects {} before accessing payment data (1.6863ms)
+✔ webhook rejects null before accessing payment data (0.2798ms)
+✔ digital initiation cannot create a checkout or reset a paid order (0.359ms)
+✔ pay_at_daycare initiation cannot create a checkout or reset a paid order (0.2326ms)
+✔ existing payment status remains readable by its parent (0.8294ms)
+✔ reading a payment still rejects another parent (0.2556ms)
+✔ mounted endpoints return unavailable instead of acknowledging a payment (193.119ms)
+▶ phase two: daycare isolation and permission enforcement
+  ✔ admin A only sees users from daycare A and never super_admin (33.9004ms)
+  ✔ admin A cannot get, update, or deactivate user from daycare B (10.8758ms)
+  ✔ owner-only admin appointment: tenant admin cannot create another admin (B07) (0.5956ms)
+  ✔ tenant admin creating caregiver stamps actor daycare_id (B04) (83.8222ms)
+  ✔ admin A only lists children from daycare A (10.0878ms)
+  ✔ admin A cannot get or update child from daycare B (1.9618ms)
+  ✔ admin A cannot assign caregiver or group from daycare B to child A (2.7487ms)
+  ✔ admin A cannot link parent B to child A (1.9227ms)
+  ✔ admin A cannot add, update or delete emergency contacts or care instructions on child B (3.1254ms)
+  ✔ parent A cannot self-authorize pickup or change classroom group (B08) (226.6452ms)
+  ✔ admin A only sees daycare A groups and cannot modify group B (4.1212ms)
+  ✔ health records stamp daycare_id and reject cross-daycare access and unassigned caregivers (23.7238ms)
+  ✔ announcements stamp daycare_id and isolate across tenants (14.3488ms)
+  ✔ direct messages reject cross-daycare recipients (1.5905ms)
+  ✔ alerts reject targeting users from another daycare (1.1567ms)
+  ✔ daily reports stamp daycare_id and isolate across tenants (12.7488ms)
+  ✔ store products and orders enforce strict daycare isolation (41.6991ms)
+  ✔ calendar events stamp daycare_id and isolate across tenants (11.886ms)
+  ✔ global search results never leak records from another daycare (14.8357ms)
+  ✔ admin dashboard statistics only aggregate for own daycare (86.2983ms)
+  ✔ audit logs stamp daycare_id and isolate across tenants (22.165ms)
+  ▶ restricted non-superuser role enforces RLS, fails closed without context, and isolates data
+    ✔ un-contexted queries fail closed and return 0 rows under RLS (28.9985ms)
+    ✔ queries with Daycare A context return only Daycare A rows without WHERE clause (2.4177ms)
+    ✔ direct SQL cross-tenant insert is rejected by RLS WITH CHECK policy (2.0417ms)
+    ✔ direct SQL insert into dependent table for cross-tenant child is rejected by RLS (1.6367ms)
+    ✔ direct SQL update targeting Daycare B record under Daycare A context affects 0 rows (1.2696ms)
+    ✔ queries with Daycare B context return only Daycare B rows (1.1473ms)
+    ✔ tenant connection pool isolates context, prevents leakage across checkouts, and fails closed (210.6022ms)
+  ✔ restricted non-superuser role enforces RLS, fails closed without context, and isolates data (604.8579ms)
+✔ phase two: daycare isolation and permission enforcement (6149.0214ms)
+✔ analytics validates real calendar dates, bounds ranges and keeps monetary comparisons exact (3.7756ms)
+✔ Plus analytics reconcile actual periods, isolate tenants and record genuine occupancy changes (6144.6163ms)
+✔ billing fee calculations use exact cents, require positive fees and Addis Ababa calendar dates (16.7197ms)
+✔ Plus billing previews, concurrent invoice runs, reminders, opt-in, retries and isolation persist correctly (6029.2667ms)
+✔ billing email preference is private to an active parent in the authenticated daycare and preserves other notification choices (2.8633ms)
+✔ Plus capabilities are explicit, paid-period aware and cannot be added to Standard terms (2.2403ms)
+✔ Standard cannot create shop sales; existing orders retain audited cash settlement after downgrade (6051.3539ms)
+✔ weekly shifts use Addis Ababa time, bound overnight duration and detect conflicts (8.6258ms)
+✔ reviewed schedules, leave and substitutions preserve scoped duties and reject duplicate or cross-tenant changes (6053.0573ms)
+ℹ tests 70
+ℹ suites 0
+ℹ pass 70
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7007.8722

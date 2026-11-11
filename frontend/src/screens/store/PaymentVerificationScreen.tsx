@@ -2,6 +2,7 @@ import React, {useState} from "react";
 import { Page, Card, Text, Button, Notice } from "../../components/design/System";
 import {simulateDemoPayment,getPaymentCapabilities} from "../../api/parentApi";
 import {useRemoteResource} from '../../hooks/useRemoteResource';
+import ReceiptPaymentCard from '../payments/ReceiptPaymentCard';
 export function PaymentVerificationScreen({ navigation, route }: any) {
   const [busy,setBusy]=useState(false);
   const [reference,setReference]=useState('');
@@ -16,7 +17,9 @@ export function PaymentVerificationScreen({ navigation, route }: any) {
     } catch(e:any){setError(e?.response?.data?.message || 'Could not confirm demo payment. Retry to check the same order.');}
     finally{setBusy(false);}
   };
-  return <Page title={capabilities.data.demo_enabled?'Demo payment':'Payment options'} back>
+  return <Page title="Payment options" back>
+    <ReceiptPaymentCard purpose="order" targetId={Number(route.params?.orderId)}/>
+    {capabilities.data.demo_enabled&&<>
     <Card><Text size={23} weight="bold">{reference?'Demo payment succeeded':'Simulate a successful payment'}</Text>
       <Text style={{marginTop:16}}>Order {route.params?.orderRef}</Text>
       <Text style={{marginTop:16}}>{capabilities.data.demo_enabled?'This development demo records a simulated payment. No money is transferred and no card details are needed.':'Settle this order at the daycare office. Demo payments are unavailable in this environment.'}</Text>
@@ -25,6 +28,7 @@ export function PaymentVerificationScreen({ navigation, route }: any) {
     {!!error && <Notice tone="error">{error}</Notice>}
     {!!capabilities.error && <Button title="Retry payment options" onPress={capabilities.refresh}/>}
     {!reference && capabilities.data.demo_enabled && <Button title={busy?'Recording demo payment…':'Simulate payment success'} disabled={busy||capabilities.loading} onPress={pay}/>}
+    </>}
     <Button title="View my orders" onPress={()=>navigation.navigate("Orders")}/>
   </Page>;
 }

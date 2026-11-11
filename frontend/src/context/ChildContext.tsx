@@ -37,18 +37,33 @@ export const ChildProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     let cancelled = false;
-    setChildrenList([]);
-    setSelectedChild(null);
-    if (user?.linked_children && user.linked_children.length > 0) {
-      setChildrenList(user.linked_children);
-      setSelectedChild(user.linked_children[0]);
-    } else if (user?.role === "parent") {
+    if (!user) {
+      setChildrenList([]);
+      setSelectedChild(null);
+      return;
+    }
+
+    if (user.linked_children && user.linked_children.length > 0) {
+      const kids = user.linked_children;
+      setChildrenList(kids);
+      setSelectedChild((prev) => {
+        if (prev && kids.some((c: ChildSummary) => c.id === prev.id)) {
+          return kids.find((c: ChildSummary) => c.id === prev.id)!;
+        }
+        return kids[0] || null;
+      });
+    } else if (user.role === "parent") {
       getMyChildren()
         .then((kids) => {
           if (cancelled) return;
           if (kids && kids.length > 0) {
             setChildrenList(kids);
-            setSelectedChild(kids[0]);
+            setSelectedChild((prev) => {
+              if (prev && kids.some((c: ChildSummary) => c.id === prev.id)) {
+                return kids.find((c: ChildSummary) => c.id === prev.id)!;
+              }
+              return kids[0] || null;
+            });
           } else {
             setChildrenList([]);
             setSelectedChild(null);
@@ -59,8 +74,13 @@ export const ChildProvider: React.FC<{ children: ReactNode }> = ({
           setChildrenList([]);
           setSelectedChild(null);
         });
+    } else {
+      setChildrenList([]);
+      setSelectedChild(null);
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const addToCart = (product: Product, quantity: number = 1) => {

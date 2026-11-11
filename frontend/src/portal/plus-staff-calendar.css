@@ -1,0 +1,19 @@
+.plus-staff-calendar{margin-top:24px;min-width:0;container-type:inline-size}
+.plus-calendar-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between}
+.plus-calendar-toolbar h3{margin:0;color:var(--navy)}
+.plus-calendar-controls{display:flex;flex-wrap:wrap;gap:8px}
+.plus-calendar-toolbar label{display:grid;gap:8px;font-weight:600;color:var(--navy)}
+.plus-calendar-toolbar input{font:inherit;min-height:44px;border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 12px;background:var(--cream-card);color:var(--navy)}
+.plus-calendar-week{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:20px}
+.plus-calendar-day{min-width:0;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--cream-soft);padding:12px}
+.plus-calendar-day.is-today{border-color:var(--green);box-shadow:inset 0 3px var(--green)}
+.plus-calendar-day h4{margin:0 0 16px;color:var(--navy);font-size:14px;line-height:1.6}
+.plus-calendar-day h4 span{display:block;color:var(--green);font-size:12px}
+.plus-calendar-duty{background:var(--cream-card);border:1px solid var(--line);border-radius:10px;padding:10px;margin:10px 0;overflow-wrap:break-word;word-break:normal}
+.plus-calendar-duty summary{cursor:pointer;min-height:44px;color:var(--navy);line-height:1.7}
+.plus-calendar-duty summary strong,.plus-calendar-duty summary>span{display:block;font-size:13px}
+.plus-calendar-duty p,.plus-calendar-empty{font-size:12px;color:var(--muted);line-height:1.6}
+.plus-staff-calendar :is(summary,input):focus-visible{outline:3px solid var(--green);outline-offset:3px}
+@container(min-width:1250px){.plus-calendar-week{grid-template-columns:repeat(7,minmax(0,1fr))}}
+@container(max-width:640px){.plus-calendar-week{grid-template-columns:1fr}.plus-calendar-day{padding:16px}.plus-calendar-day h4{font-size:16px}.plus-calendar-duty summary strong,.plus-calendar-duty summary>span{font-size:15px}.plus-calendar-duty p,.plus-calendar-empty{font-size:14px}.plus-calendar-controls{width:100%}}
+@media(max-width:800px){.plus-calendar-week{grid-template-columns:1fr}.plus-calendar-day{padding:16px}.plus-calendar-day h4{font-size:16px}.plus-calendar-duty summary strong,.plus-calendar-duty summary>span{font-size:15px}.plus-calendar-duty p,.plus-calendar-empty{font-size:14px}.plus-calendar-controls{width:100%}}

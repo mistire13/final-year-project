@@ -32,8 +32,8 @@ async function fixture(db) {
 
   // Create two daycares
   const [daycareA, daycareB] = await db('daycares').insert([
-    { name: `Daycare A ${suffix}`, slug: `daycare-a-${suffix}`, contact_email: `daycare-a-${suffix}@example.invalid`, status: 'active' },
-    { name: `Daycare B ${suffix}`, slug: `daycare-b-${suffix}`, contact_email: `daycare-b-${suffix}@example.invalid`, status: 'active' },
+    { name: `Daycare A ${suffix}`, slug: `daycare-a-${suffix}`, contact_email: `daycare-a-${suffix}@example.invalid`, status: 'active', subscription_plan:'premium' },
+    { name: `Daycare B ${suffix}`, slug: `daycare-b-${suffix}`, contact_email: `daycare-b-${suffix}@example.invalid`, status: 'active', subscription_plan:'premium' },
   ]).returning('*');
 
   const passwordHash = await bcrypt.hash(password, 4);
@@ -181,7 +181,8 @@ test('Phase 6 — Communication, Announcements, Alerts & Audiences (B12, F07, F1
       assert.ok(!(await searchService.globalSearch('OrphanRegression', f.adminA)).results.products.length);
       await assert.rejects(store.updateProduct(product.id, { name: 'Changed' }, f.adminA), { statusCode: 404 });
       await assert.rejects(store.placeOrder({ items: [{ product_id: product.id, quantity: 1 }] }, f.parentA1), { statusCode: 404 });
-      await db('products').where({ id: product.id }).delete();
+      // Inventory evidence is immutable; disposable database teardown owns cleanup.
+      await db('products').where({ id: product.id }).update({available:false});
     });
 
 

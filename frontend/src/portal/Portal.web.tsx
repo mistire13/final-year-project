@@ -1,4 +1,10 @@
+import PlusAnalytics from './PlusAnalytics.web';
+import PlusBillingAutomation from './PlusBillingAutomation.web';
+import PlusStaffScheduling from './PlusStaffScheduling.web';
+import SurfaceRecovery from './SurfaceRecovery.web';
+import {workspaceRouteFailure} from './workspaceRoutes';
 import SetupChecklist from './SetupChecklist.web';
+import { DaycareSubscription, SubscriptionNotice } from './SubscriptionViews.web';
 
 import { CaregiverPage } from "./CaregiverPages.web";
 import { DaycareFinances } from "./DaycareFinances.web";
@@ -160,9 +166,13 @@ const nav = [
     items: [
       ["dashboard", "Overview", "home"],
       ["analytics", "Analytics", "chart"],
+      ["business", "Business reports · Plus", "chart"],
       ["finances", "Finances & Fees", "file"],
+      ["billing-automation", "Billing automation · Plus", "file"],
+      ["subscription", "Platform subscription", "file"],
       ["children", "Children & Families", "child"],
       ["caregivers", "Caregivers & Staff", "people"],
+      ["staff-scheduling", "Front-desk shifts · Plus", "clock"],
       ["groups", "Groups & classrooms", "leaf"],
     ],
   },
@@ -181,7 +191,7 @@ const nav = [
     items: [
       ["communication", "Communication", "message"],
       ["events", "Events & calendar", "calendar"],
-      ["store", "Products & stock", "store"],
+      ["store", "Shop & stock · Plus", "store"],
       ["orders", "Orders & payments", "file"],
       ["audit", "Audit history", "audit"],
       ["settings", "Center profile & info", "leaf"],
@@ -192,6 +202,7 @@ const subtitles: Record<string, string> = {
   dashboard: "A thoughtful overview of your daycare, all in one place.",
   analytics: "Understand the patterns behind each day of care.",
   finances: "Child care fees, monthly invoices, cash/mobile payment reconciliation and digital receipts.",
+  subscription: "Review your package, payment history and renewal date.",
   settings: "Manage daycare center profile, contact details, operating hours and address.",
   children: "Enrolled children, their linked families, emergency contacts, and care plans.",
   caregivers: "Professional staff profiles, qualifications, assigned groups, and shift schedules.",
@@ -270,14 +281,21 @@ export default function Portal() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [broadcast, setBroadcast] = useState<{ message: string; level: string; active: boolean } | null>(null);
+  const [subscription, setSubscription] = useState<any>(null);
   const loadingRequest = useRef(0);
   const staff = actor?.role === "caregiver";
+  useEffect(() => {
+    let live = true;
+    if (!actor || actor.role !== 'admin' || preview) { setSubscription(null); return; }
+    portalApi.subscription().then(value => { if (live) setSubscription(value); }).catch(() => { if (live) setSubscription(null); });
+    return () => { live = false; };
+  }, [actor?.id, actor?.role, preview, page]);
   const base = `/${staff ? "staff" : "admin"}${preview ? "/preview" : ""}`;
   const navigation = staff
     ? [
         {
           group: "YOUR SHIFT",
-          items: [["workspace", "Attendance & pickup", "desk"], ["reports", "Daily reports", "file"], ["health", "Health & incidents", "heart"], ["communication", "Messages & announcements", "message"], ["events", "Calendar", "calendar"]],
+          items: [["workspace", "Attendance & pickup", "desk"], ["reports", "Daily reports", "file"], ["health", "Health & incidents", "heart"], ["communication", "Messages & announcements", "message"], ["events", "Calendar", "calendar"], ["staff-scheduling","My front-desk shifts · Plus","clock"]],
         },
       ]
     : nav;
@@ -363,7 +381,7 @@ export default function Portal() {
   };
   useEffect(() => {
     if (actor && ["admin", "caregiver"].includes(actor.role)) {
-      if (!available.includes(page)) go(staff ? "workspace" : "dashboard");
+      if (["/login", "/signin", "/admin/login"].includes(window.location.pathname.replace(/\/$/, ""))) go(staff ? "workspace" : "dashboard");
       void refresh();
     }
     return () => {
@@ -392,11 +410,14 @@ export default function Portal() {
         return;
       }
       setActor(user);
-      setPage(user.role === "caregiver" ? "workspace" : "dashboard");
+      let resumeRenewal = false;
+      try { resumeRenewal = user.role === 'admin' && !!window.sessionStorage.getItem('ankelba_renewal_resume'); } catch {}
+      const destination = user.role === 'caregiver' ? 'workspace' : resumeRenewal ? 'subscription' : 'dashboard';
+      setPage(destination);
       window.history.replaceState(
         {},
         "",
-        `/${user.role === "caregiver" ? "staff" : "admin"}/${user.role === "caregiver" ? "workspace" : "dashboard"}`,
+        `/${user.role === "caregiver" ? "staff" : "admin"}/${destination}`,
       );
     } catch (error) {
       setLoginError(apiError(error));
@@ -425,7 +446,7 @@ export default function Portal() {
   };
   const open = (kind: string, row: Row = { id: 0 }) => {
     setFormError("");
-    setModal({ kind, row: ["guardian-request-create","announcement"].includes(kind) ? {...row,request_key:`${Date.now()}-${Math.random().toString(36).slice(2)}`} : row });
+    setModal({ kind, row: ["guardian-request-create","announcement","refund-order"].includes(kind) ? {...row,request_key:`${Date.now()}-${Math.random().toString(36).slice(2)}`} : row });
   };
   const close = () => {
     if (!saving) setModal(null);
@@ -986,9 +1007,17 @@ export default function Portal() {
           upsert("products", { id: row.id, ...body }),
           row.id ? "patch" : "post",
         );
+      } else if (kind === "refund-order") {
+        const returnedAt=String(values.refunded_at||'');
+        if(!returnedAt||values.refund_confirmed!==true)throw Error('Confirm that the cash was already returned and enter its return time.');
+        const body={version:row.version,amount:Number(values.amount),original_payment_reference:String(values.original_payment_reference||'').trim(),refund_reference:String(values.refund_reference||'').trim(),refunded_at:new Date(returnedAt+(returnedAt.length===16?':00':'')+'+03:00').toISOString(),stock_disposition:values.stock_disposition,reason:String(values.reason||'').trim(),refund_confirmed:true,request_key:row.request_key};
+        if(preview)throw Error('Refund evidence requires a signed-in administrator and an actual cash receipt.');
+        await portalClient.post(`/store/orders/${row.id}/refund`,body);
+        await refresh();setToast('Cash return recorded. No money was transferred by Ankelba.');
       } else if (kind === "order") {
         const body: any = { version: row.version, order_status: values.order_status };
         if (values.payment_status) body.payment_status = values.payment_status;
+        if(values.payment_status==='paid'&&row.payment_status!=='paid')Object.assign(body,{amount_received:Number(values.amount_received),payment_confirmed:values.payment_confirmed===true,payment_reason:values.payment_reason});
         await mutate(
           "/store/orders/" + row.id + "/status",
           body,
@@ -1137,13 +1166,18 @@ export default function Portal() {
         </div>
       </div>
     );
-  const pageComponent =
+  const plusPageFeature:Record<string,string>={business:'business_analytics','billing-automation':'billing_automation','staff-scheduling':'staff_scheduling',store:'shop'};
+  const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...new Set([...nav.flatMap(group=>group.items.map(item=>item[0])),'workspace','users','caregivers'])],available);
+  const plusFeature=plusPageFeature[selected];
+  const pageComponent = plusFeature&&(preview||!visibleData.daycare?.features?.[plusFeature]) ? <Card title="Included with Plus"><p>{preview?'Open a live Plus daycare to manage these tools.':'Your current subscription does not include this feature. Essential care and existing records remain available.'}</p>{!staff&&!preview&&<Button onClick={()=>go('subscription')}>Review subscription</Button>}</Card> : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
     staff && ["reports","health","communication","events"].includes(selected) ? <CaregiverPage ctx={ctx} page={selected}/> : selected === "dashboard" ? (
       <> {!staff && !preview && <SetupChecklist data={visibleData}/>}<Overview {...ctx} /></>
     ) : selected === "analytics" ? (
       <Analytics {...ctx} />
     ) : selected === "finances" ? (
       <DaycareFinances ctx={ctx} />
+    ) : selected === "subscription" ? (
+      <DaycareSubscription />
     ) : ["caregivers", "users"].includes(selected) ? (
       <Caregivers {...ctx} />
     ) : selected === "children" ? (
@@ -1224,7 +1258,7 @@ export default function Portal() {
             Ankelba <span>/</span>{" "}
             <strong>{staff ? "Staff workspace" : "Administration"}</strong>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", marginRight: 16 }}>
+          <div className="p-top-links">
             <a
               href="/"
               onClick={(e) => {
@@ -1418,6 +1452,7 @@ export default function Portal() {
               )}
             </div>
           </div>
+          {!staff && selected !== 'subscription' && subscription && <SubscriptionNotice value={subscription} onOpen={() => go('subscription')} />}
           {loadError ? (
             <Card>
               <div role="alert" className="p-error">
@@ -1430,7 +1465,7 @@ export default function Portal() {
               <p role="status">Loading your daycare records…</p>
             </Card>
           ) : (
-            <PageTransition page={selected}>{pageComponent}</PageTransition>
+            <PageTransition page={routeFailure||selected}>{routeFailure?<SurfaceRecovery kind={routeFailure} embedded workspaceHref={staff?'/staff/workspace':'/admin/dashboard'}/>:pageComponent}</PageTransition>
           )}
           <p className="p-kpi-note">
             Ankelba · Connect, share, nurture.{" "}
@@ -1690,9 +1725,15 @@ function PortalModal({
     title = row.id ? "Edit product" : "Add product";
     initial = {price:0, stock_qty:0, available:true, ...row};
     fields = [field("name", "Product name"), field("price", "Price (ETB)", "number", true, {min:"0"}), field("stock_qty", "Stock quantity", "number", true, {min:"0"}), field("available", "Available for purchase", "checkbox", false), field("description", "Description", "textarea", false), field("image_url", "Image URL", "url", false)];
+  } else if (kind === "refund-order") {
+    title=`Record cash returned · order #${row.id}`;submit='Record completed cash return';
+    initial={amount:row.total,original_payment_reference:row.payment_reference,refund_reference:'',refunded_at:new Date(Date.now()+3*3600000).toISOString().slice(0,19),stock_disposition:'',reason:'',refund_confirmed:false};
+    detail=<p>Use this after independently returning the full cash payment to the parent. Ankelba records the evidence and closes the order; it does not transfer money. The original payment receipt remains available.</p>;
+    fields=[field('amount','Full cash amount returned (ETB)','number',true,{step:'0.01',min:'0.01'}),field('original_payment_reference','Original cash receipt reference'),field('refund_reference','Return receipt or external refund evidence reference'),field('refunded_at','Cash returned at · Addis Ababa','datetime-local',true,{step:'1'}),field('stock_disposition','What happened to the goods?','select',true,{options:[{value:'',label:'Choose inventory outcome'},...(row.order_status==='collected'?[{value:'returned_to_stock',label:'Returned in saleable condition — restore stock'}]:[{value:'not_handed_over',label:'Never handed over — release reserved stock'}]),{value:'not_restocked',label:'Cannot be restocked — explain in the reason'}]}),field('reason','Reason and independent refund evidence','textarea'),field('refund_confirmed','I have independently confirmed that the full cash amount was returned','checkbox')];
   } else if (kind === "order") {
     title = `Update order #${row.id}`;
     fields = [field("order_status", "Order status", "select", true, {options:["placed","confirmed","ready_for_pickup","collected","cancelled"].map(value=>({value,label:label(value)}))}), field("payment_status", "Payment status", "select", false, {options:["unpaid","pending","paid","failed"].map(value=>({value,label:label(value)}))})];
+    if(row.payment_status!=='paid')fields.push(field("amount_received","Cash amount received (must equal the order total)","number",false),field("payment_reason","Cash payment record / reason","textarea",false),field("payment_confirmed","I have received and checked this cash payment","checkbox",false));
   } else if (kind === "edit-settings") {
     title = "Edit daycare settings";
     fields = [field("name", "Daycare name"), field("license_number", "License number", "text", false), field("contact_email", "Contact email", "email", false), field("contact_phone", "Contact phone", "tel", false), field("address", "Address", "textarea", false, {wide:true})];

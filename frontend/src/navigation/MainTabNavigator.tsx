@@ -1,3 +1,4 @@
+import {usePackageFeatures} from '../context/PackageFeaturesContext';
 import { StaffHomeScreen, StaffReportsScreen, StaffAccountScreen } from "../screens/profile/StaffScreens";
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -22,7 +23,8 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabNavigator() {
   const { user } = useAuth();
   const staff = user?.role === "admin" || user?.role === "caregiver";
-  const items = tabsForRole(user?.role);
+  const {features}=usePackageFeatures();
+  const items = tabsForRole(user?.role).filter(item=>item.name!=="Shop"||features.shop);
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
@@ -48,9 +50,9 @@ export function MainTabNavigator() {
       <Tab.Screen name="Messages" component={MessagesScreen} />
       {staff ? (
         <Tab.Screen name="Workspace" component={WorkspaceScreen} />
-      ) : (
+      ) : features.shop ? (
         <Tab.Screen name="Shop" component={DaycareStoreScreen} />
-      )}
+      ) : null}
       <Tab.Screen name="Profile" component={staff ? StaffAccountScreen : ProfileScreen} />
     </Tab.Navigator>
   );

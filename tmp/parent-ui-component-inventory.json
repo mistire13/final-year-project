@@ -1,0 +1,2624 @@
+{
+  "scope": "Static parent screen/component JSX occurrences; mapped/reusable controls are not runtime button counts",
+  "files": 38,
+  "records": [
+    {
+      "file": "screens\\ai\\AIGuideScreen.tsx",
+      "counts": {
+        "IconButton": 1,
+        "Text": 12,
+        "TextInput": 1,
+        "Pressable": 2,
+        "Card": 2
+      },
+      "textSizes": {
+        "{21}": 1,
+        "{13}": 4,
+        "{17}": 2,
+        "{14}": 4,
+        "{10}": 1
+      },
+      "controls": [
+        {
+          "tag": "IconButton",
+          "line": 124,
+          "label": "\"Go back\"",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 140,
+          "label": "\"Ask Ankelba\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 148,
+          "label": "\"Send question\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 210,
+          "label": null,
+          "role": "\"button\""
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 171,
+          "interactive": false,
+          "tint": "\"#FAF8F9\""
+        },
+        {
+          "line": 182,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\attendance\\AttendanceHistoryScreen.tsx",
+      "counts": {
+        "Card": 8,
+        "Text": 16,
+        "Button": 2,
+        "Pressable": 1
+      },
+      "textSizes": {
+        "{18}": 2,
+        "{12}": 4,
+        "{22}": 3,
+        "{11}": 3,
+        "{13}": 3,
+        "{15}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 181,
+          "label": "\"Pickup status\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 271,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 305,
+          "label": "\"Retry\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 170,
+          "interactive": false,
+          "tint": "\"#F4F6EE\""
+        },
+        {
+          "line": 193,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 214,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 235,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 295,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 302,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 313,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 354,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\auth\\ChildProfileWizardScreen.tsx",
+      "counts": {
+        "Text": 66,
+        "Pressable": 19,
+        "TextInput": 4,
+        "Button": 5
+      },
+      "textSizes": {
+        "{13}": 16,
+        "{12}": 18,
+        "{22}": 1,
+        "{14}": 8,
+        "{15}": 7,
+        "{11}": 11,
+        "{10}": 2
+      },
+      "controls": [
+        {
+          "tag": "Pressable",
+          "line": 159,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 185,
+          "label": "{placeholder}",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 497,
+          "label": "\"2023-04-15\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 522,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 565,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 710,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 736,
+          "label": "\"Pickup approval is managed by daycare administration\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 903,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 981,
+          "label": "\"Search food (e.g. Milk, Peanut, Egg, Wheat)…\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 994,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1009,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 1064,
+          "label": "{`+ Add \"${searchQuery.trim()}\"`}",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1091,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 1096,
+          "label": "\"Done Selecting\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1113,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1150,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 1180,
+          "label": "\"Type other food (e.g. Mango, Mustard, Food Dye)…\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 1199,
+          "label": "\"Add Food\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1296,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 1342,
+          "label": "\"Add Medication\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1415,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 1443,
+          "label": "\"Add Another Contact\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 1823,
+          "label": "\"Go to Home Dashboard\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 1844,
+          "label": "\"Go to First Page / Welcome\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 1867,
+          "label": "\"Sign out\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 1925,
+          "label": "\"Go to previous step\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 1948,
+          "label": "\"Go to next step\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 1969,
+          "label": "\"Submit profile and continue\"",
+          "role": "\"button\""
+        }
+      ],
+      "surfaces": []
+    },
+    {
+      "file": "screens\\auth\\ForgotPasswordScreen.tsx",
+      "counts": {
+        "Text": 2,
+        "Field": 1,
+        "Button": 4
+      },
+      "textSizes": {
+        "{28}": 1
+      },
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 63,
+          "label": "\"Email address\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 81,
+          "label": "\"Send Reset Request\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 87,
+          "label": "\"I have a reset code / token\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 96,
+          "label": "\"Enter Reset Code & Set Password\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 102,
+          "label": "\"Back to Sign In\"",
+          "role": null
+        }
+      ],
+      "surfaces": []
+    },
+    {
+      "file": "screens\\auth\\LoginScreen.tsx",
+      "counts": {
+        "Pressable": 4,
+        "Text": 10,
+        "Field": 1,
+        "TextInput": 1,
+        "IconButton": 1,
+        "Button": 2
+      },
+      "textSizes": {
+        "{12}": 2,
+        "{32}": 1,
+        "{14}": 2,
+        "{13}": 3,
+        "{28}": 1
+      },
+      "controls": [
+        {
+          "tag": "Pressable",
+          "line": 102,
+          "label": "\"Back to First Page / Welcome\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 122,
+          "label": "\"Go to Home Feed\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Field",
+          "line": 155,
+          "label": "\"Email Address\"",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 175,
+          "label": "\"Password\"",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 189,
+          "label": "{visible ? \"Hide password\" : \"Show password\"}",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 196,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 214,
+          "label": "{busy ? \"Signing In…\" : \"Sign In\"}",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 226,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 253,
+          "label": "\"Back to sign in\"",
+          "role": null
+        }
+      ],
+      "surfaces": []
+    },
+    {
+      "file": "screens\\auth\\OnboardingScreen.tsx",
+      "counts": {
+        "Text": 4,
+        "Button": 2,
+        "Pressable": 2
+      },
+      "textSizes": {
+        "{29}": 1,
+        "{14}": 2
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 89,
+          "label": "\"Get Daycare Access\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 94,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 109,
+          "label": "\"Next\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 116,
+          "label": null,
+          "role": "\"button\""
+        }
+      ],
+      "surfaces": []
+    },
+    {
+      "file": "screens\\auth\\OTPScreen.tsx",
+      "counts": {
+        "Text": 8,
+        "Card": 2,
+        "Button": 3,
+        "TextInput": 3,
+        "IconButton": 1
+      },
+      "textSizes": {
+        "{26}": 1,
+        "{20}": 1,
+        "{13}": 4,
+        "{12}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 102,
+          "label": "\"Sign In with New Password\"",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 117,
+          "label": "\"Reset Token or Verification Code\"",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 137,
+          "label": "\"New Password\"",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 150,
+          "label": "{showPassword ? \"Hide password\" : \"Show password\"}",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 162,
+          "label": "\"Confirm New Password\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 183,
+          "label": "{busy ? \"Updating Password…\" : \"Update Password\"}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 191,
+          "label": "\"Return to Sign In\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 81,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 109,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\auth\\SplashScreen.tsx",
+      "counts": {
+        "Text": 5,
+        "Button": 2,
+        "Pressable": 3
+      },
+      "textSizes": {
+        "{19}": 1,
+        "{13}": 2,
+        "{14}": 1,
+        "{11}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 89,
+          "label": "{(user.role as string) === \"super_admin\" ? \"Open platform console\" : \"Go to Home Dashboard\"}",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 94,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 108,
+          "label": "\"Get Started\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 113,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 124,
+          "label": null,
+          "role": "\"link\""
+        }
+      ],
+      "surfaces": []
+    },
+    {
+      "file": "screens\\calendar\\CalendarScreen.tsx",
+      "counts": {
+        "Button": 1,
+        "Pressable": 2,
+        "Text": 10,
+        "Card": 3,
+        "IconButton": 2
+      },
+      "textSizes": {
+        "{12}": 1,
+        "{11}": 1,
+        "{13}": 5,
+        "{16}": 1,
+        "{15}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 78,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 82,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "IconButton",
+          "line": 105,
+          "label": "\"Previous month\"",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 116,
+          "label": "\"Next month\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 156,
+          "label": null,
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 103,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 197,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 234,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\calendar\\EventDetailScreen.tsx",
+      "counts": {
+        "Card": 5,
+        "Text": 7,
+        "Button": 3
+      },
+      "textSizes": {
+        "{13}": 1,
+        "{15}": 1,
+        "{21}": 1,
+        "{14}": 4
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 64,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 122,
+          "label": "{reminded ? \"Turn Off\" : \"Save reminder\"}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 131,
+          "label": "\"Message Daycare\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 47,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 60,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 81,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 104,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 112,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\finances\\BillingReminderPreferences.tsx",
+      "counts": {
+        "Card": 1,
+        "Text": 5,
+        "Button": 2,
+        "Switch": 1
+      },
+      "textSizes": {
+        "{18}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 72,
+          "label": "\"Retry preference\"",
+          "role": null
+        },
+        {
+          "tag": "Switch",
+          "line": 77,
+          "label": "\"Email care fee reminders\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 88,
+          "label": "\"Save reminder preference\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 65,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\finances\\ParentBillsScreen.tsx",
+      "counts": {
+        "Text": 48,
+        "Button": 4,
+        "Card": 4,
+        "Pressable": 5
+      },
+      "textSizes": {
+        "{12}": 22,
+        "{24}": 1,
+        "{13}": 14,
+        "{16}": 4,
+        "{11}": 3,
+        "{15}": 1,
+        "{14}": 1,
+        "{18}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 69,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 120,
+          "label": null,
+          "role": "\"tab\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 143,
+          "label": null,
+          "role": "\"tab\""
+        },
+        {
+          "tag": "Button",
+          "line": 170,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 263,
+          "label": "{`View receipt ${b.payments[0].receipt_number}`}",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 279,
+          "label": "{bankBill===b.id?'Hide bank payment details':'Pay this bill by bank transfer'}",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 285,
+          "label": "{`View receipt ${p.receipt_number}`}",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 389,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 463,
+          "label": "\"Close Receipt\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 75,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 181,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 198,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 309,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\health\\HealthNoticesScreen.tsx",
+      "counts": {
+        "Card": 6,
+        "Text": 12,
+        "Pressable": 1,
+        "Button": 2
+      },
+      "textSizes": {
+        "{18}": 2,
+        "{12}": 6,
+        "{13}": 3,
+        "{14}": 1
+      },
+      "controls": [
+        {
+          "tag": "Pressable",
+          "line": 182,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 216,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 295,
+          "label": "\"Message Caregiver About This\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 116,
+          "interactive": false,
+          "tint": "\"#F3F1F8\""
+        },
+        {
+          "line": 143,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 206,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 213,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 226,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 307,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\home\\HomeScreen.tsx",
+      "counts": {
+        "Button": 5,
+        "Text": 31,
+        "Card": 8,
+        "Pressable": 5
+      },
+      "textSizes": {
+        "{16}": 4,
+        "{11}": 6,
+        "{9}": 1,
+        "{13}": 6,
+        "{12}": 2,
+        "{18}": 2,
+        "{15}": 1,
+        "{10}": 3,
+        "{14}": 3,
+        "{20}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 153,
+          "label": "\"Message daycare\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 154,
+          "label": "\"Daycare calendar\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 324,
+          "label": "\"Dismiss announcement\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 359,
+          "label": "{`Select ${c.full_name}`}",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 400,
+          "label": "\"View Attendance History\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 419,
+          "label": "\"View child profile\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 433,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 492,
+          "label": "\"Invoices\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 511,
+          "label": "{h.label + \": \" + h.title}",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 674,
+          "label": "{buttonTitle}",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 298,
+          "interactive": true,
+          "tint": "\"#FFFBEA\""
+        },
+        {
+          "line": 389,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 460,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 504,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 559,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 574,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 642,
+          "interactive": false,
+          "tint": "{isAdminMessage ? \"#F0F4F8\" : \"#F4F5ED\"}"
+        },
+        {
+          "line": 696,
+          "interactive": true,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\messages\\AnnouncementDetailScreen.tsx",
+      "counts": {
+        "Button": 1,
+        "Card": 1,
+        "Text": 5
+      },
+      "textSizes": {
+        "{12}": 3,
+        "{26}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 43,
+          "label": "\"Retry\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 46,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\messages\\CaregiverChatScreen.tsx",
+      "counts": {
+        "IconButton": 1,
+        "Text": 9,
+        "TextInput": 1,
+        "Pressable": 1
+      },
+      "textSizes": {
+        "{18}": 1,
+        "{12}": 2,
+        "{11}": 1,
+        "{13}": 2,
+        "{16}": 1,
+        "{14}": 1,
+        "{10}": 1
+      },
+      "controls": [
+        {
+          "tag": "IconButton",
+          "line": 115,
+          "label": "\"Go back\"",
+          "role": null
+        },
+        {
+          "tag": "TextInput",
+          "line": 159,
+          "label": "\"Message\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 169,
+          "label": "\"Send message\"",
+          "role": "\"button\""
+        }
+      ],
+      "surfaces": []
+    },
+    {
+      "file": "screens\\messages\\MessagesScreen.tsx",
+      "counts": {
+        "Card": 7,
+        "Text": 24,
+        "Button": 2,
+        "Field": 1,
+        "Pressable": 1
+      },
+      "textSizes": {
+        "{18}": 1,
+        "{13}": 5,
+        "{16.5}": 1,
+        "{10.5}": 1,
+        "{11}": 6,
+        "{12}": 2,
+        "{17}": 3,
+        "{14}": 2,
+        "{16}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 139,
+          "label": "{query ? \"Clear Search\" : \"Retry\"}",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 149,
+          "label": "{\r\n          tab === \"Messages\" ? \"Search conversations…\" : \"Search announcements…\"\r\n        }",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 159,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 287,
+          "label": "\"💡 Ask AI for complementary home dinner ideas →\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 129,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 192,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 272,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 314,
+          "interactive": false,
+          "tint": "\"#F5F8F4\""
+        },
+        {
+          "line": 338,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 350,
+          "interactive": true,
+          "tint": "{a.announcement_type === \"meal_plan\" ? \"#F5F8F4\" : \"#FFFAE5\"}"
+        },
+        {
+          "line": 382,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\payments\\ReceiptPaymentCard.tsx",
+      "counts": {
+        "Card": 3,
+        "Text": 11,
+        "Button": 5,
+        "Field": 2
+      },
+      "textSizes": {
+        "{21}": 1,
+        "{26}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 47,
+          "label": "\"Retry payment details\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 55,
+          "label": "{`${provider===account.provider?'Selected · ':''}${account.institution}`}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 56,
+          "label": "{busy?'Opening payment details…':'Show amount and receiving details'}",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 64,
+          "label": "{request.provider==='cbe'?'Complete CBE receipt link':'Transaction reference'}",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 65,
+          "label": "\"Five-digit receipt account suffix\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 66,
+          "label": "{busy?'Checking payment…':'Check this receipt'}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 68,
+          "label": "\"Refresh saved payment status\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 46,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 47,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 49,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\AccountScreens.tsx",
+      "counts": {
+        "Button": 8,
+        "Text": 35,
+        "Card": 9,
+        "Field": 3
+      },
+      "textSizes": {
+        "{13}": 6,
+        "{16}": 2,
+        "{12}": 5,
+        "{15}": 2,
+        "{11}": 3,
+        "{19}": 1,
+        "{20}": 1,
+        "{14}": 1,
+        "{18}": 3,
+        "{9}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 67,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 164,
+          "label": "\"Visit Store\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 272,
+          "label": "\"Payment options\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 289,
+          "label": "\"Dismiss Receipt\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 329,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 359,
+          "label": "\"Mark as read\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 415,
+          "label": "\"Mark as read\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 510,
+          "label": "\"Current Password\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 517,
+          "label": "\"New Password\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 523,
+          "label": "\"Confirm New Password\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 531,
+          "label": "\"Update Password\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 78,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 152,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 172,
+          "interactive": false,
+          "tint": "\"#FFFFFF\""
+        },
+        {
+          "line": 252,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 341,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 386,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 409,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 437,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 509,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\AddGuardianScreen.tsx",
+      "counts": {
+        "Card": 2,
+        "Text": 4,
+        "Field": 3,
+        "Pressable": 1,
+        "Button": 1
+      },
+      "textSizes": {
+        "{20}": 1,
+        "{12}": 2,
+        "{14}": 1
+      },
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 67,
+          "label": "\"Full Name\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 85,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Field",
+          "line": 105,
+          "label": "\"Phone Number\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 113,
+          "label": "\"Email Address\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 128,
+          "label": "{sent ? \"Request sent\" : saving ? \"Sending…\" : \"Request guardian approval\"}",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 53,
+          "interactive": false,
+          "tint": "\"#FFFAEE\""
+        },
+        {
+          "line": 66,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\AuthorizedGuardiansScreen.tsx",
+      "counts": {
+        "Button": 2,
+        "Card": 4,
+        "Text": 11
+      },
+      "textSizes": {
+        "{18}": 1,
+        "{12}": 4,
+        "{13}": 2,
+        "{16}": 2,
+        "{11}": 1,
+        "{15}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 45,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 141,
+          "label": "\"Register New Guardian\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 47,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 73,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 129,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 148,
+          "interactive": false,
+          "tint": "\"#F4F5F7\""
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\ChildProfileScreen.tsx",
+      "counts": {
+        "Card": 8,
+        "Text": 22,
+        "Button": 6
+      },
+      "textSizes": {
+        "{14}": 2,
+        "{23}": 1,
+        "{13}": 8,
+        "{11}": 4,
+        "{15}": 3,
+        "{12}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 98,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 126,
+          "label": "\"Report\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 134,
+          "label": "\"Message\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 153,
+          "label": "\"Update Care, Allergies & Safety\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 349,
+          "label": "\"View Authorized Pickups\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 355,
+          "label": "\"Pickup Status & Biometrics\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 88,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 95,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 108,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 165,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 195,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 254,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 290,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 304,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\GuardianDetailsScreen.tsx",
+      "counts": {
+        "Button": 3,
+        "Card": 3,
+        "Text": 10
+      },
+      "textSizes": {
+        "{22}": 1,
+        "{14}": 3,
+        "{10}": 1,
+        "{16}": 2,
+        "{11}": 1,
+        "{13}": 1,
+        "{12}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 33,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 39,
+          "label": "\"Back to Guardians\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 123,
+          "label": "\"View Pickup Status & History\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 54,
+          "interactive": false,
+          "tint": "\"#F4F5F8\""
+        },
+        {
+          "line": 87,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 101,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\HelpSupportScreen.tsx",
+      "counts": {
+        "Card": 4,
+        "Text": 8,
+        "Button": 1
+      },
+      "textSizes": {
+        "{20}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 11,
+          "label": "\"Open daycare contacts\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 6,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 7,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 8,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 9,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\ParentProfileScreen.tsx",
+      "counts": {
+        "Card": 3,
+        "Text": 6,
+        "Field": 5,
+        "Switch": 1,
+        "Button": 1
+      },
+      "textSizes": {
+        "{22}": 1,
+        "{13}": 4,
+        "{11}": 1
+      },
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 90,
+          "label": "\"Full Name\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 96,
+          "label": "\"Phone Number\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 103,
+          "label": "\"Email Address\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 118,
+          "label": "\"Cuisine & Cooking Style\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 125,
+          "label": "\"Household Dietary Notes\"",
+          "role": null
+        },
+        {
+          "tag": "Switch",
+          "line": 145,
+          "label": "\"AI Guide meal personalization\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 163,
+          "label": "\"Save Changes\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 75,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 89,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 117,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\PickupVerificationScreen.tsx",
+      "counts": {
+        "Card": 3,
+        "Text": 8,
+        "Button": 5
+      },
+      "textSizes": {
+        "{22}": 1,
+        "{13}": 2,
+        "{19}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 81,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 109,
+          "label": "{g.name}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 156,
+          "label": "\"Refresh pickup records\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 163,
+          "label": "\"Attendance history\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 169,
+          "label": "\"Message daycare\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 73,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 85,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 102,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\profile\\ProfileScreen.tsx",
+      "counts": {
+        "Card": 9,
+        "Text": 15,
+        "Pressable": 1,
+        "Button": 3,
+        "Switch": 1
+      },
+      "textSizes": {
+        "{22}": 1,
+        "{11}": 2,
+        "{12}": 3,
+        "{19}": 1,
+        "{17}": 1,
+        "{14}": 1,
+        "{13}": 4
+      },
+      "controls": [
+        {
+          "tag": "Pressable",
+          "line": 72,
+          "label": "\"Edit profile\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 93,
+          "label": "\"Open Portal\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 123,
+          "label": "\"View Profile\"",
+          "role": null
+        },
+        {
+          "tag": "Switch",
+          "line": 218,
+          "label": "{item.name + \" notifications\"}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 295,
+          "label": "\"Log Out\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 50,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 82,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 108,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 136,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 173,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 206,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 235,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 255,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 277,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\reports\\FullDailyReportScreen.tsx",
+      "counts": {
+        "Card": 9,
+        "Text": 24,
+        "Button": 4,
+        "Pressable": 1
+      },
+      "textSizes": {
+        "{14}": 6,
+        "{18}": 2,
+        "{13}": 7,
+        "{11}": 1,
+        "{12}": 4
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 127,
+          "label": "\"View Report History\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 131,
+          "label": "\"Refresh\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 148,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 225,
+          "label": "\"Get dinner ideas based on today's meals\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 401,
+          "label": "\"Message Caregiver\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 77,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 90,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 146,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 168,
+          "interactive": false,
+          "tint": "\"#F2F0F8\""
+        },
+        {
+          "line": 184,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 264,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 293,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 338,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 378,
+          "interactive": false,
+          "tint": "\"#0C263E\""
+        }
+      ]
+    },
+    {
+      "file": "screens\\reports\\ReportsHistoryScreen.tsx",
+      "counts": {
+        "Button": 1,
+        "Card": 4,
+        "Text": 10,
+        "Pressable": 1
+      },
+      "textSizes": {
+        "{19}": 1,
+        "{12}": 5,
+        "{13}": 2,
+        "{15}": 1,
+        "{17}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 93,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 116,
+          "label": null,
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 97,
+          "interactive": false,
+          "tint": "\"#F1F0F5\""
+        },
+        {
+          "line": 139,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 147,
+          "interactive": true,
+          "tint": "default"
+        },
+        {
+          "line": 206,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\reports\\ReportsScreen.tsx",
+      "counts": {
+        "Button": 2,
+        "Card": 4,
+        "Text": 13,
+        "Pressable": 4
+      },
+      "textSizes": {
+        "{23}": 1,
+        "{13}": 4,
+        "{12}": 3,
+        "{10}": 3,
+        "{19}": 1,
+        "{16}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 87,
+          "label": "\"Retry\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 104,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 127,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 150,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 181,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Button",
+          "line": 242,
+          "label": "\"View Full Report\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 88,
+          "interactive": false,
+          "tint": "\"#F1F0F5\""
+        },
+        {
+          "line": 202,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 208,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 252,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\store\\CheckoutScreen.tsx",
+      "counts": {
+        "Card": 2,
+        "Text": 13,
+        "Pressable": 2,
+        "Field": 1,
+        "Button": 1
+      },
+      "textSizes": {
+        "{11}": 1,
+        "{18}": 3,
+        "{13}": 2,
+        "{12}": 2,
+        "{20}": 1,
+        "{16}": 1
+      },
+      "controls": [
+        {
+          "tag": "Pressable",
+          "line": 127,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "Pressable",
+          "line": 186,
+          "label": null,
+          "role": "\"radio\""
+        },
+        {
+          "tag": "Field",
+          "line": 242,
+          "label": "\"Order Note (Optional)\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 260,
+          "label": "{submitting ? \"Placing Order…\" : \"Place Order\"}",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 101,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 122,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\store\\DaycareStoreScreen.tsx",
+      "counts": {
+        "Text": 14,
+        "Button": 2,
+        "IconButton": 3,
+        "Card": 3,
+        "Field": 1,
+        "Pressable": 2
+      },
+      "textSizes": {
+        "{11}": 2,
+        "{15}": 2,
+        "{26}": 1,
+        "{10}": 1,
+        "{13}": 5,
+        "{22}": 1,
+        "{14}": 2
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 94,
+          "label": "\"View Cart\"",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 109,
+          "label": "{route?.name === \"Shop\" ? \"Go to Home\" : \"Go back\"}",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 118,
+          "label": "\"My Orders\"",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 124,
+          "label": "\"Shopping cart\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 163,
+          "label": "\"Admin Portal\"",
+          "role": null
+        },
+        {
+          "tag": "Field",
+          "line": 179,
+          "label": "\"Search supplies, uniforms, books…\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 186,
+          "label": null,
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 269,
+          "label": "{\"Add \" + p.name + \" to cart\"}",
+          "role": "\"button\""
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 152,
+          "interactive": false,
+          "tint": "\"#EBF5FA\""
+        },
+        {
+          "line": 230,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 300,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\store\\OrderConfirmationScreen.tsx",
+      "counts": {
+        "Text": 15,
+        "Card": 4,
+        "Button": 2
+      },
+      "textSizes": {
+        "{26}": 1,
+        "{14}": 1,
+        "{11}": 2,
+        "{22}": 1,
+        "{12}": 2,
+        "{18}": 3,
+        "{13}": 3,
+        "{20}": 1,
+        "{17}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 129,
+          "label": "\"View Order History\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 135,
+          "label": "\"Back to Daycare Home\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 61,
+          "interactive": false,
+          "tint": "\"#F4F6F8\""
+        },
+        {
+          "line": 73,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 90,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 117,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\store\\PaymentVerificationScreen.tsx",
+      "counts": {
+        "Card": 1,
+        "Text": 4,
+        "Button": 3
+      },
+      "textSizes": {
+        "{23}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 29,
+          "label": "\"Retry payment options\"",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 30,
+          "label": "{busy?'Recording demo payment…':'Simulate payment success'}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 32,
+          "label": "\"View my orders\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 23,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\store\\ShopAccess.tsx",
+      "counts": {
+        "Card": 3,
+        "Text": 4,
+        "Button": 1
+      },
+      "textSizes": {
+        "{21}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 7,
+          "label": "\"Retry\"",
+          "role": null
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 6,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 7,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 8,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "screens\\store\\ShoppingCartScreen.tsx",
+      "counts": {
+        "Card": 3,
+        "Text": 11,
+        "Button": 2,
+        "IconButton": 3,
+        "Pressable": 1
+      },
+      "textSizes": {
+        "{21}": 1,
+        "{16}": 1,
+        "{13}": 1,
+        "{14}": 1,
+        "{20}": 2,
+        "{11}": 1,
+        "{12}": 1
+      },
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 36,
+          "label": "\"Explore Store\"",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 74,
+          "label": "{\"Decrease \" + item.product.name}",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 88,
+          "label": "{\"Increase \" + item.product.name}",
+          "role": null
+        },
+        {
+          "tag": "IconButton",
+          "line": 101,
+          "label": "{\"Remove \" + item.product.name}",
+          "role": null
+        },
+        {
+          "tag": "Button",
+          "line": 135,
+          "label": "\"Proceed to Checkout\"",
+          "role": null
+        },
+        {
+          "tag": "Pressable",
+          "line": 141,
+          "label": null,
+          "role": "\"button\""
+        }
+      ],
+      "surfaces": [
+        {
+          "line": 28,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 43,
+          "interactive": false,
+          "tint": "default"
+        },
+        {
+          "line": 113,
+          "interactive": false,
+          "tint": "default"
+        }
+      ]
+    },
+    {
+      "file": "components\\design\\Motion.tsx",
+      "counts": {},
+      "textSizes": {},
+      "controls": [],
+      "surfaces": []
+    },
+    {
+      "file": "components\\design\\System.tsx",
+      "counts": {
+        "MotionPressable": 8,
+        "Text": 13,
+        "IconButton": 2,
+        "TextInput": 1
+      },
+      "textSizes": {
+        "{25}": 1,
+        "{back ? 20 : 27}": 1,
+        "{14}": 2,
+        "{size * 0.3}": 1,
+        "{11}": 1,
+        "{20}": 1,
+        "{13}": 2,
+        "{9}": 1
+      },
+      "controls": [
+        {
+          "tag": "MotionPressable",
+          "line": 195,
+          "label": "{label}",
+          "role": "\"button\""
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 241,
+          "label": "\"Ankelba home\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "IconButton",
+          "line": 254,
+          "label": "\"Notifications\"",
+          "role": null
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 289,
+          "label": "\"Your profile\"",
+          "role": "\"button\""
+        },
+        {
+          "tag": "IconButton",
+          "line": 336,
+          "label": "\"Go back\"",
+          "role": null
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 412,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 447,
+          "label": "{title}",
+          "role": "\"button\""
+        },
+        {
+          "tag": "TextInput",
+          "line": 500,
+          "label": "{\r\n            props.accessibilityLabel || label || props.placeholder\r\n          }",
+          "role": null
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 598,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 640,
+          "label": null,
+          "role": "\"button\""
+        },
+        {
+          "tag": "MotionPressable",
+          "line": 708,
+          "label": "{label || name}",
+          "role": "\"tab\""
+        }
+      ],
+      "surfaces": []
+    }
+  ]
+}

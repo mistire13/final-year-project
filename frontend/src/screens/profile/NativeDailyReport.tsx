@@ -100,6 +100,13 @@ export function NativeDailyReportScreen({ route, navigation }: any) {
       setMessage("Choose an active child assigned to you.");
       return;
     }
+    if (
+      sleep.trim() &&
+      (!/^\d+$/.test(sleep.trim()) || Number(sleep) > 1440 || Number(sleep) < 0)
+    ) {
+      setMessage("Rest must be a whole number from 0 to 1440 minutes.");
+      return;
+    }
     let payload;
     try {
       payload = reportPayload({
@@ -124,10 +131,16 @@ export function NativeDailyReportScreen({ route, navigation }: any) {
       setSaved(data.id);
       setMessage("Daily report saved. It is available to the linked parents.");
     } catch (error: any) {
-      setMessage(
-        error.response?.data?.error ||
-          "Could not save. Your entries are still here; retry when connected.",
-      );
+      if (error.response?.status === 409) {
+        setMessage(
+          `A daily report for ${selected.full_name} on ${date} already exists. You can view the existing report or choose a different date.`
+        );
+      } else {
+        setMessage(
+          error.response?.data?.error ||
+            "Could not save. Your entries are still here; retry when connected."
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -379,7 +392,7 @@ export function NativeDailyReportScreen({ route, navigation }: any) {
                 }
               />
               <Button
-                title="Start another report"
+                title="Record another report"
                 variant="outline"
                 onPress={() => {
                   reset();

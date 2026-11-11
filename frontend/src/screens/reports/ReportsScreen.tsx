@@ -4,6 +4,7 @@ import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
 import { Clock } from "phosphor-react-native/src/icons/Clock";
 import { Info } from "phosphor-react-native/src/icons/Info";
 import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
+import { Heart } from "phosphor-react-native/src/icons/Heart";
 import {
   Page,
   Text,
@@ -97,6 +98,78 @@ export function ReportsScreen({ navigation }: any) {
           </View>
         </View>
       </Card>
+
+      {/* Quick Navigation into Related Child Care History Domains */}
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+        <Pressable
+          onPress={() => navigation.navigate("AttendanceHistory")}
+          style={{
+            flex: 1,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 14,
+            padding: 12,
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: "#E6ECF5",
+            shadowColor: "#000",
+            shadowOpacity: 0.03,
+            shadowRadius: 4,
+            elevation: 1,
+          }}
+        >
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#EBF3FF", alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
+            <Clock size={20} color="#1E56A0" />
+          </View>
+          <Text size={12} weight="bold" color="#1E56A0">Attendance</Text>
+          <Text size={10} color="#7E828A" style={{ marginTop: 2 }}>Stay Hours</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate("ReportsHistory")}
+          style={{
+            flex: 1,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 14,
+            padding: 12,
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: "#E6ECF5",
+            shadowColor: "#000",
+            shadowOpacity: 0.03,
+            shadowRadius: 4,
+            elevation: 1,
+          }}
+        >
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEF7E6", alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
+            <CalendarBlank size={20} color="#B45309" />
+          </View>
+          <Text size={12} weight="bold" color="#B45309">Archive</Text>
+          <Text size={10} color="#7E828A" style={{ marginTop: 2 }}>Past Reports</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate("HealthNotices")}
+          style={{
+            flex: 1,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 14,
+            padding: 12,
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: "#E6ECF5",
+            shadowColor: "#000",
+            shadowOpacity: 0.03,
+            shadowRadius: 4,
+            elevation: 1,
+          }}
+        >
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center", marginBottom: 6 }}>
+            <Heart size={20} color="#B91C1C" />
+          </View>
+          <Text size={12} weight="bold" color="#B91C1C">Health</Text>
+          <Text size={10} color="#7E828A" style={{ marginTop: 2 }}>& Incidents</Text>
+        </Pressable>
+      </View>
 
       {/* Filter Tabs */}
       <ScrollView

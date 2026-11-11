@@ -1,3 +1,4 @@
+import ShopAccess from './ShopAccess';
 import React, { useState, useRef, useEffect } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { Storefront } from "phosphor-react-native/src/icons/Storefront";
@@ -19,14 +20,17 @@ import { useDesign } from "../../context/DesignContext";
 import { artwork } from "../../theme/assets";
 import { formatMoney } from "./catalog";
 import { placeStoreOrder, getPaymentCapabilities } from "../../api/parentApi";
+import {receivingAccounts} from '../../api/daycarePayments';
 
-export function CheckoutScreen({ navigation }: any) {
+function CheckoutScreenContent({ navigation }: any) {
   const { selectedChild, cart, cartTotal, clearCart } = useChild();
   const { setOrder } = useDesign();
-  const [method, setMethod] = useState<"pay_at_daycare" | "demo">(
+  const [method, setMethod] = useState<"pay_at_daycare" | "demo" | "bank_transfer">(
     "pay_at_daycare",
   );
   const [demoEnabled,setDemoEnabled]=useState(false);
+  const [bankEnabled,setBankEnabled]=useState(false);
+  useEffect(()=>{let active=true;receivingAccounts().then(accounts=>{if(active)setBankEnabled(accounts.length>0);}).catch(()=>{});return()=>{active=false;};},[]);
   useEffect(()=>{let active=true;getPaymentCapabilities().then(c=>{if(active)setDemoEnabled(c.demo_enabled);}).catch(()=>{});return()=>{active=false;};},[]);
   const orderKey = useRef(`order-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const [note, setNote] = useState("");
@@ -63,7 +67,7 @@ export function CheckoutScreen({ navigation }: any) {
       });
 
       clearCart();
-      if (method === "demo" && Number(created.total)>0) {
+      if (['demo','bank_transfer'].includes(method) && Number(created.total)>0) {
         navigation.replace("PaymentVerification", {
           orderId: created.id,
           orderRef: reference,
@@ -176,6 +180,7 @@ export function CheckoutScreen({ navigation }: any) {
           text: "Collect your receipt and settle payment at the daycare office.",
           Icon: Storefront,
         },
+        ...(bankEnabled?[{key:'bank_transfer' as const,title:'Bank transfer with receipt',text:'View the daycare account, transfer externally and verify your receipt after placing the order.',Icon:DeviceMobile}]:[]),
         ...(demoEnabled?[{key:'demo' as const,title:'Demo payment',text:'Simulate success for this demo. No money is transferred.',Icon:DeviceMobile}]:[]),
 
       ].map((p) => (
@@ -262,3 +267,5 @@ export function CheckoutScreen({ navigation }: any) {
     </Page>
   );
 }
+
+export function CheckoutScreen(props:any){return <ShopAccess><CheckoutScreenContent {...props}/></ShopAccess>;}

@@ -1,3 +1,4 @@
+import {PackageFeaturesProvider} from './PackageFeaturesContext';
 import React, {
   createContext,
   useContext,
@@ -225,7 +226,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       value={{ user, token, isLoading, login, logout, refreshUser, enablePreview }}
     >
       <React.Fragment key={user ? `${user.id}:${user.daycare_id}:${user.role}` : "signed-out"}>
-        {children}
+        <PackageFeaturesProvider enabled={!!token&&!!user?.daycare_id} actorKey={user?`${user.id}:${user.daycare_id}:${user.role}`:"signed-out"}>{children}</PackageFeaturesProvider>
       </React.Fragment>
     </AuthContext.Provider>
   );

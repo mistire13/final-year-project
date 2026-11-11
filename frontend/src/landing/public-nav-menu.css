@@ -1,0 +1,17 @@
+:is(.centered-home-experiment,.ankelba-pricing-page) .ankelba-home-nav .public-nav-desktop { display: flex; gap: 22px; }
+.ankelba-home-nav .public-nav-desktop a { white-space: nowrap; font-size: .9rem; }
+.public-nav-desktop a[aria-current="page"] { color: var(--ankelba-green); }
+.public-nav-mobile { display: none; position: relative; }
+.public-nav-mobile > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--ankelba-border); border-radius: var(--radius-pill); color: var(--ankelba-navy); background: var(--ankelba-card); font-size: .9rem; font-weight: 700; cursor: pointer; list-style: none; }
+.public-nav-mobile > summary::-webkit-details-marker { display: none; }
+.public-nav-mobile nav { position: absolute; right: 0; top: calc(100% + 12px); z-index: 110; display: flex; flex-direction: column; width: min(260px, calc(100vw - 32px)); padding: 10px; background: var(--ankelba-card); border: 1px solid var(--ankelba-border); border-radius: var(--radius-subcard); box-shadow: var(--shadow-md); }
+.public-nav-mobile nav a { display: flex; align-items: center; min-height: 46px; padding: 10px 14px; border-radius: 10px; color: var(--ankelba-navy); text-decoration: none; font-size: 1rem; font-weight: 600; }
+.public-nav-mobile nav a:hover, .public-nav-mobile nav a[aria-current="page"] { background: var(--pastel-green); color: var(--ankelba-green); }
+.public-nav-mobile :is(a,summary):focus-visible { outline: 3px solid var(--ankelba-green); outline-offset: 3px; }
+@media (max-width: 1000px) {
+  :is(.centered-home-experiment,.ankelba-pricing-page) .ankelba-home-nav .public-nav-desktop { display: none; }
+  .public-nav-mobile { display: block; margin-left: auto; }
+}
+@media (max-width: 540px) {
+  .centered-home-experiment .ankelba-home-nav-actions { display: none; }
+}

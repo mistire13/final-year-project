@@ -147,8 +147,10 @@ const runAudit = async () => {
   record('Auth', 'Caregiver authentication returns 200 OK', careRes.status === 200 && !!careToken);
 
   // Parent Login
-  let parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: '1234' });
-  if (parentRes.status !== 200) parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123!' });
+  let parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123!' });
+  if (parentRes.status !== 200) parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@1234567!' });
+  if (parentRes.status !== 200) parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123456!' });
+  if (parentRes.status !== 200) parentRes = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: '1234' });
   let parentToken = parentRes.body?.token;
   record('Auth', 'Parent authentication returns 200 OK', parentRes.status === 200 && !!parentToken);
 
@@ -183,19 +185,19 @@ const runAudit = async () => {
   }
   record('Auth', 'Forgot password generates secure token with 1-hr expiry', forgotRes.status === 200 && !!resetToken);
 
-  let resetRes = await req('POST', '/api/auth/reset-password', { token: resetToken, new_password: 'Parent@999!' });
+  let resetRes = await req('POST', '/api/auth/reset-password', { token: resetToken, new_password: 'Parent@123456!' });
   record('Auth', 'Password reset with token succeeds → 200 OK', resetRes.status === 200);
 
-  let reuseRes = await req('POST', '/api/auth/reset-password', { token: resetToken, new_password: 'ShouldFail!' });
+  let reuseRes = await req('POST', '/api/auth/reset-password', { token: resetToken, new_password: 'ShouldFail123!' });
   record('Auth', 'Reused reset token blocked with 400 Bad Request', reuseRes.status === 400);
 
-  // Restore parent password via login + change-password
-  let newLogin = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@999!' });
-  let changeRes = await req('PATCH', '/api/auth/change-password', { current_password: 'Parent@999!', new_password: '1234' }, newLogin.body?.token);
+  // Restore parent password via login + change-password (requires min 12 chars per NFR-SEC-04)
+  let newLogin = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@123456!' });
+  let changeRes = await req('PATCH', '/api/auth/change-password', { current_password: 'Parent@123456!', new_password: 'Parent@1234567!' }, newLogin.body?.token);
   record('Auth', 'Authenticated change-password restored default password', changeRes.status === 200);
 
   // Refresh parent session token with restored password
-  let restoredParent = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: '1234' });
+  let restoredParent = await req('POST', '/api/auth/login', { email: 'parent@ankelba.dev', password: 'Parent@1234567!' });
   parentToken = restoredParent.body?.token;
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -384,6 +386,11 @@ const runAudit = async () => {
   console.log(`  FAILED             : ${failed}`);
   console.log(`  OVERALL SCORE      : ${score}%`);
   console.log('══════════════════════════════════════════════════════════════════\n');
+
+  // Clean up: Restore parent default login password for developer convenience
+  const bcrypt = require('bcryptjs');
+  const parentDefaultHash = await bcrypt.hash('Parent@123!', 10);
+  await pool.query("UPDATE users SET password_hash = $1 WHERE email = 'parent@ankelba.dev'", [parentDefaultHash]);
 
   await pool.end();
   process.exit(failed > 0 ? 1 : 0);

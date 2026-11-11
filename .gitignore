@@ -1,0 +1,2 @@
+# Local database backups can contain private application and payment records.
+/tmp/subscription-backups/

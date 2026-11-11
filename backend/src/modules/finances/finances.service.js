@@ -45,7 +45,7 @@ const getOverview = async (daycareId) => {
       FROM child_invoices
       WHERE daycare_id = $1 
         AND status IN ('pending', 'partially_paid') 
-        AND due_date < CURRENT_DATE
+        AND due_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Africa/Addis_Ababa')::date
     `, [dcId]),
 
     // Recent 8 payments with details
@@ -125,7 +125,7 @@ const listInvoices = async (daycareId, { status, childId, billingPeriod, search,
 
   if (status && status !== 'all') {
     if (status === 'overdue') {
-      whereClauses.push(`(ci.status IN ('pending', 'partially_paid') AND ci.due_date < CURRENT_DATE)`);
+      whereClauses.push(`(ci.status IN ('pending', 'partially_paid') AND ci.due_date < (CURRENT_TIMESTAMP AT TIME ZONE 'Africa/Addis_Ababa')::date)`);
     } else {
       params.push(status);
       whereClauses.push(`ci.status = $${params.length}`);
@@ -459,14 +459,16 @@ const recordPayment = async (daycareId, invoiceId, data, actorId) => {
   const invId = parseInt(invoiceId, 10);
   const { amount_paid, payment_method, reference_code, notes } = data;
 
-  const paymentAmount = parseFloat(amount_paid);
-  if (isNaN(paymentAmount) || paymentAmount <= 0) {
+  const toMinor=value=>{const match=/^(\d+)(?:\.(\d{1,2}))?$/.exec(String(value));return match?BigInt(match[1])*100n+BigInt((match[2]||'').padEnd(2,'0')):null;};
+  const paidMinor=toMinor(amount_paid);
+  const paymentAmount = Number(amount_paid);
+  if (paidMinor===null || paidMinor<=0n) {
     const err = new Error('Payment amount must be a positive number.');
     err.statusCode = 422;
     throw err;
   }
 
-  const validMethods = ['cash_at_daycare', 'telebirr_transfer', 'cbe_transfer', 'digital_gateway'];
+  const validMethods = ['cash_at_daycare'];
   if (!payment_method || !validMethods.includes(payment_method)) {
     const err = new Error(`Payment method must be one of: ${validMethods.join(', ')}`);
     err.statusCode = 422;
@@ -510,11 +512,12 @@ const recordPayment = async (daycareId, invoiceId, data, actorId) => {
       throw err;
     }
 
-    const currentPaid = parseFloat(invoice.amount_paid) || 0;
-    const totalDue = parseFloat(invoice.amount);
-    const balanceRemaining = totalDue - currentPaid;
+    const currentMinor=toMinor(invoice.amount_paid),totalMinor=toMinor(invoice.amount);
+    if(currentMinor===null||totalMinor===null)throw Object.assign(new Error('This invoice requires financial reconciliation.'),{statusCode:409});
+    const totalDue = Number(invoice.amount);
+    const balanceRemaining = Number(totalMinor-currentMinor)/100;
 
-    if (paymentAmount > balanceRemaining + 0.01) {
+    if (paidMinor > totalMinor-currentMinor) {
       const err = new Error(`Payment amount (ETB ${paymentAmount}) exceeds the remaining balance (ETB ${balanceRemaining.toFixed(2)}).`);
       err.statusCode = 422;
       throw err;
@@ -529,8 +532,8 @@ const recordPayment = async (daycareId, invoiceId, data, actorId) => {
     const paymentRes = await client.query(`
       INSERT INTO child_payments (
         daycare_id, invoice_id, amount_paid, payment_method, reference_code,
-        receipt_number, recorded_by, verified_at, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
+        receipt_number, recorded_by, verified_at, notes,verification_source
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8,'cash_confirmed')
       RETURNING *
     `, [
       dcId,
@@ -546,8 +549,8 @@ const recordPayment = async (daycareId, invoiceId, data, actorId) => {
     const newPayment = paymentRes.rows[0];
 
     // 2. Update child_invoices
-    const updatedPaid = currentPaid + paymentAmount;
-    const newStatus = (updatedPaid >= totalDue - 0.01) ? 'paid' : 'partially_paid';
+    const updatedPaid = Number(currentMinor+paidMinor)/100;
+    const newStatus = currentMinor+paidMinor===totalMinor ? 'paid' : 'partially_paid';
 
     const updatedInvoiceRes = await client.query(`
       UPDATE child_invoices
@@ -594,6 +597,7 @@ const recordPayment = async (daycareId, invoiceId, data, actorId) => {
         payment_method,
         reference_code: reference_code || null,
         verified_at: newPayment.verified_at,
+        verification_source: newPayment.verification_source,
       },
     };
   } catch (err) {
@@ -637,6 +641,8 @@ const listParentInvoices = async (parentId, daycareId) => {
           'payment_method', cp.payment_method,
           'reference_code', cp.reference_code,
           'receipt_number', cp.receipt_number,
+          'verification_source',cp.verification_source,
+          'daycare_payment_request_id',cp.daycare_payment_request_id,
           'verified_at', cp.verified_at
         ) ORDER BY cp.verified_at DESC)
         FROM child_payments cp

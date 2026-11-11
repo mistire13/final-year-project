@@ -62,6 +62,13 @@ test('Backend phase 1: security revisions and atomic profile saves',async t=>wit
  });
  await t.test('HTTP login survives legacy wizard saves and atomic endpoint saves',async()=>{
   process.env.NODE_ENV='test';process.env.DAYCARE_AUTH_ENABLED='false';
+  // This suite intentionally tests an 017-to-018 historical upgrade. Current
+  // HTTP middleware also reads paid-through (034) and deletion (041) fields;
+  // add those to this isolated fixture without replacing the upgrade test.
+  await db.schema.alterTable('daycares', table => {
+   table.timestamp('subscription_ends_at',{useTz:true});
+   table.timestamp('deleted_at',{useTz:true});
+  });
   const server=require('../src/app').listen(0,'127.0.0.1');
   await require('node:events').once(server,'listening');
   try {

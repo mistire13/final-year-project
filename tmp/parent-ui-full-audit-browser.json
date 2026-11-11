@@ -1,0 +1,265 @@
+{
+  "screens": [
+    {
+      "screen": "Sign-in validation",
+      "snapshot": "- button \"Back to First Page / Welcome\":\n  - generic: First Page\n- button \"Go to Home Feed\":\n  - generic: Home Feed\n- generic \"Ankelba\":\n  - img \"Ankelba\"\n- generic: Welcome Back\n- generic: Sign in to stay connected with your child’s daily daycare updates.\n- generic: Email Address\n- textbox \"Email Address\":\n  - /placeholder: Enter your email address\n- generic: Password\n- textbox \"Password\":\n  - /placeholder: Enter your password\n- button \"Show password\":\n- button \"Forgot Password?\":\n  - generic: Forgot Password?\n- alert:\n  - generic: Please enter your email address.\n- button \"Sign In\" [active]:\n  - generic: Sign In\n- generic: Parent accounts are created by your daycare administrator.\n- button \"How to get access\":\n  - generic: How to get access"
+    },
+    {
+      "screen": "Final announcement list",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"3\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Messages & Notices\n- generic: Stay connected with your child's educators and daycare office.\n- textbox \"Search announcements…\"\n- button \"Messages\":\n  - generic: Messages\n- button \"Announcements (3)\" [active] [pressed]:\n  - generic: Announcements (3)\n- button \"Meal Plans (1)\":\n  - generic: Meal Plans (1)\n- button \"Pickup entrance changed today · የመግቢያ ቦታ ለውጥ UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed. Posted by Acceptance administrator Nov 10\":\n  - generic: Pickup entrance changed today · የመግቢያ ቦታ ለውጥ\n  - generic: UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed.\n  - generic: Posted by Acceptance administrator\n  - generic: Nov 10\n- button:\n  - generic: Family meeting and classroom updates for the coming week\n  - generic: \"This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. Meeting details: • Time: 16:00 • Location: the daycare office • Bring your questions.\"\n  - generic: Posted by Acceptance administrator\n  - generic: Nov 10\n- 'button \"Weekly meals · የሳምንቱ ምግብ ዝርዝር Monday: vegetables, rice and fruit. Tuesday: lentils and bread. Please discuss individual allergies with the daycare office. Posted by Acceptance administrator Nov 10\"':\n  - generic: Weekly meals · የሳምንቱ ምግብ ዝርዝር\n  - generic: \"Monday: vegetables, rice and fruit. Tuesday: lentils and bread. Please discuss individual allergies with the daycare office.\"\n  - generic: Posted by Acceptance administrator\n  - generic: Nov 10\n- tab \"Home\":\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\" [selected]:\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    }
+  ],
+  "announcements": [
+    {
+      "view": "Home alert",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"4\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Hello, Acceptance\n- generic: Here’s how Disposable’s day is going.\n- button \"DAYCARE ANNOUNCEMENT NEW Dismiss announcement Pickup entrance changed today · የመግቢያ ቦታ ለውጥ UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed. Posted by Acceptance administrator Read announcement →\":\n  - generic: DAYCARE ANNOUNCEMENT\n  - generic: NEW\n  - button \"Dismiss announcement\":\n  - generic: Pickup entrance changed today · የመግቢያ ቦታ ለውጥ\n  - generic: UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed.\n  - generic: Posted by Acceptance administrator\n  - generic: Read announcement →\n- generic: Dc\n- generic: Disposable child\n- button \"View Attendance History\":\n  - generic: ● AT DAYCARE\n- generic: 3 years · Acceptance classroom\n- generic: Checked in at 10:56 PM\n- button \"View child profile\":\n  - generic: View child profile\n- button \"Message\":\n  - generic: Message\n- button \"Report\":\n  - generic: Report\n- button \"Health\":\n  - generic: Health\n- button \"Ask AI\":\n  - generic: Ask AI\n- button \"Calendar\":\n  - generic: Calendar\n- button \"Tuition\":\n  - generic: Tuition\n- generic: Care Fees & Tuition\n- generic: Monthly tuition invoices & verified receipts\n- button \"Invoices\":\n  - generic: Invoices\n- generic: Today’s Highlights\n- button \"View All →\":\n  - generic: View All →\n- 'button \"MEALS: Lunch: good\"':\n  - generic: MEALS\n  - generic: \"Lunch: good\"\n- 'button \"SLEEP: Nap: 45m\"':\n  - generic: SLEEP\n  - generic: \"Nap: 45m\"\n- 'button \"PLAY: Building blocks\"':\n  - generic: PLAY\n  - generic: Building blocks\n- 'button \"MOOD: Happy\"':\n  - generic: MOOD\n  - generic: Happy\n- 'button \"OBSERVATION: Synthetic UI-review caregiver ob…\"':\n  - generic: OBSERVATION\n  - generic: Synthetic UI-review caregiver ob…\n- 'button \"LATEST ACTIVITY 2026-11-10 Building blocks Location: indoor\"':\n  - generic: LATEST ACTIVITY\n  - generic: 2026-11-10\n  - generic: Building blocks\n  - generic: \"Location: indoor\"\n- generic: Acceptance administrator\n- generic: Classroom Caregiver Note\n- generic: “Synthetic UI-review caregiver observation.”\n- button \"Message Caregiver\":\n  - generic: Message Caregiver\n- tab \"Home\" [selected]:\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\":\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    },
+    {
+      "view": "Announcement list with long content",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"4\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Messages & Notices\n- generic: Stay connected with your child's educators and daycare office.\n- textbox \"Search announcements…\"\n- button \"Messages\":\n  - generic: Messages\n- button \"Announcements (3)\" [active] [pressed]:\n  - generic: Announcements (3)\n- button \"Meal Plans (1)\":\n  - generic: Meal Plans (1)\n- button \"Pickup entrance changed today · የመግቢያ ቦታ ለውጥ UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed. Posted by Acceptance administrator Nov 10\":\n  - generic: Pickup entrance changed today · የመግቢያ ቦታ ለውጥ\n  - generic: UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed.\n  - generic: Posted by Acceptance administrator\n  - generic: Nov 10\n- button:\n  - generic: Family meeting and classroom updates for the coming week\n  - generic: \"This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. Meeting details: • Time: 16:00 • Location: the daycare office • Bring your questions.\"\n  - generic: Posted by Acceptance administrator\n  - generic: Nov 10\n- 'button \"Weekly meals · የሳምንቱ ምግብ ዝርዝር Monday: vegetables, rice and fruit. Tuesday: lentils and bread. Please discuss individual allergies with the daycare office. Posted by Acceptance administrator Nov 10\"':\n  - generic: Weekly meals · የሳምንቱ ምግብ ዝርዝር\n  - generic: \"Monday: vegetables, rice and fruit. Tuesday: lentils and bread. Please discuss individual allergies with the daycare office.\"\n  - generic: Posted by Acceptance administrator\n  - generic: Nov 10\n- tab \"Home\":\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\" [selected]:\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    },
+    {
+      "view": "No search matches",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"4\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Messages & Notices\n- generic: Stay connected with your child's educators and daycare office.\n- textbox \"Search announcements…\" [active]: no-match-ui-audit\n- button \"Messages\":\n  - generic: Messages\n- button \"Announcements (3)\" [pressed]:\n  - generic: Announcements (3)\n- button \"Meal Plans (1)\":\n  - generic: Meal Plans (1)\n- generic: No Announcements Found\n- generic: There are currently no active announcements from the daycare center.\n- tab \"Home\":\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\" [selected]:\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    },
+    {
+      "view": "Meal plans",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"4\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Messages & Notices\n- generic: Stay connected with your child's educators and daycare office.\n- textbox \"Search announcements…\"\n- button \"Messages\":\n  - generic: Messages\n- button \"Announcements (3)\":\n  - generic: Announcements (3)\n- button \"Meal Plans (1)\" [active] [pressed]:\n  - generic: Meal Plans (1)\n- generic: WEEKLY DAYCARE MENUS\n- generic: Daycare administrators publish planned meals and snacks here to keep families informed of daily nutrition.\n- button \"💡 Ask AI for complementary home dinner ideas →\":\n  - generic: 💡 Ask AI for complementary home dinner ideas →\n- generic: Weekly meals · የሳምንቱ ምግብ ዝርዝር\n- generic: \"Monday: vegetables, rice and fruit. Tuesday: lentils and bread. Please discuss individual allergies with the daycare office.\"\n- generic: Daycare Nutrition Plan · Acceptance administrator\n- generic: Nov 10\n- tab \"Home\":\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\" [selected]:\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    },
+    {
+      "view": "After dismiss",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"4\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Hello, Acceptance\n- generic: Here’s how Disposable’s day is going.\n- button:\n  - generic: DAYCARE ANNOUNCEMENT\n  - generic: NEW\n  - button \"Dismiss announcement\":\n  - generic: Family meeting and classroom updates for the coming week\n  - generic: \"This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. This is a synthetic UI-review announcement about a family meeting. It contains a long paragraph to check reading density and wrapping. Meeting details: • Time: 16:00 • Location: the daycare office • Bring your questions.\"\n  - generic: Posted by Acceptance administrator\n  - generic: Read announcement →\n- generic: Dc\n- generic: Disposable child\n- button \"View Attendance History\":\n  - generic: ● AT DAYCARE\n- generic: 3 years · Acceptance classroom\n- generic: Checked in at 10:56 PM\n- button \"View child profile\":\n  - generic: View child profile\n- button \"Message\":\n  - generic: Message\n- button \"Report\":\n  - generic: Report\n- button \"Health\":\n  - generic: Health\n- button \"Ask AI\":\n  - generic: Ask AI\n- button \"Calendar\":\n  - generic: Calendar\n- button \"Tuition\":\n  - generic: Tuition\n- generic: Care Fees & Tuition\n- generic: Monthly tuition invoices & verified receipts\n- button \"Invoices\":\n  - generic: Invoices\n- generic: Today’s Highlights\n- button \"View All →\":\n  - generic: View All →\n- 'button \"MEALS: Lunch: good\"':\n  - generic: MEALS\n  - generic: \"Lunch: good\"\n- 'button \"SLEEP: Nap: 45m\"':\n  - generic: SLEEP\n  - generic: \"Nap: 45m\"\n- 'button \"PLAY: Building blocks\"':\n  - generic: PLAY\n  - generic: Building blocks\n- 'button \"MOOD: Happy\"':\n  - generic: MOOD\n  - generic: Happy\n- 'button \"OBSERVATION: Synthetic UI-review caregiver ob…\"':\n  - generic: OBSERVATION\n  - generic: Synthetic UI-review caregiver ob…\n- 'button \"LATEST ACTIVITY 2026-11-10 Building blocks Location: indoor\"':\n  - generic: LATEST ACTIVITY\n  - generic: 2026-11-10\n  - generic: Building blocks\n  - generic: \"Location: indoor\"\n- generic: Acceptance administrator\n- generic: Classroom Caregiver Note\n- generic: “Synthetic UI-review caregiver observation.”\n- button \"Message Caregiver\":\n  - generic: Message Caregiver\n- tab \"Home\" [selected]:\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\":\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    },
+    {
+      "view": "After reload",
+      "snapshot": "- button \"Ankelba home\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n  - generic: Ankelba\n- button \"Notifications\":\n- generic: \"3\"\n- button \"Your profile\":\n  - generic \"Ankelba\":\n    - img \"Ankelba\"\n- generic: Hello, Acceptance\n- generic: Here’s how Disposable’s day is going.\n- button \"DAYCARE ANNOUNCEMENT NEW Dismiss announcement Pickup entrance changed today · የመግቢያ ቦታ ለውጥ UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed. Posted by Acceptance administrator Read announcement →\":\n  - generic: DAYCARE ANNOUNCEMENT\n  - generic: NEW\n  - button \"Dismiss announcement\":\n  - generic: Pickup entrance changed today · የመግቢያ ቦታ ለውጥ\n  - generic: UI-review example only. Use the main office entrance for pickup today. Contact the daycare directly if you need help. No actual entrance or policy has changed.\n  - generic: Posted by Acceptance administrator\n  - generic: Read announcement →\n- generic: Dc\n- generic: Disposable child\n- button \"View Attendance History\":\n  - generic: ● AT DAYCARE\n- generic: 3 years · Acceptance classroom\n- generic: Checked in at 10:56 PM\n- button \"View child profile\":\n  - generic: View child profile\n- button \"Message\":\n  - generic: Message\n- button \"Report\":\n  - generic: Report\n- button \"Health\":\n  - generic: Health\n- button \"Ask AI\":\n  - generic: Ask AI\n- button \"Calendar\":\n  - generic: Calendar\n- button \"Tuition\":\n  - generic: Tuition\n- generic: Care Fees & Tuition\n- generic: Monthly tuition invoices & verified receipts\n- button \"Invoices\":\n  - generic: Invoices\n- generic: Today’s Highlights\n- button \"View All →\":\n  - generic: View All →\n- 'button \"MEALS: Lunch: good\"':\n  - generic: MEALS\n  - generic: \"Lunch: good\"\n- 'button \"SLEEP: Nap: 45m\"':\n  - generic: SLEEP\n  - generic: \"Nap: 45m\"\n- 'button \"PLAY: Building blocks\"':\n  - generic: PLAY\n  - generic: Building blocks\n- 'button \"MOOD: Happy\"':\n  - generic: MOOD\n  - generic: Happy\n- 'button \"OBSERVATION: Synthetic UI-review caregiver ob…\"':\n  - generic: OBSERVATION\n  - generic: Synthetic UI-review caregiver ob…\n- 'button \"LATEST ACTIVITY 2026-11-10 Building blocks Location: indoor\"':\n  - generic: LATEST ACTIVITY\n  - generic: 2026-11-10\n  - generic: Building blocks\n  - generic: \"Location: indoor\"\n- generic: Acceptance administrator\n- generic: Classroom Caregiver Note\n- generic: “Synthetic UI-review caregiver observation.”\n- button \"Message Caregiver\":\n  - generic: Message Caregiver\n- tab \"Home\" [selected]:\n  - generic: HOME\n- tab \"Reports\":\n  - generic: REPORTS\n- tab \"Messages\":\n  - generic: MESSAGES\n- tab \"Shop\":\n  - generic: SHOP\n- tab \"Profile\":\n  - generic: PROFILE"
+    }
+  ],
+  "controls": [
+    {
+      "screen": "Sign-in",
+      "items": [
+        {
+          "height": 30,
+          "label": "Back to First Page / Welcome",
+          "width": 103
+        },
+        {
+          "height": 30,
+          "label": "Go to Home Feed",
+          "width": 111
+        },
+        {
+          "height": 44,
+          "label": "Show password",
+          "width": 44
+        },
+        {
+          "height": 20,
+          "label": "Forgot Password?",
+          "width": 109
+        },
+        {
+          "height": 54,
+          "label": "Sign In",
+          "width": 432
+        },
+        {
+          "height": 36,
+          "label": "How to get access",
+          "width": 131
+        }
+      ]
+    },
+    {
+      "screen": "Home",
+      "items": [
+        {
+          "height": 38,
+          "label": "Ankelba home",
+          "role": "button",
+          "width": 127
+        },
+        {
+          "height": 44,
+          "label": "Notifications",
+          "role": "button",
+          "width": 44
+        },
+        {
+          "height": 40,
+          "label": "Your profile",
+          "role": "button",
+          "width": 40
+        },
+        {
+          "height": 164,
+          "label": "DAYCARE ANNOUNCEMENT\nNEW\nPickup entrance changed today · የመግቢያ ቦታ ለውጥ\nUI-review example on",
+          "role": "button",
+          "width": 424
+        },
+        {
+          "height": 24,
+          "label": "Dismiss announcement",
+          "role": "button",
+          "width": 24
+        },
+        {
+          "height": 25,
+          "label": "View Attendance History",
+          "role": "button",
+          "width": 94
+        },
+        {
+          "height": 54,
+          "label": "View child profile",
+          "role": "button",
+          "width": 387
+        },
+        {
+          "height": 82,
+          "label": "Message",
+          "role": "button",
+          "width": 57
+        },
+        {
+          "height": 82,
+          "label": "Report",
+          "role": "button",
+          "width": 57
+        },
+        {
+          "height": 82,
+          "label": "Health",
+          "role": "button",
+          "width": 57
+        },
+        {
+          "height": 82,
+          "label": "Ask AI",
+          "role": "button",
+          "width": 57
+        },
+        {
+          "height": 82,
+          "label": "Calendar",
+          "role": "button",
+          "width": 57
+        },
+        {
+          "height": 82,
+          "label": "Tuition",
+          "role": "button",
+          "width": 57
+        },
+        {
+          "height": 36,
+          "label": "Invoices",
+          "role": "button",
+          "width": 82
+        },
+        {
+          "height": 21,
+          "label": "View All →",
+          "role": "button",
+          "width": 68
+        },
+        {
+          "height": 132,
+          "label": "MEALS: Lunch: good",
+          "role": "button",
+          "width": 204
+        },
+        {
+          "height": 132,
+          "label": "SLEEP: Nap: 45m",
+          "role": "button",
+          "width": 204
+        },
+        {
+          "height": 132,
+          "label": "PLAY: Building blocks",
+          "role": "button",
+          "width": 204
+        },
+        {
+          "height": 132,
+          "label": "MOOD: Happy",
+          "role": "button",
+          "width": 204
+        },
+        {
+          "height": 134,
+          "label": "OBSERVATION: Synthetic UI-review caregiver ob…",
+          "role": "button",
+          "width": 204
+        },
+        {
+          "height": 179,
+          "label": "LATEST ACTIVITY\n2026-11-10\nBuilding blocks\nLocation: indoor",
+          "role": "button",
+          "width": 424
+        },
+        {
+          "height": 54,
+          "label": "Message Caregiver",
+          "role": "button",
+          "width": 383
+        },
+        {
+          "height": 67,
+          "label": "Home",
+          "role": "tab",
+          "width": 96
+        },
+        {
+          "height": 67,
+          "label": "Reports",
+          "role": "tab",
+          "width": 96
+        },
+        {
+          "height": 67,
+          "label": "Messages",
+          "role": "tab",
+          "width": 96
+        },
+        {
+          "height": 67,
+          "label": "Shop",
+          "role": "tab",
+          "width": 96
+        },
+        {
+          "height": 67,
+          "label": "Profile",
+          "role": "tab",
+          "width": 96
+        }
+      ]
+    }
+  ],
+  "font": [
+    {
+      "screen": "Care wizard",
+      "fields": [
+        {
+          "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+          "label": "e.g. Jane Doe",
+          "size": "15px"
+        },
+        {
+          "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+          "label": "e.g. Liya Hana",
+          "size": "15px"
+        },
+        {
+          "font": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+          "label": "2023-04-15",
+          "size": "15px"
+        }
+      ]
+    }
+  ],
+  "limits": []
+}
