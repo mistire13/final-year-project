@@ -1,6 +1,6 @@
 import { apiClient } from "../api/client";
 import { useAuth } from "./AuthContext";
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 export type Guardian = {
   id: number;
   name: string;
@@ -28,6 +28,7 @@ type State = {
   order: PreviewOrder | null;
   setOrder: (order: PreviewOrder) => void;
   preferences: Record<string, boolean>;
+  preferencesSaving: boolean;
   togglePreference: (key: string) => void;
 };
 const Context = createContext<State | null>(null);
@@ -37,12 +38,15 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const [guardians,setGuardians]=useState<Guardian[]>([]);
   const [reminders, setReminders] = useState<number[]>([]);
   const [order, setOrder] = useState<PreviewOrder | null>(null);
+  const [preferencesSaving, setPreferencesSaving] = useState(false);
+  const preferenceRequest = useRef(0);
+  const preferenceBusy = useRef(false);
   const [preferences, setPreferences] = useState<Record<string, boolean>>({
     activity: true,
     messages: true,
-    announcements: false,
+    announcements: true,
   });
-  useEffect(()=>{setOrder(null);setGuardians([]);setReminders([]);setPersistenceError('');setPreferences({activity:true,messages:true,announcements:false});},[user?.id,user?.daycare_id]);
+  useEffect(()=>{preferenceRequest.current++;preferenceBusy.current=false;setPreferencesSaving(false);setOrder(null);setGuardians([]);setReminders([]);setPersistenceError('');setPreferences({activity:true,messages:true,announcements:true});},[user?.id,user?.daycare_id]);
   useEffect(()=>{let active=true;if(user?.daycare_id)apiClient.get('/notifications/preferences').then(({data})=>{if(!active)return;setReminders(data.reminders||[]);setPreferences(p=>({...p,...data.notifications}));}).catch(()=>{if(active)setPersistenceError('Preferences could not be loaded. Retry after reconnecting.');});return()=>{active=false;};},[user?.id,user?.daycare_id]);
   const persist=async(body:any)=>{try{await apiClient.patch('/notifications/preferences',body);setPersistenceError('');}catch{setPersistenceError('Your preference was not saved. Check your connection and try again.');}};
   const saveGuardian = (guardian: Guardian) =>
@@ -66,10 +70,17 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         order,
         setOrder,
         preferences,
+        preferencesSaving,
         togglePreference: (key) => {
+          if (preferenceBusy.current) return;
+          preferenceBusy.current = true;
+          setPreferencesSaving(true);
+          const request = preferenceRequest.current;
           const enabled=!preferences[key];
-          setPreferences(p=>({...p,[key]:enabled}));
-          void persist({notifications:{[key]:enabled}});
+          void apiClient.patch('/notifications/preferences',{notifications:{[key]:enabled}})
+            .then(()=>{if(request===preferenceRequest.current){setPreferences(p=>({...p,[key]:enabled}));setPersistenceError('');}})
+            .catch(()=>{if(request===preferenceRequest.current)setPersistenceError('Your preference was not saved. Check your connection and try again.');})
+            .finally(()=>{if(request===preferenceRequest.current){preferenceBusy.current=false;setPreferencesSaving(false);}});
         },
       }}
     >

@@ -5,6 +5,7 @@ import SurfaceRecovery from './SurfaceRecovery.web';
 import {workspaceRouteFailure} from './workspaceRoutes';
 import SetupChecklist from './SetupChecklist.web';
 import { DaycareSubscription, SubscriptionNotice } from './SubscriptionViews.web';
+import { adminNavigationForFeatures, plusNavigationFeatures, subscriptionDisplayState } from './subscriptions';
 
 import { CaregiverPage } from "./CaregiverPages.web";
 import { DaycareFinances } from "./DaycareFinances.web";
@@ -30,7 +31,13 @@ import {
   emptyDataset,
   today,
 } from "./model";
-import { portalApi, portalClient, apiError } from "./api";
+import { portalApi, portalClient, portalTokenStorage, apiError } from "./api";
+import { subscribeRealtime } from "../services/realtime";
+import {
+  BiometricStatusBadge,
+  BiometricPickupModal,
+  BiometricEnrollModal,
+} from "./BiometricModals.web";
 import { isPortalPreviewPath } from "./previewPolicy";
 import {
   Analytics,
@@ -283,22 +290,7 @@ export default function Portal() {
   }, [actor?.id, actor?.role, preview, page]);
   const base = `/${staff ? "staff" : "admin"}${preview ? "/preview" : ""}`;
   const portalFeatures = data.daycare?.features || {};
-  const featureByNavKey: Record<string, string> = {
-    'staff-scheduling': 'staff_scheduling',
-    'billing-automation': 'billing_automation',
-    store: 'shop',
-    business: 'business_analytics',
-  };
-  const adminNav = nav.map((group) => ({
-    ...group,
-    items: group.items.map(([key, titleText, iconName]) => {
-      const fKey = featureByNavKey[key];
-      if (!fKey) return [key, titleText, iconName];
-      const unlocked = !preview && portalFeatures[fKey] === true;
-      const baseTitle = titleText.replace(/ · Plus$/, '');
-      return [key, unlocked ? baseTitle : `${baseTitle} · Plus`, iconName];
-    }),
-  }));
+  const adminNav = adminNavigationForFeatures(nav, portalFeatures, preview);
   const navigation = staff
     ? [
         {
@@ -316,7 +308,9 @@ export default function Portal() {
         },
       ]
     : adminNav;
-  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users"])];
+  // An admin's bookmarked Plus page must still reach the locked explanation.
+  // Hiding navigation must not hide retained order and payment history.
+  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users", ...Object.keys(plusNavigationFeatures)])];
   const normalizedPage = page === "users" ? "caregivers" : page;
   const selected = available.includes(normalizedPage)
     ? normalizedPage
@@ -412,6 +406,25 @@ export default function Portal() {
       loadingRequest.current++;
     };
   }, [actor?.id, date]);
+  useEffect(() => {
+    if (preview || !actor) return;
+    const token = portalTokenStorage.getToken();
+    if (!token) return;
+    const unsubscribe = subscribeRealtime(
+      token,
+      (event) => {
+        if (
+          event.type === "message.changed" ||
+          event.type === "message.read" ||
+          event.type === "resource.changed"
+        ) {
+          void refresh();
+        }
+      },
+      actor.id,
+    );
+    return () => unsubscribe();
+  }, [actor?.id, preview]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 4500);
@@ -895,14 +908,17 @@ export default function Portal() {
           }),
         );
       } else if (kind === "pickup") {
-        if (
-          !values.identity_confirmed ||
-          !values.reason ||
-          values.reason.trim().length < 12
-        )
-          throw Error(
-            "Confirm the identity check and describe how identity was verified (at least 12 characters).",
-          );
+        const isBiometric = values.method === "biometric";
+        if (!isBiometric) {
+          if (
+            !values.identity_confirmed ||
+            !values.reason ||
+            values.reason.trim().length < 12
+          )
+            throw Error(
+              "Confirm the identity check and describe how identity was verified (at least 12 characters).",
+            );
+        }
         const [adultType, adultId] = String(values.guardian_key || "").split(":");
         const userId = adultType === "user" ? Number(adultId) : null;
         const pickupId = adultType === "pickup" ? Number(adultId) : null;
@@ -925,10 +941,12 @@ export default function Portal() {
           );
         const body = {
           child_id: row.id,
-          ...(pickupId ? {pickup_guardian_id:pickupId} : {guardian_user_id:userId}),
-          method: "manual",
+          ...(pickupId ? { pickup_guardian_id: pickupId } : { guardian_user_id: userId }),
+          method: isBiometric ? "biometric" : "manual",
           identity_confirmed: true,
-          reason: values.reason.trim(),
+          ...(isBiometric
+            ? { reason: values.reason || "Biometric scan verified at front desk via R307S", match_score: 0.95 }
+            : { reason: values.reason.trim() }),
         };
         await mutate("/portal/checkout", body, (d) => ({
           ...d,
@@ -946,7 +964,7 @@ export default function Portal() {
             {
               id: Date.now(),
               ...body,
-              result: "manual_fallback",
+              result: isBiometric ? "verified" : "manual_fallback",
               verified_by: actor!.id,
               verified_at: new Date().toISOString(),
             },
@@ -1067,6 +1085,7 @@ export default function Portal() {
       setFormError(
         error.response ? apiError(error) : error.message || "Unable to save.",
       );
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -1167,7 +1186,7 @@ export default function Portal() {
         </div>
       </div>
     );
-  const plusPageFeature:Record<string,string>={business:'business_analytics','billing-automation':'billing_automation','staff-scheduling':'staff_scheduling',store:'shop'};
+  const plusPageFeature = plusNavigationFeatures;
   const plusFeatureMeta: Record<string, { name: string; detail: string }> = {
     business_analytics: { name: 'Business reports & CSV/PDF exports', detail: 'Track multi-period attendance comparisons, care-fee collections, capacity utilization and occupancy trends.' },
     billing_automation: { name: 'Scheduled billing automation', detail: 'Automatically generate monthly care-fee invoices and notify parents with upcoming and overdue reminders.' },
@@ -1176,7 +1195,9 @@ export default function Portal() {
   };
   const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...nav.flatMap(group=>group.items.map(item=>item[0])),'dashboard','workspace','users'],available);
   const plusFeature=plusPageFeature[selected];
-  const isExpiredPlus = visibleData.daycare?.package_code === 'premium' && visibleData.daycare?.subscription_active === false;
+  const displayState = subscriptionDisplayState(visibleData.daycare);
+  const isTrial = displayState === 'trial' || displayState === 'expired_trial';
+  const isExpiredPlus = visibleData.daycare?.package_code === 'premium' && displayState === 'expired';
   const lockedMeta = plusFeature ? plusFeatureMeta[plusFeature] : null;
   const pageComponent = plusFeature&&(preview||!visibleData.daycare?.features?.[plusFeature]) ? (
     <Card title={isExpiredPlus ? 'Plus subscription expired' : (lockedMeta?.name || 'Included with Ankelba Plus')}>
@@ -1184,6 +1205,10 @@ export default function Portal() {
         <p>Open a live Plus daycare to manage {lockedMeta?.name?.toLowerCase() || 'these tools'}.</p>
       ) : isExpiredPlus ? (
         <p>Your Plus subscription period has ended. Essential child attendance, authorized pickup, health alerts, and existing invoice/order settlements stay available while Plus tools wait for renewal.</p>
+      ) : isTrial ? (
+        <p>This tool is not included in your current access. Review your subscription details for the available plans.</p>
+      ) : visibleData.daycare?.package_code === 'premium' ? (
+        <p>This tool is not currently available to your center. Review your subscription details or contact platform support.</p>
       ) : (
         <>
           <p>{lockedMeta?.detail || 'Your current plan does not include this tool.'}</p>
@@ -1337,6 +1362,7 @@ export default function Portal() {
             </a>
           </div>
           <div className="p-top-actions">
+            <BiometricStatusBadge />
             {usesPageSearch && <label className="p-search">
               <Icon name="search" size={17} />
               <input
@@ -1572,6 +1598,23 @@ function PortalModal({
         error={error}
         save={save}
         close={close}
+      />
+    );
+  } else if (kind === "pickup") {
+    return (
+      <BiometricPickupModal
+        row={row}
+        data={data}
+        onSave={save}
+        onClose={close}
+      />
+    );
+  } else if (kind === "enroll-biometric") {
+    return (
+      <BiometricEnrollModal
+        row={row as any}
+        onSuccess={() => {}}
+        onClose={close}
       />
     );
   } else if (kind === "assign-caregiver") {
@@ -1926,7 +1969,26 @@ function PortalModal({
               {data.guardians.filter((g) => g.child_id === row.id).map((g) => (
                 <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
                   <Person name={userName(data, g.user_id)} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || "No phone on record"}`} />
-                  <Badge value={g.pickup_authorized ? "Approved for Pickup" : "Not authorized"} tone={g.pickup_authorized ? "green" : "quiet"} />
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <Badge value={g.pickup_authorized ? "Approved for Pickup" : "Not authorized"} tone={g.pickup_authorized ? "green" : "quiet"} />
+                    {g.pickup_authorized && !ctx.staff && (
+                      <Button
+                        variant="secondary small"
+                        onClick={() =>
+                          ctx.open("enroll-biometric", {
+                            id: g.id,
+                            guardian_link_id: g.id,
+                            child_id: row.id,
+                            user_id: g.user_id,
+                            guardian_name: userName(data, g.user_id),
+                            child_name: row.full_name,
+                          } as any)
+                        }
+                      >
+                        Enroll Fingerprint
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
               {!data.guardians.some((g) => g.child_id === row.id) && (

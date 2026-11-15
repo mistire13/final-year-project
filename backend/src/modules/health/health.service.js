@@ -161,21 +161,28 @@ const markNotified = async (recordIdParam, user) => {
   }
 
   const client=await db.connect();
+  let sentMessages=[];
   try{
     await client.query('BEGIN');
     const {rows:[locked]}=await client.query(`SELECT h.*,c.caregiver_id FROM health_records h JOIN children c ON c.id=h.child_id
       WHERE h.id=$1 AND h.daycare_id=$2 FOR UPDATE OF h FOR SHARE OF c`,[recordId,user.daycare_id]);
     if(!locked||user.role==='caregiver'&&locked.caregiver_id!==user.id)throw Object.assign(new Error('Health record unavailable'),{statusCode:403});
     if(!locked.parent_notified){
-      const sent=await client.query(`INSERT INTO messages(sender_id,recipient_id,subject,body,daycare_id)
-        SELECT $1,u.id,'Health update from your daycare',$2,$3 FROM users u
-        WHERE u.status='active' AND u.daycare_id=$3 AND EXISTS(SELECT 1 FROM guardian_links gl WHERE gl.user_id=u.id AND gl.child_id=$4) RETURNING id`,
+      const hasPushCol = (await client.query("SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='messages' AND column_name='push_event_type'")).rowCount > 0;
+      const pushColSql = hasPushCol ? ',push_event_type' : '';
+      const pushValSql = hasPushCol ? ",'health'" : '';
+      const sent = await client.query(`INSERT INTO messages(sender_id,recipient_id,subject,body,daycare_id${pushColSql})
+        SELECT $1,u.id,'Health update from your daycare',$2,$3${pushValSql} FROM users u
+        WHERE u.status='active' AND u.daycare_id=$3 AND EXISTS(SELECT 1 FROM guardian_links gl WHERE gl.user_id=u.id AND gl.child_id=$4) RETURNING id, sender_id, recipient_id, daycare_id`,
         [user.id,`A ${locked.record_type==='incident'?'new incident':'health observation'} was recorded for your child. ${locked.description}`,user.daycare_id,locked.child_id]);
       if(!sent.rowCount)throw Object.assign(new Error('No active guardian account can receive this update.'),{statusCode:422});
+      sentMessages=sent.rows.map(message=>({...message,push_event_type:'health'}));
       await client.query('UPDATE health_records SET parent_notified=TRUE WHERE id=$1',[recordId]);
       await client.query(`INSERT INTO audit_logs(actor_id,action,target_table,target_id,metadata,daycare_id) VALUES($1,'HEALTH_RECORD_NOTIFIED','health_records',$2,$3,$4)`,[user.id,recordId,JSON.stringify({child_id:locked.child_id,parent_notified:true}),user.daycare_id]);
     }
-    await client.query('COMMIT');return{...locked,parent_notified:true,disclaimer:MEDICAL_DISCLAIMER};
+    await client.query('COMMIT');
+    for (const message of sentMessages) require('../realtime/hub').publishMessage(message);
+    return{...locked,parent_notified:true,disclaimer:MEDICAL_DISCLAIMER};
   }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
 
 };

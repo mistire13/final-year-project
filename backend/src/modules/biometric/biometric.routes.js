@@ -8,8 +8,12 @@ const router = express.Router();
 const auth = require('../../middleware/auth');
 const { allowRoles } = require('../../middleware/rbac');
 const { validate } = require('../../middleware/validator');
-const { enrollSchema, verifySchema } = require('./biometric.validator');
+const { enrollSchema, identifySchema, verifySchema } = require('./biometric.validator');
 const c = require('./biometric.controller');
+
+router.get('/slots', auth, allowRoles('admin'), c.getSlots);
+router.post('/identify', auth, allowRoles('admin', 'caregiver'), validate(identifySchema), c.identify);
+router.post('/device-enroll', auth, allowRoles('admin'), validate(enrollSchema), c.enroll);
 
 router.post('/enroll', auth, allowRoles('admin'), validate(enrollSchema), c.enroll);
 router.post('/verify', auth, allowRoles('admin', 'caregiver'), validate(verifySchema), c.verify);

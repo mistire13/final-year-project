@@ -1,7 +1,8 @@
 import ShopAccess from './ShopAccess';
-import React, { useState, useEffect } from "react";
-import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform, Linking } from "react-native";
+import React, { useState } from "react";
+import { View, ScrollView, Pressable, Image, ActivityIndicator, Platform, Linking, useWindowDimensions } from "react-native";
 import { ShoppingCart } from "phosphor-react-native/src/icons/ShoppingCart";
+import { ArrowsClockwise } from "phosphor-react-native/src/icons/ArrowsClockwise";
 import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
 import { Plus } from "phosphor-react-native/src/icons/Plus";
 import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
@@ -14,6 +15,7 @@ import {
   Field,
   Badge,
   IconButton,
+  Notice,
   s,
 } from "../../components/design/System";
 import { useChild } from "../../context/ChildContext";
@@ -21,31 +23,20 @@ import { useAuth } from "../../context/AuthContext";
 import { artwork } from "../../theme/assets";
 import { getStoreProducts, StoreProduct } from "../../api/parentApi";
 import { getWebPortalUrl } from "../../utils/host";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
 
 export const formatMoney = (value: number) =>
   value.toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ETB";
 
 function DaycareStoreScreenContent({ navigation, route }: any) {
   const { user } = useAuth();
+  const { width, fontScale } = useWindowDimensions();
+  const singleColumn = width < 360 || fontScale > 1.25;
   const isAdmin = user?.role === "admin";
   const { cart, cartItemCount, cartTotal, addToCart } = useChild();
-  const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {data:products,loading,loaded,refreshing,error,refresh} = useRemoteResource<StoreProduct[]>('store',getStoreProducts,[]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getStoreProducts();
-        setProducts(data);
-      } catch {
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
 
   const inCart = (id: number) =>
     cart.find((item) => item.product.id === id)?.quantity || 0;
@@ -66,6 +57,8 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
   return (
     <Page
       header={false}
+      refreshing={refreshing}
+      onRefresh={refresh}
       contentStyle={{ paddingHorizontal: 20 }}
       footer={
         cartItemCount > 0 ? (
@@ -77,10 +70,11 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
                 borderRadius: 30,
                 padding: 10,
                 paddingLeft: 18,
+                flexWrap: "wrap",
               },
             ]}
           >
-            <View style={s.row}>
+            <View style={[s.row, { flexShrink: 1, minWidth: 0 }]}>
               <ShoppingCart size={23} color="white" />
               <View>
                 <Text size={11} color="#B9C5D1">
@@ -114,7 +108,12 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
         <Text size={26} weight="bold" style={{ flex: 1, marginLeft: 12 }}>
           Daycare Store
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <IconButton
+            icon={ArrowsClockwise}
+            label="Refresh products"
+            onPress={() => void refresh()}
+          />
           <IconButton
             icon={Receipt}
             label="My Orders"
@@ -198,13 +197,13 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
           borderColor: "#DCE9FF",
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1, minWidth: 0 }}>
           <Receipt size={18} color="#24476D" />
-          <Text size={13} weight="medium" color="#24476D">
+          <Text size={13} weight="medium" color="#24476D" style={{ flexShrink: 1 }}>
             Track past purchases & receipts
           </Text>
         </View>
-        <Text size={13} weight="bold" color="#2064D8">
+        <Text size={13} weight="bold" color="#2064D8" style={{ flexShrink: 1, textAlign: "right", marginLeft: 8 }}>
           Order History →
         </Text>
       </Pressable>
@@ -213,12 +212,14 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
         {search ? "Search Results" : "Daycare Products"}
       </Text>
 
+      {!!error && <><Notice tone="error">{error}</Notice><Button title="Retry catalog" onPress={refresh} /></>}
+
       {loading ? (
         <View style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
           <Text size={13} color="#7E828A" style={{ marginTop: 10 }}>Loading products catalog…</Text>
         </View>
-      ) : filtered.length > 0 ? (
+      ) : error && !loaded ? null : filtered.length > 0 ? (
         <View style={s.grid}>
           {filtered.map((p) => {
             const stock = p.stock_quantity ?? 0;
@@ -230,7 +231,7 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
             return (
               <Card
                 key={p.id}
-                style={{ width: "48%", padding: 0, overflow: "hidden", marginBottom: 14 }}
+                style={{ width: singleColumn ? "100%" : "48%", padding: 0, overflow: "hidden", marginBottom: 14 }}
               >
                 <View style={{ width: "100%", aspectRatio: 1 }}>
                   <Image
@@ -262,8 +263,8 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
                   >
                     {p.name}
                   </Text>
-                  <View style={[s.between, { marginTop: 8 }]}>
-                    <Text size={14} weight="semibold" color="#516A8B">
+                  <View style={[s.between, { marginTop: 8, flexWrap: "wrap" }]}>
+                    <Text size={14} weight="semibold" color="#516A8B" style={{ flexShrink: 1 }}>
                       {formatMoney(priceNum)}
                     </Text>
                     <Pressable
@@ -280,9 +281,9 @@ function DaycareStoreScreenContent({ navigation, route }: any) {
                         })
                       }
                       style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 19,
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
                         opacity: isOutOfStock || isMaxedOut ? 0.35 : 1,
                         backgroundColor: "#DCE9FF",
                         alignItems: "center",

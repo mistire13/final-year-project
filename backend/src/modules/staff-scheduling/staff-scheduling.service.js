@@ -45,7 +45,8 @@ function shiftProblems(shifts,assignments,leaves,availability){
 function createStaffScheduling(pool,options={}){
   const requireFeature=options.requireFeature||((...args)=>require('../saas/package-features').requireFeature(...args));
   const now=options.now||(()=>new Date());
-  async function transaction(work){const c=await pool.connect();try{await c.query('BEGIN');const value=await work(c);await c.query('COMMIT');return value;}catch(error){await c.query('ROLLBACK');if(error.code==='23505')throw fail('This scheduling request has already been recorded. Refresh before retrying.',409);throw error;}finally{c.release();}}
+  const pendingMessages=new WeakMap();
+  async function transaction(work){const c=await pool.connect();pendingMessages.set(c,[]);try{await c.query('BEGIN');const value=await work(c);await c.query('COMMIT');for(const message of pendingMessages.get(c))require('../realtime/hub').publishMessage(message);return value;}catch(error){await c.query('ROLLBACK');if(error.code==='23505')throw fail('This scheduling request has already been recorded. Refresh before retrying.',409);throw error;}finally{pendingMessages.delete(c);c.release();}}
   async function actor(c,user,admin=false){
     await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`staff-scheduling-actor:${user.id}`]);
     const a=(await c.query('SELECT u.id,u.daycare_id,u.status,r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.id=$1 FOR SHARE OF u',[user.id])).rows[0];
@@ -63,7 +64,7 @@ function createStaffScheduling(pool,options={}){
   }
   async function audit(c,a,action,table,target,details){await c.query('INSERT INTO audit_logs(actor_id,daycare_id,action,target_table,target_id,metadata) VALUES($1,$2,$3,$4,$5,$6)',[a.id,a.daycare_id,action,table,target,JSON.stringify(details)]);}
   async function notify(c,a,staffIds,subject,body){
-    for(const staffId of new Set(staffIds)){if(staffId===a.id)continue;await c.query('INSERT INTO messages(sender_id,recipient_id,subject,body,daycare_id) VALUES($1,$2,$3,$4,$5)',[a.id,staffId,subject,body,a.daycare_id]);}
+    for(const staffId of new Set(staffIds)){if(staffId===a.id)continue;const result=await c.query('INSERT INTO messages(sender_id,recipient_id,subject,body,daycare_id) VALUES($1,$2,$3,$4,$5) RETURNING id',[a.id,staffId,subject,body,a.daycare_id]);if(result.rows?.[0])pendingMessages.get(c).push({id:result.rows[0].id,sender_id:a.id,recipient_id:staffId,daycare_id:a.daycare_id});}
   }
   async function overview(user,body={}){return transaction(async c=>{
     const a=await actor(c,user);const input=valid(Joi.object({from:date.default(today()),to:date.optional()}),body);input.to=input.to||dayPlus(input.from,41);

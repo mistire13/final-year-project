@@ -14,6 +14,17 @@ const getGuidance = async (req, res, next) => {
   }
 };
 
+const getHistory = async (req, res, next) => {
+  try {
+    const childId = req.query.child_id ? parseInt(req.query.child_id, 10) : null;
+    const history = await svc.getHistory(req.user, childId);
+    res.json({ history });
+  } catch (e) {
+    next(e);
+  }
+};
+
 module.exports = {
   getGuidance,
+  getHistory,
 };

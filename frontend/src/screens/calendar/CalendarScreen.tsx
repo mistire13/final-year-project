@@ -22,6 +22,7 @@ export function CalendarScreen({ navigation, route }: any) {
   const {
     data: eventsList,
     loading,
+    refreshing,
     error,
     refresh,
   } = useRemoteResource<CalendarEvent[]>(
@@ -68,6 +69,8 @@ export function CalendarScreen({ navigation, route }: any) {
 
   return (
     <Page
+      refreshing={refreshing}
+      onRefresh={refresh}
       title="Calendar"
       back={route?.name === "CalendarPage"}
     >

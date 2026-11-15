@@ -2,9 +2,10 @@
 const crypto=require('node:crypto');
 const Joi=require('joi');
 const {banks,bankCodes,receiptInput,cbeReceipt}=require('../saas/subscription-banks');
-const {lookupVeritas,extractVeritasReceipt,messageFor}=require('../saas/veritas-client');
+const {lookupVeritas,messageFor}=require('../saas/veritas-client');
 const {matchesVerifiedPayment,canonicalReference,telebirrPhone}=require('../saas/subscription-payments.service');
 const {MAX_IMAGE_BASE64,readReceiptImage,extractedReceipt,providerReceipt}=require('./receipt-evidence');
+const {extractDaycareReceipt}=require('./receipt-extractor');
 const fail=(message,statusCode=422)=>Object.assign(new Error(message),{statusCode});
 const money=value=>{const s=String(value??'');const m=/^(\d+)(?:\.(\d{1,2}))?$/.exec(s);return m?BigInt(m[1])*100n+BigInt((m[2]||'').padEnd(2,'0')):null;};
 const decimal=n=>`${n/100n}.${String(n%100n).padStart(2,'0')}`;
@@ -145,7 +146,8 @@ function createDaycarePayments(pool,options={}){
     let check;
     if(image){
       let extraction;
-      try{extraction=await (options.extract??extractVeritasReceipt)(image);}catch{extraction={available:false,code:'transport'};}
+      try{extraction=await (options.extract??extractDaycareReceipt)(image,{provider:row.provider,suffix:input.suffix});}
+      catch{extraction={available:false,code:'image_unavailable'};}
       const proof=extractedReceipt(extraction,row.provider,input.suffix);
       if(proof){
         reference=canonicalReference(proof.reference,row.provider);
@@ -161,7 +163,7 @@ function createDaycarePayments(pool,options={}){
         if(saved.version!==row.version||saved.status!=='checking')return safe(saved);
         row=saved;
       }else{
-        check=extraction.available?{available:false,code:'image_unreadable'}:extraction;
+        check={available:false,code:extraction?.code??'image_unreadable'};
       }
     }
     if(!check){

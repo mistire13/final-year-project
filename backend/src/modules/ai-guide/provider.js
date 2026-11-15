@@ -6,7 +6,7 @@ function createProvider({
   fetchImpl = (...args) => fetch(...args),
   now = Date.now,
   timeoutMs = 8000,
-  maxConcurrent = 2,
+  maxConcurrent = 10,
   log = () => {},
   getConfig = () => ({
     key: process.env.NVIDIA_API_KEY,

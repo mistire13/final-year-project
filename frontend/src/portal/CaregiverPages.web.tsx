@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PageContext } from "./pages.web";
 import { Card, Button, Empty, Badge } from "./ui.web";
-import { portalClient, apiError } from "./api";
+import { portalClient, portalTokenStorage, apiError } from "./api";
+import { sendTyping, subscribeRealtime } from "../services/realtime";
 import { PageTransition } from "./WebMotion.web";
 export function CaregiverPage({
   ctx,
@@ -20,25 +21,50 @@ export function CaregiverPage({
   const [message, setMessage] = useState("");
   const [contacts, setContacts] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>(ctx.data.messages);
+  const [recipient, setRecipient] = useState("");
+  const [typingFrom, setTypingFrom] = useState<number | null>(null);
+  const incomingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const outgoingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTyping = useRef(0);
   const [detail, setDetail] = useState<any>(null);
   useEffect(() => { setReports(ctx.data.reports); }, [ctx.data.reports]);
   useEffect(() => { setHealth(ctx.data.health); }, [ctx.data.health]);
   useEffect(() => { setMessages(ctx.data.messages); }, [ctx.data.messages]);
   useEffect(() => {
     let active = true;
+    let revision = 0;
     setMessage("");
     setDetail(null);
-    if (page === "communication")
+    const loadCommunication = () => {
+      const current = ++revision;
       Promise.all([portalClient.get("/communication/contacts"), portalClient.get("/communication/messages")])
         .then(([contacts, inbox]) => {
-          if (!active) return;
+          if (!active || revision !== current) return;
           setContacts(contacts.data.contacts || []);
           setMessages(inbox.data.data || []);
         })
         .catch(() =>
-          { if (active) setMessage("Messages or contacts could not be loaded. Reopen this page to retry."); },
+          { if (active && revision === current) setMessage("Messages or contacts could not be loaded. Reopen this page to retry."); },
         );
-    return () => { active = false; };
+    };
+    if (page !== "communication") return () => { active = false; };
+    loadCommunication();
+    const token = portalTokenStorage.getToken();
+    const unsubscribe = token ? subscribeRealtime(token, event => {
+      if (event.type === 'ready' || event.type === 'message.changed' || event.type === 'message.read') loadCommunication();
+      else if (event.type === 'disconnected') setTypingFrom(null);
+      else if (event.type === 'typing') {
+        if (incomingTimer.current) clearTimeout(incomingTimer.current);
+        setTypingFrom(event.active ? event.userId : null);
+        if (event.active) incomingTimer.current = setTimeout(() => setTypingFrom(null), 5000);
+      }
+    }) : undefined;
+    return () => {
+      active = false;
+      unsubscribe?.();
+      if (incomingTimer.current) clearTimeout(incomingTimer.current);
+      if (outgoingTimer.current) clearTimeout(outgoingTimer.current);
+    };
   }, [page]);
   const send = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,7 +79,9 @@ export function CaregiverPage({
           subject: values.subject,
           body: values.body,
         });
-        setMessages((prev) => [data, ...prev]);
+        setMessages((prev) => [data, ...prev.filter(item => item.id !== data.id)]);
+        if (recipient) sendTyping(portalTokenStorage.getToken(), Number(recipient), false);
+        setRecipient("");
         form.reset();
         setMessage("Message sent.");
       } else {
@@ -142,7 +170,10 @@ export function CaregiverPage({
             <>
               <label>
                 Recipient
-                <select name="recipient" required defaultValue="">
+                <select name="recipient" required value={recipient} onChange={event => {
+                  if (recipient) sendTyping(portalTokenStorage.getToken(), Number(recipient), false);
+                  setRecipient(event.target.value);
+                }}>
                   <option value="" disabled>
                     Choose a contact
                   </option>
@@ -159,8 +190,20 @@ export function CaregiverPage({
               </label>
               <label>
                 Message
-                <textarea name="body" required maxLength={10000} />
+                <textarea name="body" required maxLength={10000} onChange={event => {
+                  const id = Number(recipient);
+                  if (!id) return;
+                  const token = portalTokenStorage.getToken();
+                  const active = event.target.value.trim().length > 0;
+                  if (!active || Date.now() - lastTyping.current > 1500) {
+                    sendTyping(token, id, active);
+                    lastTyping.current = Date.now();
+                  }
+                  if (outgoingTimer.current) clearTimeout(outgoingTimer.current);
+                  if (active) outgoingTimer.current = setTimeout(() => sendTyping(token, id, false), 3000);
+                }} />
               </label>
+              {typingFrom && typingFrom === Number(recipient) ? <p role="status">{contacts.find(c => c.id === typingFrom)?.name || 'Contact'} is typing…</p> : null}
             </>
           ) : (
             <>

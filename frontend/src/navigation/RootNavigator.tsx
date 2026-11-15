@@ -3,12 +3,13 @@ import { AnnouncementDetailScreen } from "../screens/messages/AnnouncementDetail
 import { StaffComposeScreen } from "../screens/profile/StaffScreens";
 import { StaffReportDetailScreen } from "../screens/profile/NativeDailyReport";
 import { HelpSupportScreen } from "../screens/profile/HelpSupportScreen";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useReducedMotion } from "../components/design/Motion";
 import {
   NavigationContainer,
   DefaultTheme,
   NavigatorScreenParams,
+  createNavigationContainerRef,
 } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { MainTabNavigator, MainTabParamList } from "./MainTabNavigator";
@@ -44,6 +45,7 @@ import { AttendanceHistoryScreen } from "../screens/attendance/AttendanceHistory
 import { PaymentVerificationScreen } from "../screens/store/PaymentVerificationScreen";
 import { ReportsHistoryScreen } from "../screens/reports/ReportsHistoryScreen";
 import { ParentBillsScreen } from "../screens/finances/ParentBillsScreen";
+import { subscribeNotificationResponses } from '../notifications/notificationService';
 
 export type RootStackParamList = {
   HelpSupport: undefined;
@@ -84,13 +86,31 @@ export type RootStackParamList = {
   ChildCareFees: undefined;
 };
 const Stack = createStackNavigator<RootStackParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 export function RootNavigator() {
   const reduceMotion = useReducedMotion();
-  const {user}=useAuth();
+  const {user,token}=useAuth();
+  const pendingNotification=useRef<Record<string,unknown>|null>(null);
+  const routeNotification=(data:Record<string,unknown>)=>{
+    if(!navigationRef.isReady()){pendingNotification.current=data;return;}
+    const id=Number(data.eventId);const childId=Number(data.childId);
+    if(data.type==='announcement' && Number.isSafeInteger(id) && id>0) navigationRef.navigate('AnnouncementDetail',{announcementId:id});
+    else if(data.type==='report' && user?.role==='parent' && Number.isSafeInteger(id) && id>0) navigationRef.navigate('FullDailyReport',{reportId:id,childId:Number.isSafeInteger(childId)&&childId>0?childId:undefined});
+    else if((data.type==='checkin'||data.type==='pickup') && user?.role==='parent') navigationRef.navigate('AttendanceHistory',{childId:Number.isSafeInteger(childId)&&childId>0?childId:undefined});
+    else if(data.type==='message') navigationRef.navigate('MainTabs',{screen:'Messages'});
+  };
+  const notificationHandler=useRef(routeNotification);notificationHandler.current=routeNotification;
+  useEffect(()=>{
+    pendingNotification.current=null;
+    if(!token||!user?.id)return;
+    return subscribeNotificationResponses(data=>notificationHandler.current(data));
+  },[token,user?.id]);
   const parent=user?.role === "parent";
   const staff=user?.role === "admin" || user?.role === "caregiver";
   return (
     <NavigationContainer
+      ref={navigationRef}
+      onReady={()=>{if(pendingNotification.current){const data=pendingNotification.current;pendingNotification.current=null;notificationHandler.current(data);}}}
       theme={{
         ...DefaultTheme,
         colors: {

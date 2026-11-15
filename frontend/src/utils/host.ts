@@ -1,7 +1,7 @@
 import { NativeModules, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Current machine local Wi-Fi IP address
+// Used only when no explicit LAN host or Expo development host is available.
 const FALLBACK_HOST = '192.168.8.104';
 
 /**
@@ -19,6 +19,11 @@ export const getDevServerHost = (): string => {
       return host;
     }
     return 'localhost';
+  }
+
+  // An installed APK has no Metro host. Set this when building for a LAN.
+  if (process.env.EXPO_PUBLIC_LAN_HOST) {
+    return process.env.EXPO_PUBLIC_LAN_HOST;
   }
 
   // 1. In modern Expo Go, hostUri contains the exact IP Metro runs on (e.g. "192.168.8.104:8081")

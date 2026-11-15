@@ -124,7 +124,15 @@ function createSubscriptions(pool,options={}) {
       addBillingPeriod(row.subscription_ends_at,row.billing_cycle,row.subscription_started_at).getTime() <= Date.now();
     const scheduled=(await pool.query(`SELECT ch.*,i.status AS payment_status,i.payment_reference FROM subscription_package_changes ch
       LEFT JOIN subscription_payment_intents i ON i.id=ch.payment_intent_id WHERE ch.daycare_id=$1 AND ch.status IN ('awaiting_payment','paid','blocked') ORDER BY ch.created_at DESC LIMIT 1`,[id])).rows[0]||null;
-    const activeChildren=(await pool.query("SELECT COUNT(*)::int AS count FROM children WHERE daycare_id=$1 AND enrollment_status='active'",[id])).rows[0]?.count??0;
+    let activeChildren = 0;
+    try {
+      const q = pool.withTenant
+        ? await pool.withTenant(id, () => pool.query("SELECT COUNT(*)::int AS count FROM children WHERE daycare_id=$1 AND enrollment_status='active'", [id]))
+        : await pool.query("SELECT COUNT(*)::int AS count FROM children WHERE daycare_id=$1 AND enrollment_status='active'", [id]);
+      activeChildren = q.rows?.[0]?.count ?? 0;
+    } catch {
+      activeChildren = 0;
+    }
     return {...row,...await getDaycareFeatures(pool,id),active_children_count:activeChildren,scheduled_change:scheduled,renewal_restart_eligible:!!eligible,effective_status:row.status==='pending'?'awaiting_review':stateOf(row),history,
       expiry_policy:'After expiry, care and pickup remain available while other operations are read-only until renewal.',
       payment_method:'Pay each period and submit a reference for verification; no automatic charges'};

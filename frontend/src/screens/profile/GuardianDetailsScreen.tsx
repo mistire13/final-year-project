@@ -23,18 +23,18 @@ export function GuardianDetailsScreen({ navigation, route }: any) {
   const { selectedChild } = useChild();
   const initial: GuardianRecord | undefined = route.params?.guardian;
   const key = initial ? guardianRecordKey(initial) : "none";
-  const {data:guardian,loading,error,refresh} = useRemoteResource<GuardianRecord | undefined>(
+  const {data:guardian,loading,refreshing,error,refresh} = useRemoteResource<GuardianRecord | undefined>(
     `guardian:${selectedChild?.id}:${key}`,
     async()=>selectedChild ? (await getChildGuardians(selectedChild.id)).find(g=>guardianRecordKey(g)===key) : undefined,
     undefined,
   );
   useEffect(()=>navigation.addListener?.("focus",refresh),[navigation,refresh]);
 
-  if (loading || error) return <Page title="Guardian Details" back><Notice tone={error?"error":"neutral"}>{error || "Loading current guardian approval…"}</Notice>{error?<Button title="Retry" onPress={refresh}/>:null}</Page>;
+  if (loading || (error && !guardian)) return <Page title="Guardian Details" back refreshing={refreshing} onRefresh={refresh}><Notice tone={error?"error":"neutral"}>{error || "Loading current guardian approval…"}</Notice>{error?<Button title="Retry" onPress={refresh}/>:null}</Page>;
 
   if (!guardian) {
     return (
-      <Page title="Guardian Details" back>
+      <Page title="Guardian Details" back refreshing={refreshing} onRefresh={refresh}>
         <Notice tone="error">Guardian details are currently unavailable.</Notice>
         <Button
           title="Back to Guardians"
@@ -50,7 +50,8 @@ export function GuardianDetailsScreen({ navigation, route }: any) {
   const groupName = selectedChild?.group_name || "Early Learning";
 
   return (
-    <Page title="Guardian Details" back tabs activeTab="Profile">
+    <Page title="Guardian Details" back tabs activeTab="Profile" refreshing={refreshing} onRefresh={refresh}>
+      {!!error && <Notice tone="error">{error}</Notice>}
       <Card tint="#F4F5F8" style={{ alignItems: "center", paddingVertical: 24 }}>
         <Avatar
           initials={guardian.name

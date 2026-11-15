@@ -10,6 +10,7 @@ import {
   ViewStyle,
   StyleProp,
   ScrollView,
+  RefreshControl,
   Image,
   ImageSourcePropType,
   TextInput,
@@ -32,11 +33,13 @@ import { User } from "phosphor-react-native/src/icons/User";
 import { Storefront } from "phosphor-react-native/src/icons/Storefront";
 import { SquaresFour } from "phosphor-react-native/src/icons/SquaresFour";
 import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
+import { ArrowsClockwise } from "phosphor-react-native/src/icons/ArrowsClockwise";
 import { X } from "phosphor-react-native/src/icons/X";
 import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 import { colors, fonts, radii, shadows } from "../../theme/tokens";
 import { useAuth } from "../../context/AuthContext";
 import { apiClient } from "../../api/client";
+import { useRealtime } from "../../hooks/useRealtime";
 
 export const Text = ({
   style,
@@ -217,27 +220,29 @@ export function IconButton({
     </MotionPressable>
   );
 }
-export function Header() {
+export function Header({ onRefresh }: { onRefresh?: () => void } = {}) {
   const navigation = useNavigation<any>();
   const [badgeCount, setBadgeCount] = React.useState(0);
+  const mounted = React.useRef(true);
+  const fetchBadges = React.useCallback(() => {
+    apiClient.get("/notifications").then(({ data }) => {
+      if (mounted.current) setBadgeCount(data.total_badges || 0);
+    }).catch(() => {});
+  }, []);
+  useRealtime(event => {
+    if (event.type === 'ready' || event.type === 'message.changed' || event.type === 'message.read' ||
+      (event.type === 'resource.changed' && ['announcements', 'health', 'alerts', 'reports'].includes(event.resource))) fetchBadges();
+  });
 
   React.useEffect(() => {
-    let active = true;
-    const fetchBadges = () => {
-      apiClient
-        .get("/notifications")
-        .then(({ data }) => {
-          if (active) setBadgeCount(data.total_badges || 0);
-        })
-        .catch(() => {});
-    };
+    mounted.current = true;
     fetchBadges();
     const unsubscribe = navigation.addListener?.("focus", fetchBadges);
     return () => {
-      active = false;
+      mounted.current = false;
       if (typeof unsubscribe === "function") unsubscribe();
     };
-  }, [navigation]);
+  }, [navigation, fetchBadges]);
 
   return (
     <View style={s.header}>
@@ -252,7 +257,14 @@ export function Header() {
           Ankelba
         </Text>
       </MotionPressable>
-      <View style={s.row}>
+      <View style={[s.row, { gap: 6 }]}>
+        {onRefresh && (
+          <IconButton
+            icon={ArrowsClockwise}
+            label="Refresh content"
+            onPress={onRefresh}
+          />
+        )}
         <View style={{ position: "relative" }}>
           <IconButton
             icon={BellSimple}
@@ -315,6 +327,8 @@ export function Page({
   scrollToEnd = false,
   decorative = false,
   contentStyle,
+  refreshing = false,
+  onRefresh,
 }: {
   children: ReactNode;
   title?: string;
@@ -329,6 +343,8 @@ export function Page({
   scrollToEnd?: boolean;
   decorative?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }) {
   const nav = useNavigation<any>();
   const { width } = useWindowDimensions();
@@ -353,6 +369,14 @@ export function Page({
         >
           {title}
         </Text>
+        {onRefresh && !header && (
+          <IconButton
+            icon={ArrowsClockwise}
+            label="Refresh content"
+            onPress={onRefresh}
+            background="#F1EFEF"
+          />
+        )}
       </View>
       {!!subtitle && (
         <Text color={colors.textSecondary} style={{ marginTop: 8 }}>
@@ -364,7 +388,7 @@ export function Page({
   return (
     <SafeAreaView edges={["top", "left", "right"]} style={s.page}>
       <SoftBackground decorative={decorative} />
-      {header && <Header />}
+      {header && <Header onRefresh={onRefresh} />}
       {toolbar}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -374,6 +398,17 @@ export function Page({
           {scroll ? (
             <ScrollView
               ref={scrollRef}
+              refreshControl={
+                onRefresh ? (
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={[colors.bgNavy, colors.accentGold]}
+                    tintColor={colors.bgNavy}
+                    progressBackgroundColor="#FFFFFF"
+                  />
+                ) : undefined
+              }
               onContentSizeChange={() => {
                 if (scrollToEnd)
                   scrollRef.current?.scrollToEnd({ animated: !reduceMotion });
@@ -478,7 +513,13 @@ export function Button({
         <ActivityIndicator color={c} />
       ) : (
         <>
-          <Text weight="medium" color={c} style={{ flexShrink: 1, textAlign: "center" }}>
+          <Text
+            weight="medium"
+            color={c}
+            numberOfLines={2}
+            ellipsizeMode="tail"
+            style={{ flexShrink: 1, textAlign: "center" }}
+          >
             {title}
           </Text>
           {Icon && <Icon color={c} size={20} />}
@@ -813,7 +854,7 @@ export const s = StyleSheet.create({
   input: {
     flex: 1,
     minWidth: 0,
-    height: 54,
+    minHeight: 54,
     fontFamily: fonts.regular,
     fontSize: 15,
     color: colors.textPrimary,

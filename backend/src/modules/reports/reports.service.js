@@ -45,6 +45,10 @@ const createReport = async (body, user) => {
     await client.query('BEGIN');
 
     // 2. Insert daily report header stamped with child's daycare_id
+    const reportCaregiverId = user.role === 'caregiver'
+      ? user.id
+      : (body.caregiver_id || child.caregiver_id || user.id);
+
     const insertHeaderSql = `
       INSERT INTO daily_reports
         (child_id, caregiver_id, report_date, sleep_duration_min, sleep_notes, mood, behavior_notes, general_observations, daycare_id)
@@ -53,7 +57,7 @@ const createReport = async (body, user) => {
     `;
     const headerVals = [
       childId,
-      user.id,
+      reportCaregiverId,
       reportDate,
       body.sleep_duration_min ?? null,
       body.sleep_notes || null,
@@ -128,10 +132,18 @@ const getReport = async (reportIdParam, user) => {
 
   // Query 1: Header + caregiver & child names
   const { rows: headerRows } = await db.query(
-    `SELECT dr.*, u.name AS caregiver_name, c.full_name AS child_name, c.daycare_id AS child_daycare_id, c.caregiver_id AS child_caregiver_id
+    `SELECT dr.*,
+            CASE
+              WHEN ur.name = 'caregiver' THEN u.name
+              WHEN cg.name IS NOT NULL THEN cg.name
+              ELSE u.name
+            END AS caregiver_name,
+            c.full_name AS child_name, c.daycare_id AS child_daycare_id, c.caregiver_id AS child_caregiver_id
      FROM daily_reports dr
      JOIN users u ON u.id = dr.caregiver_id
+     JOIN roles ur ON ur.id = u.role_id
      JOIN children c ON c.id = dr.child_id
+     LEFT JOIN users cg ON cg.id = c.caregiver_id
      WHERE dr.id = $1`,
     [reportId]
   );
@@ -224,9 +236,16 @@ const getChildReports = async (childIdParam, query = {}, user) => {
 
   const { rows } = await db.query(
     `SELECT dr.id, dr.child_id, dr.report_date, dr.mood, dr.sleep_duration_min, dr.submitted_at, dr.daycare_id,
-            u.name AS caregiver_name
+            CASE
+              WHEN ur.name = 'caregiver' THEN u.name
+              WHEN cg.name IS NOT NULL THEN cg.name
+              ELSE u.name
+            END AS caregiver_name
      FROM daily_reports dr
      JOIN users u ON u.id = dr.caregiver_id
+     JOIN roles ur ON ur.id = u.role_id
+     JOIN children c ON c.id = dr.child_id
+     LEFT JOIN users cg ON cg.id = c.caregiver_id
      WHERE dr.child_id = $1
        AND ($2::date IS NULL OR dr.report_date >= $2::date)
        AND ($3::date IS NULL OR dr.report_date <= $3::date)

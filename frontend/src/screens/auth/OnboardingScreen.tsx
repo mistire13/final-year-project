@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { MotionView } from "../../components/design/Motion";
-import { View, Image, Pressable } from "react-native";
+import { View, Image, Pressable, useWindowDimensions } from "react-native";
 import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
 import { Page, Text, Button } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
@@ -23,6 +23,7 @@ const slides = [
 ];
 export function OnboardingScreen({ navigation }: any) {
   const [index, setIndex] = useState(0);
+  const { width } = useWindowDimensions();
   const slide = slides[index];
   return (
     <Page
@@ -34,8 +35,8 @@ export function OnboardingScreen({ navigation }: any) {
         <View
           style={{
             alignSelf: "center",
-            width: 260,
-            height: 260,
+            width: Math.min(260, Math.max(0, width - 64)),
+            aspectRatio: 1,
             borderRadius: 32,
             backgroundColor: "#fff",
             overflow: "hidden",

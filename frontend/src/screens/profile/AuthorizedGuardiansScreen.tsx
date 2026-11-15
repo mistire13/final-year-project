@@ -21,7 +21,7 @@ import {useRemoteResource} from '../../hooks/useRemoteResource';
 
 export function AuthorizedGuardiansScreen({ navigation }: any) {
   const { selectedChild } = useChild();
-  const {data:guardians,error,loading,refresh:loadGuardians}=useRemoteResource<GuardianRecord[]>(
+  const {data:guardians,error,loading,refreshing,refresh:loadGuardians}=useRemoteResource<GuardianRecord[]>(
     `guardians:${selectedChild?.id||'none'}`,()=>selectedChild?.id?getChildGuardians(selectedChild.id):Promise.resolve([]),[]);
 
   useEffect(() => {
@@ -41,6 +41,8 @@ export function AuthorizedGuardiansScreen({ navigation }: any) {
       back
       tabs
       activeTab="Profile"
+      refreshing={refreshing}
+      onRefresh={loadGuardians}
     >
       {error ? <><Notice tone="error">{error}</Notice><Button title="Retry" onPress={loadGuardians}/></> : null}
       {!selectedChild ? <Notice>Select a linked child to view guardians.</Notice> : null}

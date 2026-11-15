@@ -128,19 +128,46 @@ const callNvidiaNIM = async (question, childContext) => {
 const getGuidance = async (body, user) => {
   const questionText = body.question ? body.question.toLowerCase() : "";
 
+  // Helper to persist interaction in audit-capable ai_interactions table
+  const persistInteraction = async (res) => {
+    try {
+      if (user?.daycare_id && user?.id) {
+        await db.query(
+          `INSERT INTO ai_interactions (daycare_id, user_id, child_id, question, answer, disclaimer, source, model)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            user.daycare_id,
+            user.id,
+            body.child_id ? parseInt(body.child_id, 10) : null,
+            res.question || body.question,
+            res.answer,
+            res.disclaimer,
+            res.source || (res.safety_redirected ? "safety_redirect" : "prepared_guidance"),
+            res.model || null,
+          ]
+        );
+      }
+    } catch (err) {
+      logger.warn("Failed to record AI interaction", { error: err.message });
+    }
+  };
+
   // 1. Safety Guardrail: Block medical/emergency diagnosis attempts (FR-AI-05)
   const containsMedical = FORBIDDEN_MEDICAL_PATTERNS.some((pattern) =>
     questionText.includes(pattern),
   );
   if (containsMedical) {
-    return {
+    const res = {
       question: body.question,
       answer:
         "I am an AI Parenting Guide assistant designed for general daycare routines, meal ideas, and age-appropriate activities. I cannot provide medical diagnosis, dosage advice, or healthcare treatments. If your child is experiencing medical symptoms, fever, or illness, please consult a qualified healthcare professional or daycare staff immediately.",
       disclaimer: AI_DISCLAIMER,
       safety_redirected: true,
       is_medical_query: true,
+      source: "safety_redirect",
     };
+    await persistInteraction(res);
+    return res;
   }
 
   // 2. Child context lookup if child_id provided (FR-AI-04, FR-AI-07)
@@ -202,7 +229,7 @@ const getGuidance = async (body, user) => {
       : null;
   const nvidiaResult = await callNvidiaNIM(body.question, providerContext);
   if (nvidiaResult && nvidiaResult.answer) {
-    return {
+    const res = {
       source: "nvidia_nim",
       model: nvidiaResult.model,
       provider_connected: true,
@@ -212,11 +239,13 @@ const getGuidance = async (body, user) => {
       disclaimer: AI_DISCLAIMER,
       safety_redirected: false,
     };
+    await persistInteraction(res);
+    return res;
   }
 
   // 4. Graceful degradation: Fall back to rule-based domain guidance (FR-AI-09)
   const fallbackAnswer = generateRuleBasedAnswer(questionText, childContext);
-  return {
+  const fallbackRes = {
     source: "prepared_guidance",
     provider_connected: false,
     question: body.question,
@@ -225,9 +254,32 @@ const getGuidance = async (body, user) => {
     disclaimer: AI_DISCLAIMER,
     safety_redirected: false,
   };
+  await persistInteraction(fallbackRes);
+  return fallbackRes;
+};
+
+const getHistory = async (user, childId = null) => {
+  const daycareId = user?.daycare_id;
+  if (!daycareId || !user?.id) return [];
+  const params = [daycareId, user.id];
+  let childFilter = "";
+  if (childId) {
+    params.push(childId);
+    childFilter = `AND child_id = $${params.length}`;
+  }
+  const { rows } = await db.query(
+    `SELECT id, child_id, question, answer, disclaimer, source, model, created_at
+     FROM ai_interactions
+     WHERE daycare_id = $1 AND user_id = $2 ${childFilter}
+     ORDER BY created_at DESC
+     LIMIT 50`,
+    params,
+  );
+  return rows;
 };
 
 module.exports = {
   getGuidance,
   callNvidiaNIM,
+  getHistory,
 };

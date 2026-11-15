@@ -139,6 +139,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 // ──────────────────────────────────────────────
 // 8. API routes
 // ──────────────────────────────────────────────
+app.use(require('./modules/realtime/resource-invalidation').notifySuccessfulMutation);
 // The legacy application endpoint also provisions an administrator. Both aliases
 // stay closed in preview until the owner-approved application workflow exists.
 if (daycareAuthConfig.enabled) {

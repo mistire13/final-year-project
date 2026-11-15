@@ -432,6 +432,7 @@ export function NativeReportHistory({
       <Text size={18} weight="bold">
         Report history
       </Text>
+      <Button title={history.refreshing ? "Refreshing…" : "Refresh report history"} variant="outline" onPress={history.refresh} disabled={history.refreshing} />
       {childrenList.map((c) => (
         <Button
           key={c.id}
@@ -480,7 +481,7 @@ export function StaffReportDetailScreen({ route }: any) {
   );
   const row = report.data;
   return (
-    <Page title="Daily report details" back>
+    <Page title="Daily report details" back refreshing={report.refreshing} onRefresh={report.refresh}>
       {report.loading ? (
         <ActivityIndicator />
       ) : report.error ? (

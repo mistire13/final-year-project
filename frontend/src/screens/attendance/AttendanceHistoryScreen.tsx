@@ -3,7 +3,6 @@ import {
   View,
   Pressable,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
 import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
 import { Clock } from "phosphor-react-native/src/icons/Clock";
@@ -45,6 +44,7 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
   const {
     data: records,
     loading,
+    refreshing,
     error,
     refresh: loadAttendance,
   } = useRemoteResource<AttendanceRecord[]>(
@@ -52,8 +52,6 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
     () => (childId ? getChildAttendance(childId) : Promise.resolve([])),
     [],
   );
-  const refreshing = loading;
-  const onRefresh = loadAttendance;
   useEffect(() => {
     const remove = navigation.addListener?.("focus", loadAttendance);
     return () => remove?.();
@@ -159,6 +157,8 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
 
   return (
     <Page
+      refreshing={refreshing}
+      onRefresh={loadAttendance}
       title="Attendance History"
       back
       tabs
@@ -187,11 +187,13 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
       </Card>
 
       {/* Summary KPI Cards */}
-      <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
         <Card
           style={{
             flex: 1,
-            padding: 14,
+            minWidth: 0,
+            paddingVertical: 12,
+            paddingHorizontal: 6,
             alignItems: "center",
             backgroundColor: "#EAF5EE",
           }}
@@ -203,6 +205,8 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
             size={11}
             color="#357D4F"
             weight="semibold"
+            numberOfLines={1}
+            ellipsizeMode="tail"
             style={{ marginTop: 2 }}
           >
             Check-ins
@@ -212,7 +216,9 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
         <Card
           style={{
             flex: 1,
-            padding: 14,
+            minWidth: 0,
+            paddingVertical: 12,
+            paddingHorizontal: 6,
             alignItems: "center",
             backgroundColor: "#EBF1FA",
           }}
@@ -224,6 +230,8 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
             size={11}
             color="#2A5B8D"
             weight="semibold"
+            numberOfLines={1}
+            ellipsizeMode="tail"
             style={{ marginTop: 2 }}
           >
             Departures
@@ -233,7 +241,9 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
         <Card
           style={{
             flex: 1,
-            padding: 14,
+            minWidth: 0,
+            paddingVertical: 12,
+            paddingHorizontal: 6,
             alignItems: "center",
             backgroundColor: "#FEF7E6",
           }}
@@ -245,6 +255,8 @@ export function AttendanceHistoryScreen({ navigation, route }: any) {
             size={11}
             color="#A77416"
             weight="semibold"
+            numberOfLines={1}
+            ellipsizeMode="tail"
             style={{ marginTop: 2 }}
           >
             Absences

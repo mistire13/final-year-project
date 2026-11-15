@@ -8,7 +8,14 @@ const { Joi } = require('../../middleware/validator');
 
 const enrollSchema = Joi.object({
   guardian_link_id: Joi.number().integer().required(),
-  reference_data: Joi.string().required(),
+  reference_data: Joi.string().allow('', null),
+  slot_id: Joi.number().integer().min(1).max(300),
+  device_id: Joi.string().allow('', null),
+}).or('reference_data', 'slot_id');
+
+const identifySchema = Joi.object({
+  child_id: Joi.number().integer().required(),
+  slot_id: Joi.number().integer().min(1).max(300).required(),
 });
 
 const verifySchema = Joi.object({
@@ -20,5 +27,6 @@ const verifySchema = Joi.object({
 
 module.exports = {
   enrollSchema,
+  identifySchema,
   verifySchema,
 };

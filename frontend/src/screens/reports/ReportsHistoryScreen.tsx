@@ -35,6 +35,8 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
   const {
     data: reports,
     loading,
+    refreshing,
+    loaded,
     error,
     refresh: loadReports,
   } = useRemoteResource<DailyReportSummary[]>(
@@ -85,6 +87,8 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
       back
       tabs
       activeTab="Reports"
+      refreshing={refreshing}
+      onRefresh={loadReports}
     >
       {!childId && <Notice>No child is linked to this account yet.</Notice>}
       {error ? (
@@ -136,7 +140,7 @@ export function ReportsHistoryScreen({ navigation, route }: any) {
         })}
       </View>
 
-      {error ? null : loading ? (
+      {error && !loaded ? null : loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
           <Text size={13} color="#858A93" style={{ marginTop: 12 }}>

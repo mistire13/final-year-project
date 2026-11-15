@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, TextInput, Pressable, Image, ActivityIndicator } from "react-native";
 import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { ArrowsClockwise } from "phosphor-react-native/src/icons/ArrowsClockwise";
 import { PaperPlaneRight } from "phosphor-react-native/src/icons/PaperPlaneRight";
 import { Lock } from "phosphor-react-native/src/icons/Lock";
 import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
@@ -22,9 +23,11 @@ import {
   getCommunicationContacts,
 } from "../../api/parentApi";
 import { useAuth } from "../../context/AuthContext";
+import { useRealtime } from "../../hooks/useRealtime";
+import { sendTyping } from "../../services/realtime";
 
 export function CaregiverChatScreen({ navigation, route }: any) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const recipientId = Number(route.params?.recipientId);
   const validRecipient = Number.isSafeInteger(recipientId) && recipientId > 0;
   const [recipientRole,setRecipientRole]=useState<string | undefined>(route.params?.recipientRole);
@@ -36,7 +39,15 @@ export function CaregiverChatScreen({ navigation, route }: any) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const requestRevision=useRef(0);
+  // Loading the conversation can overlap a send; only a change of conversation
+  // or session should invalidate the send result, not an ordinary refresh.
+  const conversationRevision=useRef(0);
+  const typingExpiry=useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopTyping=useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTyping=useRef(0);
   useEffect(()=>{
     let active=true;
     setRecipientRole(route.params?.recipientRole);
@@ -46,7 +57,6 @@ export function CaregiverChatScreen({ navigation, route }: any) {
 
   const loadMessages = useCallback(async () => {
     const revision=++requestRevision.current;
-    setMessages([]);setLoading(true);
     if (!validRecipient) {
       setErrorMessage("Choose a staff contact from Messages to start a conversation.");
       setLoading(false);
@@ -76,10 +86,47 @@ export function CaregiverChatScreen({ navigation, route }: any) {
 
 
   useEffect(() => {
+    conversationRevision.current++;
     setInput('');
+    setMessages([]);
+    setLoading(true);
+    setSending(false);
     loadMessages();
-    return()=>{requestRevision.current++;};
-  }, [loadMessages]);
+    return()=>{
+      conversationRevision.current++;
+      requestRevision.current++;
+      if (typingExpiry.current) clearTimeout(typingExpiry.current);
+      if (stopTyping.current) clearTimeout(stopTyping.current);
+      sendTyping(token, recipientId, false);
+    };
+  }, [loadMessages, recipientId, token]);
+
+  useRealtime(event => {
+    if (event.type === 'typing' && event.userId === recipientId) {
+      setTyping(event.active);
+      if (typingExpiry.current) clearTimeout(typingExpiry.current);
+      if (event.active) typingExpiry.current = setTimeout(() => setTyping(false), 5000);
+    } else if (event.type === 'disconnected') {
+      setTyping(false);
+    } else if (event.type === 'ready' ||
+      ((event.type === 'message.changed' || event.type === 'message.read') &&
+        (event.senderId === recipientId || event.recipientId === recipientId))) {
+      void loadMessages();
+    }
+  });
+
+  const changeInput = (value: string) => {
+    setInput(value);
+    if (!validRecipient) return;
+    const active = value.trim().length > 0;
+    const now = Date.now();
+    if (!active || now - lastTyping.current > 1500) {
+      sendTyping(token, recipientId, active);
+      lastTyping.current = now;
+    }
+    if (stopTyping.current) clearTimeout(stopTyping.current);
+    if (active) stopTyping.current = setTimeout(() => sendTyping(token, recipientId, false), 3000);
+  };
 
   const handleSend = async () => {
     const text = input.trim();
@@ -88,16 +135,23 @@ export function CaregiverChatScreen({ navigation, route }: any) {
     setSending(true);
     setErrorMessage("");
 
+    const revision=conversationRevision.current;
+    const submittedInput=input;
     try {
-      const revision=requestRevision.current;
       const sent = await sendDirectMessage(recipientId, text, isOffice ? "Office Inquiry" : "Daycare Inquiry");
-      if(revision!==requestRevision.current)return;
-      setMessages((prev) => [...prev, sent]);
-      setInput("");
+      if(revision!==conversationRevision.current)return;
+      // A load started before this send must not replace the confirmed message
+      // with an older snapshot. Fetch a fresh snapshot after updating the UI.
+      requestRevision.current++;
+      setMessages((prev) => prev.some(item => item.id === sent.id) ? prev : [...prev, sent]);
+      // Keep text entered while the request was in flight.
+      setInput(current => current === submittedInput ? "" : current);
+      sendTyping(token, recipientId, false);
+      void loadMessages();
     } catch (err: any) {
-      setErrorMessage("Failed to send message. Please retry.");
+      if(revision===conversationRevision.current)setErrorMessage("Failed to send message. Please retry.");
     } finally {
-      setSending(false);
+      if(revision===conversationRevision.current)setSending(false);
     }
   };
 
@@ -110,8 +164,10 @@ export function CaregiverChatScreen({ navigation, route }: any) {
   return (
     <Page
       header={false}
+      refreshing={refreshing}
+      onRefresh={() => { setRefreshing(true); void loadMessages().finally(() => setRefreshing(false)); }}
       toolbar={
-        <View style={[s.row, { paddingVertical: 14, paddingHorizontal: 16 }]}>
+        <View style={[s.row, { paddingVertical: 14, paddingHorizontal: 16, gap: 10 }]}>
           <IconButton
             icon={ArrowLeft}
             label="Go back"
@@ -122,14 +178,22 @@ export function CaregiverChatScreen({ navigation, route }: any) {
             initials={recipientRole === 'caregiver' ? undefined : recipientName.slice(0, 2).toUpperCase()}
             size={42}
           />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text size={18} weight="semibold">
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text size={18} weight="semibold" numberOfLines={1} ellipsizeMode="tail">
               {recipientName}
             </Text>
-            <Text size={12} color="#7D838C">
-              {isOffice ? "Center Administration & Front Desk" : recipientRole==='caregiver' ? "Classroom Educator" : recipientRole==='parent' ? "Parent / Guardian" : "Daycare Staff"}
+            <Text size={12} color="#7D838C" numberOfLines={1} ellipsizeMode="tail">
+              {typing ? "Typing…" : isOffice ? "Center Administration & Front Desk" : recipientRole==='caregiver' ? "Classroom Educator" : recipientRole==='parent' ? "Parent / Guardian" : "Daycare Staff"}
             </Text>
           </View>
+          <IconButton
+            icon={ArrowsClockwise}
+            label="Refresh messages"
+            onPress={() => {
+              setRefreshing(true);
+              void loadMessages().finally(() => setRefreshing(false));
+            }}
+          />
         </View>
       }
       scrollToEnd={messages.length > 0}
@@ -162,7 +226,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
               placeholderTextColor="#9EA3AC"
               style={[s.input, { flex: 1 }]}
               value={input}
-              onChangeText={setInput}
+              onChangeText={changeInput}
               onSubmitEditing={handleSend}
               editable={!sending}
             />
@@ -172,9 +236,9 @@ export function CaregiverChatScreen({ navigation, route }: any) {
               disabled={!input.trim() || sending}
               onPress={handleSend}
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 backgroundColor: "#061224",
                 alignItems: "center",
                 justifyContent: "center",
@@ -202,11 +266,12 @@ export function CaregiverChatScreen({ navigation, route }: any) {
             paddingHorizontal: 14,
             marginBottom: 20,
             alignSelf: "center",
+            maxWidth: "100%",
           },
         ]}
       >
         <Lock size={13} color="#7D838C" style={{ marginRight: 6 }} />
-        <Text size={11} color="#7D838C">
+        <Text size={11} color="#7D838C" style={{ flexShrink: 1 }}>
           Daycare messages can be reviewed by your daycare administrator.
         </Text>
       </View>
@@ -230,7 +295,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
         </View>
       ) : (
         messages.map((m) => {
-          const isMine = m.sender_id === user?.id || (m.sender_name && m.sender_name.toLowerCase().includes("parent"));
+          const isMine = m.sender_id === user?.id;
           return (
             <View
               key={m.id}
@@ -256,7 +321,7 @@ export function CaregiverChatScreen({ navigation, route }: any) {
                   shadowRadius: 2,
                 }}
               >
-                <Text size={14} color={isMine ? "#FFFFFF" : "#323842"} style={{ lineHeight: 20 }}>
+                <Text size={14} color={isMine ? "#FFFFFF" : "#323842"} style={{ lineHeight: 20, flexShrink: 1 }}>
                   {m.body}
                 </Text>
               </View>

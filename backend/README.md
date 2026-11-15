@@ -132,6 +132,16 @@ bootstrap command and `npm run test:auth-security`. This remains default-off;
 the current frontend and configured application database have not been activated
 or migrated by these checkpoints.
 
+### Daycare receipt screenshots
+
+For parent shop and tuition payments, the backend reads CBE receipt QR codes
+and runs local OCR for Telebirr and Bank of Abyssinia. The OCR engine and
+language data are installed with `npm ci`; there is no separate Tesseract
+installation or image service to configure for these flows. The screenshot is
+processed in memory. Veritas receives only the extracted reference or CBE link
+and any required suffix. Bank verification and duplicate checks still apply.
+Run `npm run test:daycare-payments` to exercise the flow with synthetic receipts.
+
 ### 5. Seed test data
 
 ```bash

@@ -27,6 +27,7 @@ export function EventDetailScreen({ navigation, route }: any) {
   const {
     data: event,
     loading,
+    refreshing,
     error,
     refresh,
   } = useRemoteResource<CalendarEvent | null>(
@@ -43,7 +44,7 @@ export function EventDetailScreen({ navigation, route }: any) {
 
   if (loading) {
     return (
-      <Page title="Event Details" back tabs activeTab="Calendar">
+      <Page title="Event Details" back tabs activeTab="Calendar" refreshing={refreshing} onRefresh={refresh}>
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
           <Text size={13} color="#7E828A" style={{ marginTop: 10 }}>
@@ -56,7 +57,7 @@ export function EventDetailScreen({ navigation, route }: any) {
 
   if (!event) {
     return (
-      <Page title="Event Details" back tabs activeTab="Calendar">
+      <Page title="Event Details" back tabs activeTab="Calendar" refreshing={refreshing} onRefresh={refresh}>
         <Card style={{ padding: 24, alignItems: "center" }}>
           <Text size={15} weight="medium">
             {error || "This event is unavailable."}
@@ -76,7 +77,8 @@ export function EventDetailScreen({ navigation, route }: any) {
   });
 
   return (
-    <Page title="Event Details" back tabs activeTab="Calendar">
+    <Page title="Event Details" back tabs activeTab="Calendar" refreshing={refreshing} onRefresh={refresh}>
+      {!!error && <Notice tone="error">{error}</Notice>}
       {!!persistenceError && <Notice>{persistenceError}</Notice>}
       <Card>
         <View style={s.between}>
@@ -110,10 +112,10 @@ export function EventDetailScreen({ navigation, route }: any) {
 
       <Section title="Reminders" />
       <Card>
-        <View style={s.between}>
-          <View style={s.row}>
+        <View style={{ gap: 12 }}>
+          <View style={[s.row, { minWidth: 0 }]}>
             <Bell size={20} color={reminded ? "#2D6A4F" : "#8A909B"} />
-            <Text size={14} weight="medium" style={{ marginLeft: 10 }}>
+            <Text size={14} weight="medium" style={{ marginLeft: 10, flex: 1 }}>
               {reminded
                 ? "Saved in your event reminders"
                 : "Save this event to your reminders"}
@@ -123,7 +125,7 @@ export function EventDetailScreen({ navigation, route }: any) {
             title={reminded ? "Turn Off" : "Save reminder"}
             variant={reminded ? "outline" : "primary"}
             onPress={() => toggleReminder(event.id)}
-            style={{ minHeight: 36, paddingHorizontal: 14 }}
+            style={{ minHeight: 44, paddingHorizontal: 14, alignSelf: "stretch", maxWidth: "100%" }}
           />
         </View>
       </Card>

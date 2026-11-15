@@ -29,21 +29,30 @@ function effectiveFeatures(row, now = Date.now()) {
   const endMs = end ? Date.parse(end) : NaN;
   const validStatus = !!row && row.status === 'active' && !row.deleted_at;
   const validTermCode = !hasTerms || PACKAGE_CODES.includes(row.subscription_terms?.code);
+  const trialActive =
+    row?.subscription_status === 'trialing' &&
+    (!row?.trial_ends_at || Date.parse(row.trial_ends_at) > now);
   const subStatusOk =
     !row?.subscription_status ||
     ['active', 'cancelled'].includes(row.subscription_status) ||
-    (row.subscription_status === 'trialing' && !row.trial_ends_at);
+    trialActive;
   const active =
     validStatus &&
     validTermCode &&
     subStatusOk &&
-    (end ? Number.isFinite(endMs) && endMs > now : !hasTerms);
+    (trialActive || (end ? Number.isFinite(endMs) && endMs > now : true));
   const defaults = catalogFeatures(code);
   const accepted = row?.subscription_terms?.features;
   const features = Object.fromEntries(
     FEATURE_KEYS.map((key) => [key, active && defaults[key] && (!accepted || accepted[key] === true)])
   );
-  if (active && code === 'standard' && Date.parse(row?.legacy_shop_access_until) > now) {
+  if (
+    active &&
+    code === 'standard' &&
+    (!accepted || accepted.shop !== false) &&
+    row?.legacy_shop_access_until &&
+    Date.parse(row.legacy_shop_access_until) > now
+  ) {
     features.shop = true;
   }
   return {
@@ -51,7 +60,7 @@ function effectiveFeatures(row, now = Date.now()) {
     active,
     package_code: code,
     package_name: code === 'premium' ? 'Plus' : 'Standard',
-    expires_at: end || null,
+    expires_at: end || (trialActive ? row?.trial_ends_at : null) || null,
     feature_policy_version: FEATURE_POLICY_VERSION,
   };
 }

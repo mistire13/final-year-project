@@ -14,6 +14,24 @@ const enroll = async (req, res, next) => {
   }
 };
 
+const getSlots = async (req, res, next) => {
+  try {
+    const result = await svc.getAvailableSlots(req.user);
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+};
+
+const identify = async (req, res, next) => {
+  try {
+    const result = await svc.identifyGuardianBySlot(req.body.child_id, req.body.slot_id, req.user);
+    res.json(result);
+  } catch (e) {
+    next(e);
+  }
+};
+
 const verify = async (req, res, next) => {
   try {
     const result = await svc.verify(req.body, req.user);
@@ -34,6 +52,8 @@ const getGuardianBiometric = async (req, res, next) => {
 
 module.exports = {
   enroll,
+  getSlots,
+  identify,
   verify,
   getGuardianBiometric,
 };

@@ -395,16 +395,18 @@ const listContacts = async (user) => {
   }
 
   if (user.role === 'parent') {
-    // 1. Assigned caregivers for this parent's linked children
+    // 1. Assigned caregivers for this parent's linked children (direct caregiver or classroom lead)
     const { rows: assignedCgRows } = await db.query(
       `SELECT DISTINCT u.id, u.name, u.email, 'caregiver' AS role, 'Assigned Caregiver' AS title,
               ARRAY_AGG(DISTINCT c.full_name) AS child_names
        FROM guardian_links gl
        JOIN children c ON c.id = gl.child_id
-       JOIN users u ON u.id = c.caregiver_id
+       LEFT JOIN groups g ON g.id = c.group_id
+       JOIN users u ON u.id = COALESCE(c.caregiver_id, g.lead_caregiver_id)
        WHERE gl.user_id = $1 AND u.status = 'active'
          AND ($2::boolean = TRUE OR u.daycare_id = $3)
-       GROUP BY u.id, u.name, u.email`,
+       GROUP BY u.id, u.name, u.email
+       ORDER BY u.name ASC`,
       [user.id, isSuper, daycareId]
     );
 
@@ -440,7 +442,57 @@ const listContacts = async (user) => {
     return { contacts: [...assignedCgRows, ...officeRows, ...uniqueGeneral] };
   }
 
-  // Caregiver or Admin
+  if (user.role === 'caregiver') {
+    // 1. Parents of children assigned to this caregiver
+    const { rows: assignedParentRows } = await db.query(
+      `SELECT DISTINCT u.id, u.name, u.email, 'parent' AS role, 'Parent / Guardian' AS title,
+              ARRAY_AGG(DISTINCT c.full_name) AS child_names
+       FROM children c
+       JOIN guardian_links gl ON gl.child_id = c.id
+       JOIN users u ON u.id = gl.user_id
+       LEFT JOIN groups g ON g.id = c.group_id
+       WHERE (c.caregiver_id = $1 OR g.lead_caregiver_id = $1)
+         AND u.status = 'active'
+         AND ($2::boolean = TRUE OR u.daycare_id = $3)
+       GROUP BY u.id, u.name, u.email
+       ORDER BY u.name ASC`,
+      [user.id, isSuper, daycareId]
+    );
+
+    // 2. Daycare office / admin
+    const { rows: officeRows } = await db.query(
+      `SELECT u.id, u.name, u.email, 'admin' AS role, 'Daycare Office & Administration' AS title
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+       WHERE r.name = 'admin' AND u.status = 'active'
+         AND ($1::boolean = TRUE OR u.daycare_id = $2)
+       ORDER BY u.name ASC`,
+      [isSuper, daycareId]
+    );
+
+    // 3. Other parents & staff in this daycare
+    const assignedParentIds = new Set(assignedParentRows.map(p => p.id));
+    const officeIds = new Set(officeRows.map(o => o.id));
+    const { rows: otherRows } = await db.query(
+      `SELECT u.id, u.name, u.email, r.name AS role,
+              CASE 
+                WHEN r.name = 'admin' THEN 'Daycare Office & Administration'
+                WHEN r.name = 'caregiver' THEN 'Caregiver / Teacher'
+                ELSE 'Parent / Guardian'
+              END AS title
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+       WHERE u.id != $1 AND u.status = 'active'
+         AND ($2::boolean = TRUE OR u.daycare_id = $3)
+       ORDER BY u.name ASC`,
+      [user.id, isSuper, daycareId]
+    );
+
+    const remaining = otherRows.filter(o => !assignedParentIds.has(o.id) && !officeIds.has(o.id));
+    return { contacts: [...assignedParentRows, ...officeRows, ...remaining] };
+  }
+
+  // Admin / Director
   const { rows } = await db.query(
     `SELECT u.id, u.name, u.email, r.name AS role,
             CASE 

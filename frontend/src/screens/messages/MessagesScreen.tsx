@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Pressable, ActivityIndicator } from "react-native";
 import { MagnifyingGlass } from "phosphor-react-native/src/icons/MagnifyingGlass";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
@@ -15,6 +15,7 @@ import {
   s,
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
+import { useRealtime } from "../../hooks/useRealtime";
 import {
   getDirectMessages,
   getAnnouncements,
@@ -42,28 +43,34 @@ export function MessagesScreen({ navigation, route }: any) {
   const [announcements, setAnnouncements] = useState<DaycareAnnouncement[]>([]);
   const [contacts, setContacts] = useState<CommunicationContact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const requestRevision = useRef(0);
+  const hasLoaded = useRef(false);
   const [loadError, setLoadError] = useState("");
   useEffect(() => {
     if (["Messages", "Announcements", "Meal Plans"].includes(route?.params?.tab)) setTab(route.params.tab);
   }, [route?.params?.tab]);
 
   const loadData = useCallback(async () => {
+    const revision = ++requestRevision.current;
     try {
-      setLoading(true);
+      if (!hasLoaded.current) setLoading(true);
       setLoadError("");
       const [msgData, annData, contactsData] = await Promise.all([
         getDirectMessages(),
         getAnnouncements(),
         getCommunicationContacts(),
       ]);
+      if (revision !== requestRevision.current) return;
       setMessages(msgData);
       setAnnouncements(annData);
       setContacts(contactsData);
+      hasLoaded.current = true;
     } catch {
+      if (revision !== requestRevision.current) return;
       setLoadError("Could not load messages and notices.");
-      setContacts([]);
     } finally {
-      setLoading(false);
+      if (revision === requestRevision.current) setLoading(false);
     }
   }, []);
 
@@ -71,9 +78,14 @@ export function MessagesScreen({ navigation, route }: any) {
     loadData();
     const unsubscribe = navigation.addListener?.("focus", loadData);
     return () => {
+      requestRevision.current++;
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [navigation, loadData]);
+  useRealtime(event => {
+    if (event.type === 'ready' || event.type === 'message.changed' || event.type === 'message.read' ||
+      (event.type === 'resource.changed' && event.resource === 'announcements')) void loadData();
+  });
 
   const formatTime = (iso?: string) => {
     if (!iso) return "";
@@ -123,7 +135,7 @@ export function MessagesScreen({ navigation, route }: any) {
     : visibleAnnouncements;
 
   return (
-    <Page title="Messages">
+    <Page title="Messages" refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadData().finally(() => setRefreshing(false)); }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {([
           ["Messages", "Chats"],

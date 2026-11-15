@@ -6,6 +6,36 @@ export const priceLabel=(value:string|number|null|undefined,cycle:Cycle)=>value=
 export const dateLabel=(value:string|null|undefined)=>value?new Date(value).toLocaleString('en-GB',{timeZone:'Africa/Addis_Ababa',dateStyle:'medium',timeStyle:'short'}):'Not started';
 export const coreFeatures=['Attendance and authorized pickup','Daily reports and health/incident records','Parent messaging, announcements and events','Child/guardian profiles and classroom access','Individual front-desk duties','Manual invoices, payment records and receipts','Basic financial overview and audit history'];
 
+export const plusNavigationFeatures:Record<string,string>={
+  'staff-scheduling':'staff_scheduling',
+  'billing-automation':'billing_automation',
+  store:'shop',
+  business:'business_analytics',
+};
+
+/** Keep locked tools out of the main navigation while retaining existing order history. */
+export function adminNavigationForFeatures<T extends {group:string;items:string[][]}>(groups:T[],features:Record<string,unknown>,preview:boolean):T[]{
+  return groups.map(group=>({
+    ...group,
+    items:group.items.filter(([key])=>!plusNavigationFeatures[key] || preview || features[plusNavigationFeatures[key]]===true)
+      .map(([key,title,icon])=>[key,plusNavigationFeatures[key] && !preview ? title.replace(/ · Plus$/, '') : title,icon]),
+  })).filter(group=>group.items.length>0);
+}
+
+/** Report the known subscription state without treating a blocked legacy trial as expired paid access. */
+export function subscriptionDisplayState(daycare:any, now=Date.now()):'trial'|'expired_trial'|'active'|'cancelled'|'expired'|'unavailable'|'unknown'{
+  if(!daycare)return 'unknown';
+  if(daycare.subscription_status==='trialing'){
+    const end=daycare.trial_ends_at ? Date.parse(daycare.trial_ends_at) : NaN;
+    return Number.isFinite(end) && end<=now ? 'expired_trial' : 'trial';
+  }
+  const end=daycare.subscription_ends_at ? Date.parse(daycare.subscription_ends_at) : NaN;
+  if(['active','cancelled'].includes(daycare.subscription_status) && Number.isFinite(end) && end<=now)return 'expired';
+  if(daycare.subscription_active===true)return daycare.subscription_status==='cancelled' ? 'cancelled' : 'active';
+  if(daycare.subscription_active===false)return 'unavailable';
+  return 'unknown';
+}
+
 export const plusFeatureLabels:Record<string,string>={shop:'Daycare shop, orders and stock control',business_analytics:'Comparative business reports and CSV/PDF exports',billing_automation:'Scheduled monthly invoices and payment reminders',staff_scheduling:'Repeating attendance/pickup shifts, leave and substitutes'};
 export const packageBenefits=(offer:PackageOffer)=>[...coreFeatures,...Object.entries(plusFeatureLabels).filter(([key])=>offer.features?.[key]===true).map(([,label])=>label)];
 export const packageComparisonRows:{key:string;label:string;feature?:string;capacity?:boolean}[]=[

@@ -13,5 +13,6 @@ const c = require('./ai-guide.controller');
 
 // Only parents can access the AI Parent Guide (§8.8)
 router.post('/guide', auth, allowRoles('parent'), validate(aiGuideSchema), c.getGuidance);
+router.get('/history', auth, allowRoles('parent'), c.getHistory);
 
 module.exports = router;

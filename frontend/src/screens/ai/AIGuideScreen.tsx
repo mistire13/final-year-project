@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { CaringBloom } from "../../components/design/Motion";
 import { View, Pressable, TextInput } from "react-native";
 import { ArrowLeft } from "phosphor-react-native/src/icons/ArrowLeft";
+import { ArrowsClockwise } from "phosphor-react-native/src/icons/ArrowsClockwise";
 import { PaperPlaneRight } from "phosphor-react-native/src/icons/PaperPlaneRight";
 import { Info } from "phosphor-react-native/src/icons/Info";
 import { Lightbulb } from "phosphor-react-native/src/icons/Lightbulb";
@@ -64,8 +65,31 @@ export function AIGuideScreen({ navigation, route }: any) {
   const [messages, setMessages] = useState<{ mine: boolean; text: string }[]>(
     [],
   );
+  const [refreshing, setRefreshing] = useState(false);
   const requestRevision = useRef(0);
   const requestBusy = useRef(false);
+
+  const loadHistory = async () => {
+    if (!token) return;
+    try {
+      const res = await apiClient.get<{ history: any[] }>("/ai/history", {
+        params: selectedChild?.id ? { child_id: selectedChild.id } : undefined,
+      });
+      if (res.data?.history && res.data.history.length > 0) {
+        const past = res.data.history
+          .slice()
+          .reverse()
+          .flatMap((item: any) => [
+            { mine: true, text: item.question },
+            { mine: false, text: item.answer },
+          ]);
+        setMessages(past);
+      }
+    } catch {
+      // Graceful fallback if history is empty or unreachable
+    }
+  };
+
   useEffect(() => {
     requestRevision.current++;
     requestBusy.current = false;
@@ -73,6 +97,7 @@ export function AIGuideScreen({ navigation, route }: any) {
     setError("");
     setBusy(false);
     setProviderStatus('unknown');
+    void loadHistory();
     return () => { requestRevision.current++; };
   }, [selectedChild?.id, token]);
 
@@ -119,17 +144,31 @@ export function AIGuideScreen({ navigation, route }: any) {
   return (
     <Page
       header={false}
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true);
+        void loadHistory().finally(() => setRefreshing(false));
+      }}
       toolbar={
-        <View style={[s.row, { paddingVertical: 12, paddingHorizontal: 24 }]}>
+        <View style={[s.row, { paddingVertical: 12, paddingHorizontal: 24, gap: 8 }]}>
           <IconButton
             icon={ArrowLeft}
             label="Go back"
             onPress={() => navigation.goBack()}
             background="#F3F1F5"
           />
-          <Text size={21} weight="medium" style={{ flex: 1 }}>
+          <Text size={21} weight="medium" style={{ flex: 1, minWidth: 0 }}>
             Ask Ankelba
           </Text>
+          <IconButton
+            icon={ArrowsClockwise}
+            label="Refresh history"
+            onPress={() => {
+              setRefreshing(true);
+              void loadHistory().finally(() => setRefreshing(false));
+            }}
+            background="#F3F1F5"
+          />
           <Info size={23} color="#737A83" />
         </View>
       }

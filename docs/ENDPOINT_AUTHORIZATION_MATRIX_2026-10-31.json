@@ -1,7 +1,7 @@
 {
   "mode": "legacy active runtime",
-  "routes": 176,
-  "checks": 707,
+  "routes": 203,
+  "checks": 820,
   "logoutRevocation": true,
   "failures": [],
   "inventory": [
@@ -18,6 +18,16 @@
       "path": "/api/saas/packages",
       "roles": [],
       "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/saas/features",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
     },
     {
       "method": "POST",
@@ -240,6 +250,16 @@
       "path": "/api/packages",
       "roles": [],
       "public": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/features",
+      "roles": [
+        "admin",
+        "caregiver",
+        "parent"
+      ],
+      "public": false
     },
     {
       "method": "POST",
@@ -1146,41 +1166,10 @@
       "public": false
     },
     {
-      "method": "GET",
-      "path": "/api/payments/capabilities",
-      "roles": [
-        "parent"
-      ],
-      "public": false
-    },
-    {
       "method": "POST",
-      "path": "/api/payments/demo",
+      "path": "/api/store/orders/:id/refund",
       "roles": [
-        "parent"
-      ],
-      "public": false
-    },
-    {
-      "method": "POST",
-      "path": "/api/payments/initiate",
-      "roles": [
-        "parent"
-      ],
-      "public": false
-    },
-    {
-      "method": "POST",
-      "path": "/api/payments/webhook",
-      "roles": [],
-      "public": true
-    },
-    {
-      "method": "GET",
-      "path": "/api/payments/order/:id",
-      "roles": [
-        "admin",
-        "parent"
+        "admin"
       ],
       "public": false
     },
@@ -1237,6 +1226,222 @@
       "path": "/api/finances/parent/my-bills",
       "roles": [
         "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/daycare-payments/settings",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/daycare-payments/settings",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/daycare-payments/receiving-accounts",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/daycare-payments/requests",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/daycare-payments/requests",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/daycare-payments/requests/:id",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/daycare-payments/requests/:id/verify",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/daycare-payments/requests/:id/review",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/daycare-payments/requests/:id/resolve",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/plus/analytics/",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/plus/analytics/export.csv",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing-automation/settings",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing-automation/preview",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/billing-automation/settings",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing-automation/history",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/billing-automation/run",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing-automation/my-reminders",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/billing-automation/my-reminders/preferences",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/billing-automation/my-reminders/preferences",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/billing-automation/my-reminders/:id/read",
+      "roles": [
+        "parent"
+      ],
+      "public": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff-scheduling/",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff-scheduling/templates",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff-scheduling/templates/:id",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff-scheduling/preview",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff-scheduling/publish",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/staff-scheduling/availability",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff-scheduling/leave",
+      "roles": [],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff-scheduling/leave/:id/review",
+      "roles": [
+        "admin"
+      ],
+      "public": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff-scheduling/assignments/:id/substitute",
+      "roles": [
+        "admin"
       ],
       "public": false
     },

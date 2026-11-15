@@ -17,6 +17,7 @@ import {
 } from "../../components/design/System";
 import { artwork } from "../../theme/assets";
 import { useChild } from "../../context/ChildContext";
+import { useRealtime } from "../../hooks/useRealtime";
 import { getChildReports, DailyReportSummary } from "../../api/parentApi";
 
 export function ReportsScreen({ navigation }: any) {
@@ -29,6 +30,7 @@ export function ReportsScreen({ navigation }: any) {
   const [reports, setReports] = useState<DailyReportSummary[]>([]);
   const [loadError,setLoadError]=useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const requestRevision = useRef(0);
   const loadReports = useCallback(async () => {
@@ -57,6 +59,9 @@ export function ReportsScreen({ navigation }: any) {
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [navigation, loadReports]);
+  useRealtime(event => {
+    if (event.type === 'ready' || (event.type === 'resource.changed' && event.resource === 'reports')) void loadReports();
+  });
 
   // Filter reports
   const todayStr = new Date().toISOString().split("T")[0];
@@ -82,7 +87,7 @@ export function ReportsScreen({ navigation }: any) {
   };
 
   return (
-    <Page title="Reports">
+    <Page title="Reports" refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadReports().finally(() => setRefreshing(false)); }}>
       {!childId && <Notice>No child is linked to this account yet. Contact your daycare administrator.</Notice>}
       {!!loadError&&<><Notice>{loadError}</Notice><Button title="Retry" onPress={loadReports}/></>}
       <Card tint="#F1F0F5" style={{ padding: 16 }}>

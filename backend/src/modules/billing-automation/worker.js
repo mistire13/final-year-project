@@ -33,14 +33,16 @@ function createBillingWorker({pool,transporter=null,from=null,emailEnabled=false
       let heartbeat;
       try{
         if(job.channel==='in_app'){
-          await transaction(pool,async c=>{
+          const messageEvent=await transaction(pool,async c=>{
             const locked=(await c.query("SELECT id FROM billing_automation_reminders WHERE id=$1 AND daycare_id=$2 AND status='sending' AND attempts=$3 FOR UPDATE",[job.id,daycareId,job.attempts])).rows[0];if(!locked)return;
             const invoice=await eligible(c,job);
             if(!invoice){await c.query("UPDATE billing_automation_reminders SET status='cancelled',lease_until=NULL WHERE id=$1",[job.id]);return;}
             const text=`${invoice.daycare_name}: ${invoice.title} has an outstanding balance of ${invoice.balance} ETB, due ${invoice.due_date}. Open your bills to review current payments. If you recently paid, contact the daycare to reconcile the receipt.`;
             const message=(await c.query('INSERT INTO messages(daycare_id,sender_id,recipient_id,subject,body) VALUES($1,$2,$3,$4,$5) RETURNING id',[daycareId,invoice.updated_by,job.user_id,'Care fee payment reminder',text])).rows[0];
             await c.query("UPDATE billing_automation_reminders SET status='sent',sent_at=NOW(),lease_until=NULL,last_error=NULL,message_id=$2 WHERE id=$1",[job.id,message.id]);
+            return {...message,daycare_id:daycareId,sender_id:invoice.updated_by,recipient_id:job.user_id};
           });
+          if(messageEvent)require('../realtime/hub').publishMessage(messageEvent);
         }else{
           const invoice=await eligible(pool,job);
           if(!invoice){await pool.query("UPDATE billing_automation_reminders SET status='cancelled',lease_until=NULL WHERE id=$1 AND attempts=$2 AND status='sending'",[job.id,job.attempts]);continue;}

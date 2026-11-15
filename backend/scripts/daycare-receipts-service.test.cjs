@@ -1,7 +1,9 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const QRCode=require('qrcode');
 const {withCurrentDatabase}=require('./helpers/auth-test-database.cjs');
 const {createDaycarePayments}=require('../src/modules/daycare-payments/service');
+const {extractDaycareReceipt}=require('../src/modules/daycare-payments/receipt-extractor');
 const base=()=>({telebirr:{enabled:true,account_holder:'Synthetic Receiver',account_number:'0911234567'},cbe:{enabled:true,account_holder:'Synthetic Receiver',account_number:'1000000000001'},abyssinia:{enabled:true,account_holder:'Synthetic Receiver',account_number:'2000000000001'}});
 test('daycare receipts use strict evidence, preserve money through races and share permanent claims',async t=>{
  await withCurrentDatabase(async({db,pool})=>{
@@ -70,13 +72,14 @@ test('daycare receipts use strict evidence, preserve money through races and sha
     }).returning('*');
     await db('payments').insert({order_id:order.id,method:'pay_at_daycare',status:'unpaid'});
     const r=await svc.create({purpose:'order',target_id:order.id,provider:'cbe',request_key:crypto.randomUUID()},parent);
-    const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aSU0AAAAASUVORK5CYII=';
+    const screenshot=async code=>(await QRCode.toBuffer(`https://mbreciept.cbe.com.et/${code}`)).toString('base64');
     let token='v2-SyntheticScreenshot01';
+    const image=await screenshot(token);
     let receiverAccount='1000000000001',extracted=0,lookups=0;
     const imageService=createDaycarePayments(pool,{
-      extract:async file=>{
+      extract:async (file,input)=>{
         extracted++;assert.equal(file.type,'image/png');
-        return {available:true,provider:'cbe',reference:token,amount:9999};
+        return extractDaycareReceipt(file,input);
       },
       lookup:async ({reference})=>{
         lookups++;assert.equal(reference,`https://mbreciept.cbe.com.et/${token}`);
@@ -106,10 +109,16 @@ test('daycare receipts use strict evidence, preserve money through races and sha
     token='v2-SyntheticScreenshot02';
     receiverAccount='1000000000002';
     const {invoice:wrongInvoice,request:wrongAccount}=await request();
-    const mismatch=await imageService.verify(wrongAccount.id,{version:wrongAccount.version,image},parent);
+    const mismatch=await imageService.verify(wrongAccount.id,{version:wrongAccount.version,image:await screenshot(token)},parent);
     assert.equal(mismatch.verification.code,'mismatch');
     assert.equal(mismatch.status,'review_pending');
     assert.equal((await db('child_invoices').where({id:wrongInvoice.id}).first()).amount_paid,'0.00');
+    const {request:unreadable}=await request();
+    const invalidImage=Buffer.from('89504e470d0a1a0a','hex').toString('base64');
+    const pending=await imageService.verify(unreadable.id,{version:unreadable.version,image:invalidImage},parent);
+    assert.equal(pending.verification.code,'image_unreadable');
+    assert.equal(pending.status,'review_pending');
+    assert.equal(lookups,2);
   });
 
   await t.test('Telebirr receipt formatting still requires the correct destination and settled amount',async()=>{

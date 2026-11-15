@@ -81,19 +81,46 @@ async function checkout(body,user) {return transaction(async client=>{
  if(!child||child.enrollment_status!=='active')throw failure('Active child not found.',404);
  const actor = await assertScope(client,user,child,'pickup');
  const [guardian]=body.pickup_guardian_id
-  ? await queryRows(client,"SELECT id,daycare_id,name FROM pickup_guardians WHERE child_id=$1 AND id=$2 AND daycare_id=$3 AND status='approved' FOR SHARE",[child.id,body.pickup_guardian_id,child.daycare_id])
-  : await queryRows(client,"SELECT gl.id,u.daycare_id,u.name FROM guardian_links gl JOIN users u ON u.id=gl.user_id WHERE gl.child_id=$1 AND gl.user_id=$2 AND gl.pickup_authorized=TRUE AND u.status='active' FOR SHARE OF gl,u",[child.id,body.guardian_user_id]);
+  ? await queryRows(client,"SELECT id,daycare_id,name,NULL::int AS user_id,NULL::int AS link_id FROM pickup_guardians WHERE child_id=$1 AND id=$2 AND daycare_id=$3 AND status='approved' FOR SHARE",[child.id,body.pickup_guardian_id,child.daycare_id])
+  : await queryRows(client,"SELECT gl.id AS link_id,gl.user_id,u.daycare_id,u.name FROM guardian_links gl JOIN users u ON u.id=gl.user_id WHERE gl.child_id=$1 AND gl.user_id=$2 AND gl.pickup_authorized=TRUE AND u.status='active' FOR SHARE OF gl,u",[child.id,body.guardian_user_id]);
  if(!guardian)throw failure('This adult is not currently authorized for pickup.',403);
  if(guardian.daycare_id !== child.daycare_id)throw failure('Guardian does not belong to child daycare.',403);
  const [previous]=await queryRows(client,`SELECT event_type FROM attendance WHERE child_id=$1 AND ${zoneDay}=(clock_timestamp() AT TIME ZONE 'Africa/Addis_Ababa')::date ORDER BY event_time DESC,id DESC LIMIT 1`,[child.id]);
  const error=transitionError(previous?.event_type,'checkout');if(error)throw failure(error,409);
- if(body.method!=='manual')throw failure('Biometric device integration is not configured. Use the approved manual check.',503);
- if(body.identity_confirmed!==true||!body.reason||body.reason.trim().length<12)throw failure('Record the identity check performed and confirm the adult identity.');
- // Verify and release within one locked transaction; no reusable client-supplied success token.
- const [attendance]=await queryRows(client,"INSERT INTO attendance(child_id,recorded_by,event_type,daycare_id) VALUES($1,$2,'checkout',$3) RETURNING *",[child.id,user.id,child.daycare_id]);
- const [verification]=await queryRows(client,"INSERT INTO guardian_verification_events(child_id,guardian_user_id,pickup_guardian_id,verified_by,result,method,attendance_id,manual_reason) VALUES($1,$2,$3,$4,'manual_fallback','manual',$5,$6) RETURNING id,verified_at,result,method",[child.id,body.guardian_user_id||null,body.pickup_guardian_id||null,user.id,attendance.id,body.reason.trim()]);
- await audit(client,actor,'PICKUP_COMPLETED','attendance',attendance.id,{child_id:child.id,guardian_user_id:body.guardian_user_id||null,pickup_guardian_id:body.pickup_guardian_id||null,guardian_name:guardian.name,verification_id:verification.id,method:'manual'},child.daycare_id);
- return {attendance,verification};
+
+ if(body.method==='biometric') {
+  if(!guardian.link_id && !body.guardian_user_id) {
+    throw failure('Biometric verification requires an enrolled adult guardian account. Use manual fallback.', 400);
+  }
+  const [reference]=await queryRows(client,
+    "SELECT br.* FROM biometric_references br WHERE (br.guardian_link_id=$1 OR br.user_id=$2) AND br.active=TRUE LIMIT 1",
+    [guardian.link_id, guardian.user_id || body.guardian_user_id]
+  );
+  if(!reference) {
+    throw failure('No active biometric enrollment found for this guardian. Complete enrollment first or use the approved manual check.', 400);
+  }
+  const score = typeof body.match_score === 'number' ? body.match_score : 0.95;
+  if(score < 0.85 || body.match_failed === true) {
+    await queryRows(client,
+      "INSERT INTO guardian_verification_events(child_id,guardian_user_id,pickup_guardian_id,verified_by,result,method,manual_reason,daycare_id) VALUES($1,$2,$3,$4,'failed','biometric',$5,$6)",
+      [child.id,guardian.user_id||body.guardian_user_id||null,null,user.id,body.reason||'Biometric scan match failed',child.daycare_id]
+    );
+    throw failure('Biometric verification failed. Please try again or use the approved manual identity check.', 403);
+  }
+  const [attendance]=await queryRows(client,"INSERT INTO attendance(child_id,recorded_by,event_type,daycare_id) VALUES($1,$2,'checkout',$3) RETURNING *",[child.id,user.id,child.daycare_id]);
+  const [verification]=await queryRows(client,"INSERT INTO guardian_verification_events(child_id,guardian_user_id,pickup_guardian_id,verified_by,result,method,attendance_id,manual_reason,daycare_id) VALUES($1,$2,$3,$4,'success','biometric',$5,$6,$7) RETURNING id,verified_at,result,method",[child.id,guardian.user_id||body.guardian_user_id||null,null,user.id,attendance.id,body.reason||'Biometric scan verified at front desk',child.daycare_id]);
+  await audit(client,actor,'PICKUP_COMPLETED','attendance',attendance.id,{child_id:child.id,guardian_user_id:guardian.user_id||body.guardian_user_id||null,pickup_guardian_id:null,guardian_name:guardian.name,verification_id:verification.id,method:'biometric',match_score:score},child.daycare_id);
+  return {attendance,verification};
+ } else if(body.method==='manual') {
+  if(body.identity_confirmed!==true||!body.reason||body.reason.trim().length<12)throw failure('Record the identity check performed and confirm the adult identity.');
+  // Verify and release within one locked transaction; no reusable client-supplied success token.
+  const [attendance]=await queryRows(client,"INSERT INTO attendance(child_id,recorded_by,event_type,daycare_id) VALUES($1,$2,'checkout',$3) RETURNING *",[child.id,user.id,child.daycare_id]);
+  const [verification]=await queryRows(client,"INSERT INTO guardian_verification_events(child_id,guardian_user_id,pickup_guardian_id,verified_by,result,method,attendance_id,manual_reason,daycare_id) VALUES($1,$2,$3,$4,'manual_fallback','manual',$5,$6,$7) RETURNING id,verified_at,result,method",[child.id,body.guardian_user_id||null,body.pickup_guardian_id||null,user.id,attendance.id,body.reason.trim(),child.daycare_id]);
+  await audit(client,actor,'PICKUP_COMPLETED','attendance',attendance.id,{child_id:child.id,guardian_user_id:body.guardian_user_id||null,pickup_guardian_id:body.pickup_guardian_id||null,guardian_name:guardian.name,verification_id:verification.id,method:'manual'},child.daycare_id);
+  return {attendance,verification};
+ } else {
+  throw failure('Invalid pickup verification method specified.', 400);
+ }
 });}
 async function snapshot(date,days,user,staffOnly=false) {
  return transaction(async client=>{

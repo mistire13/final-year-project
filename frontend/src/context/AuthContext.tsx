@@ -7,9 +7,10 @@ import React, {
   useRef,
   ReactNode,
 } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { apiClient, tokenStorage, onSessionExpired } from "../api/client";
 import { User, AuthResponse, UserProfileMe } from "../types";
+import { setupNotifications, unregisterNotifications } from '../notifications/notificationService';
 
 interface AuthContextType {
   user: UserProfileMe | null;
@@ -70,7 +71,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const generation = useRef(0);
 
+  useEffect(() => {
+    if (!token || !user?.daycare_id || !user.id) return;
+    const identity=`${user.daycare_id}:${user.id}:${token}`;
+    void setupNotifications(true,identity);
+    const listener=AppState.addEventListener('change',state=>{if(state==='active') void setupNotifications(false,identity);});
+    return ()=>listener.remove();
+  }, [token, user?.id, user?.daycare_id]);
+
   useEffect(() => onSessionExpired(() => {
+    void unregisterNotifications();
     generation.current++;
     setToken(null);
     setUser(null);
@@ -85,11 +95,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (response.data?.user) {
         setUser(response.data.user);
       }
-    } catch {
+    } catch (error) {
       if (requestGeneration !== generation.current) return;
-      await tokenStorage.clearToken();
-      setToken(null);
-      setUser(null);
+      // The response interceptor invalidates an authenticated session on 401.
+      // A network failure or server error must not silently sign the user out.
+      throw error;
     }
   };
 
@@ -205,6 +215,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const requestGeneration = ++generation.current;
     setIsLoading(true);
     try {
+      await unregisterNotifications();
       await apiClient.post("/auth/logout").catch(() => {});
     } finally {
       if (requestGeneration !== generation.current) return;

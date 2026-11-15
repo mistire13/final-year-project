@@ -18,6 +18,7 @@ import {
   s,
 } from "../../components/design/System";
 import { useAuth } from "../../context/AuthContext";
+import { useRealtime } from "../../hooks/useRealtime";
 import { apiClient } from "../../api/client";
 import { useRemoteResource } from "../../hooks/useRemoteResource";
 import { getMyOrders, OrderRecord } from "../../api/parentApi";
@@ -29,6 +30,8 @@ export function OrdersScreen({ navigation }: any) {
   const {
     data: orders,
     loading,
+    refreshing,
+    loaded,
     error,
     refresh: loadOrders,
   } = useRemoteResource<OrderRecord[]>("orders", getMyOrders, []);
@@ -60,14 +63,14 @@ export function OrdersScreen({ navigation }: any) {
   };
 
   return (
-    <Page title="My Orders" back tabs activeTab="Profile">
+    <Page title="My Orders" back tabs activeTab="Profile" refreshing={refreshing} onRefresh={loadOrders}>
       {error ? (
         <>
           <Notice tone="error">{error}</Notice>
           <Button title="Retry" onPress={loadOrders} />
         </>
       ) : null}
-      {error ? null : loading ? (
+      {error && !loaded ? null : loading ? (
         <View style={{ paddingVertical: 40, alignItems: "center" }}>
           <ActivityIndicator size="small" color="#061224" />
           <Text size={13} color="#8A919B" style={{ marginTop: 12 }}>
@@ -302,6 +305,7 @@ export function NotificationsScreen({ navigation }: any) {
   const [read, setRead] = useState<number[]>([]);
   const [readAnnouncements, setReadAnnouncements] = useState<number[]>([]);
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => {
     setError("");
     try {
@@ -321,8 +325,12 @@ export function NotificationsScreen({ navigation }: any) {
     const unsubscribe = navigation.addListener("focus", load);
     return unsubscribe;
   }, [load, navigation]);
+  useRealtime(event => {
+    if (event.type === 'ready' || event.type === 'message.changed' || event.type === 'message.read' ||
+      (event.type === 'resource.changed' && ['announcements', 'health', 'alerts'].includes(event.resource))) void load();
+  });
   return (
-    <Page title="Notifications" back>
+    <Page title="Notifications" back refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }}>
       {error ? (
         <>
           <Notice>{error}</Notice>

@@ -34,7 +34,7 @@ export function AnnouncementDetailScreen({ route }: any) {
     void load();
   }, [load]);
   return (
-    <Page title="Announcement" back>
+    <Page title="Announcement" back refreshing={loading} onRefresh={load}>
       {loading ? (
         <ActivityIndicator />
       ) : error ? (

@@ -19,6 +19,7 @@ function loadTs(relPath, stubs = {}) {
     require(name) {
       if (name in stubs) return stubs[name];
       if (name === './model') return require('../src/portal/model.ts');
+      if (name === './subscriptions') return require('../src/portal/subscriptions.ts');
       throw new Error(`Unexpected import in ${relPath}: ${name}`);
     },
   });

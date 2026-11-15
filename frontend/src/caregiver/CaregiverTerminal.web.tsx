@@ -3,7 +3,7 @@ import "../portal/portal.css";
 import "./caregiver.css";
 import { Button, Icon } from "../portal/ui.web";
 import { portalClient, portalApi, apiError, portalTokenStorage } from "../portal/api";
-import { Dataset, emptyDataset, today, localTime, localDay } from "../portal/model";
+import { Dataset, emptyDataset, today, localTime, localDay, allowedDuty } from "../portal/model";
 
 interface GuardianOption {
   key: string;
@@ -274,8 +274,22 @@ export default function CaregiverTerminal() {
     }
   };
 
+  // Duty Shift Check for Guardian Pickup
+  const hasPickupShift = (child: ChildCardData) => {
+    if (!actor) return false;
+    if (actor.role === "admin") return true;
+    return allowedDuty(data?.duties || [], actor.id, child.group_id || 0, "pickup");
+  };
+
   // Open Pickup Dialog
   const openPickupModal = (child: ChildCardData) => {
+    if (!hasPickupShift(child)) {
+      setFeedback({
+        text: "Front-desk shift required: You do not currently have an active front-desk assignment with pickup permission for this classroom.",
+        type: "error",
+      });
+      return;
+    }
     setSelectedChildForPickup(child);
     setSelectedGuardianKey(child.guardians[0]?.key || "");
     setVerifiedIdentityChecked(false);
@@ -287,6 +301,13 @@ export default function CaregiverTerminal() {
   // Verified Pickup & Release Action
   const handleCompletePickup = async () => {
     if (!selectedChildForPickup || !selectedGuardianKey || !verifiedIdentityChecked) return;
+    if (!hasPickupShift(selectedChildForPickup)) {
+      setFeedback({
+        text: "Front-desk shift required: You do not have an active front-desk assignment permitting pickup for this child's group.",
+        type: "error",
+      });
+      return;
+    }
     if (verificationReason.trim().length < 12) {
       alert("Verification reason must be at least 12 characters explaining the ID inspection.");
       return;
@@ -637,13 +658,36 @@ export default function CaregiverTerminal() {
                   )}
 
                   {child.status === "present" && (
-                    <button
-                      onClick={() => openPickupModal(child)}
-                      disabled={actionBusy}
-                      className="btn-terminal-action checkout"
-                    >
-                      <Icon name="shield" size={17} /> Verify guardian &amp; check out
-                    </button>
+                    hasPickupShift(child) ? (
+                      <button
+                        onClick={() => openPickupModal(child)}
+                        disabled={actionBusy}
+                        className="btn-terminal-action checkout"
+                      >
+                        <Icon name="shield" size={17} /> Verify guardian &amp; check out
+                      </button>
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          boxSizing: "border-box",
+                          padding: "0.6rem 0.85rem",
+                          borderRadius: "9999px",
+                          border: "1.5px dashed var(--line)",
+                          background: "var(--cream-soft)",
+                          color: "var(--muted)",
+                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "0.4rem",
+                        }}
+                        title="An active front-desk duty assignment is required to verify guardians and release children"
+                      >
+                        <Icon name="shield" size={15} /> Requires pickup shift
+                      </div>
+                    )
                   )}
 
                   {child.status === "checked_out" && (

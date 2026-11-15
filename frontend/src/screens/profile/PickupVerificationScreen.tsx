@@ -27,7 +27,7 @@ export function PickupVerificationScreen({ route, navigation }: any) {
   const [guardianKey, setGuardianKey] = useState<string | null>(
     route?.params?.guardianKey ?? null,
   );
-  const { data, loading, error, refresh } = useRemoteResource<{
+  const { data, loading, loaded, refreshing, error, refresh } = useRemoteResource<{
     attendance: AttendanceRecord[];
     guardians: GuardianRecord[];
   }>(
@@ -63,6 +63,8 @@ export function PickupVerificationScreen({ route, navigation }: any) {
       back
       tabs
       activeTab="Profile"
+      refreshing={refreshing}
+      onRefresh={refresh}
     >
       {!childId ? (
         <Notice>
@@ -74,13 +76,14 @@ export function PickupVerificationScreen({ route, navigation }: any) {
           <ActivityIndicator />
           <Text>Loading pickup records…</Text>
         </Card>
-      ) : error ? (
+      ) : error && !loaded ? (
         <>
           <Notice tone="error">{error}</Notice>
           <Button title="Retry" onPress={refresh} />
         </>
       ) : (
         <>
+          {!!error && <Notice tone="error">{error}</Notice>}
           <Card>
             <Text size={22} weight="semibold">
               {selectedChild?.full_name}

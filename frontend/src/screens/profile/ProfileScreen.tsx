@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { View, Switch, Linking } from "react-native";
 import { PencilSimple } from "phosphor-react-native/src/icons/PencilSimple";
 import { UsersThree } from "phosphor-react-native/src/icons/UsersThree";
@@ -32,9 +32,23 @@ import { useChild } from "../../context/ChildContext";
 import { getWebPortalUrl } from "../../utils/host";
 
 export function ProfileScreen({ navigation }: any) {
-  const { user, logout } = useAuth();
-  const { preferences, togglePreference, persistenceError } = useDesign();
+  const { user, logout, refreshUser } = useAuth();
+  const { preferences, preferencesSaving, togglePreference, persistenceError } = useDesign();
   const { selectedChild } = useChild();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setRefreshError("");
+    try {
+      await refreshUser();
+    } catch {
+      setRefreshError("Could not refresh your profile. Check your connection and pull down to retry.");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshUser]);
 
   const childrenList = user?.linked_children?.length
     ? user.linked_children
@@ -43,7 +57,8 @@ export function ProfileScreen({ navigation }: any) {
     : [];
 
   return (
-    <Page>
+    <Page refreshing={refreshing} onRefresh={onRefresh}>
+      {!!refreshError && <Notice tone="error">{refreshError}</Notice>}
       {!!persistenceError && <Notice>{persistenceError}</Notice>}
       <Card>
         <View style={[s.row, { alignItems: "flex-start" }]}>
@@ -125,6 +140,7 @@ export function ProfileScreen({ navigation }: any) {
             <Switch
               accessibilityLabel={item.name + " notifications"}
               value={preferences[item.key]}
+              disabled={preferencesSaving}
               onValueChange={() => togglePreference(item.key)}
               trackColor={{ false: "#E3E2E5", true: "#061224" }}
               thumbColor="white"

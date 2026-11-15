@@ -34,6 +34,7 @@ import {
 import { apiClient } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useChild } from "../../context/ChildContext";
+import { useRealtime } from "../../hooks/useRealtime";
 import {
   getChildAttendance,
   getChildReports,
@@ -72,12 +73,15 @@ export function HomeScreen({ navigation }: any) {
   // State from real database queries
   const [loadError,setLoadError]=useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [latestAttendance, setLatestAttendance] = useState<AttendanceRecord | null>(null);
   const [todayReport, setTodayReport] = useState<DetailedDailyReport | null>(null);
   const [upcomingEvent, setUpcomingEvent] = useState<CalendarEvent | null>(null);
   const [latestMessage, setLatestMessage] = useState<DirectMessage | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<DaycareAnnouncement | null>(null);
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
+  const dismissedAnnouncementsRef = useRef<number[]>([]);
+  const announcementsListRef = useRef<DaycareAnnouncement[]>([]);
 
   const formatEventTime = (isoString?: string) => {
     if (!isoString) return "";
@@ -95,15 +99,17 @@ export function HomeScreen({ navigation }: any) {
         Promise<DailyReportSummary[]>,
         Promise<CalendarEvent[]>,
         Promise<DirectMessage[]>,
-        Promise<DaycareAnnouncement[]>
+        Promise<DaycareAnnouncement[]>,
+        Promise<any>
       ] = [
         childId ? getChildAttendance(childId) : Promise.resolve([]),
         childId ? getChildReports(childId) : Promise.resolve([]),
         getDaycareEvents(false).catch(() => []),
         getDirectMessages().catch(() => []),
-        getAnnouncements().catch(() => [])
+        getAnnouncements().catch(() => []),
+        apiClient.get('/notifications/preferences').catch(() => ({ data: {} })),
       ];
-      const [attendance, reports, events, messages, announcements] = await Promise.all(promises);
+      const [attendance, reports, events, messages, announcements, prefsRes] = await Promise.all(promises);
       const localDay = (value: string | Date) => new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
       const todayKey = localDay(new Date());
       const currentReport = reports.find(report => localDay(report.report_date) === todayKey);
@@ -114,17 +120,29 @@ export function HomeScreen({ navigation }: any) {
       setUpcomingEvent(events[0] || null);
       const incomingStaffMessage = messages.find((m) => m.sender_id !== user?.id) || null;
       setLatestMessage(incomingStaffMessage);
-      const activeAnn = announcements.find(a => !dismissedAnnouncements.includes(a.id)) || announcements[0] || null;
+
+      const savedReadIds: number[] = Array.isArray(prefsRes?.data?.read_announcement_ids)
+        ? prefsRes.data.read_announcement_ids.map(Number)
+        : [];
+      const combinedDismissed = Array.from(new Set([...dismissedAnnouncementsRef.current, ...savedReadIds]));
+      dismissedAnnouncementsRef.current = combinedDismissed;
+      setDismissedAnnouncements(combinedDismissed);
+      announcementsListRef.current = announcements;
+      const activeAnn = announcements.find(a => !combinedDismissed.includes(a.id)) || null;
       setLatestAnnouncement(activeAnn);
     } catch {
       if (revision === requestRevision.current) setLoadError("Could not load updates.");
     } finally {
       if (revision === requestRevision.current) setLoading(false);
     }
-  }, [childId, user?.id, dismissedAnnouncements]);
+  }, [childId, user?.id]);
 
   const dismissAnnouncement = useCallback((id: number) => {
-    setDismissedAnnouncements(prev => [...prev, id]);
+    const nextDismissed = Array.from(new Set([...dismissedAnnouncementsRef.current, id]));
+    dismissedAnnouncementsRef.current = nextDismissed;
+    setDismissedAnnouncements(nextDismissed);
+    const nextAnn = announcementsListRef.current.find(a => !nextDismissed.includes(a.id)) || null;
+    setLatestAnnouncement(nextAnn);
     apiClient.patch('/notifications/preferences', { read_announcement_id: id }).catch(() => {});
   }, []);
 
@@ -141,11 +159,25 @@ export function HomeScreen({ navigation }: any) {
     };
   }, [navigation, loadDashboardData]);
 
-  if (!childId) return <Page title={`Welcome, ${user?.name?.split(" ")[0] || "parent"}`}>
-    <Notice>No child is linked to this account yet. Contact your daycare administrator to complete enrollment.</Notice>
-    <Button title="Message daycare" onPress={()=>navigation.navigate("MainTabs",{screen:"Messages"})}/>
-    <Button title="Daycare calendar" variant="outline" onPress={()=>navigation.navigate("CalendarPage")} style={{marginTop:12}}/>
-  </Page>;
+  useRealtime(event => {
+    if (event.type === 'ready' || event.type === 'message.changed' || event.type === 'message.read' ||
+      (event.type === 'resource.changed' && ['attendance', 'reports', 'events', 'announcements', 'health', 'alerts'].includes(event.resource))) void loadDashboardData();
+  });
+
+  if (!childId) return (
+    <Page
+      title={`Welcome, ${user?.name?.split(" ")[0] || "parent"}`}
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true);
+        void loadDashboardData().finally(() => setRefreshing(false));
+      }}
+    >
+      <Notice>No child is linked to this account yet. Contact your daycare administrator to complete enrollment.</Notice>
+      <Button title="Message daycare" onPress={()=>navigation.navigate("MainTabs",{screen:"Messages"})}/>
+      <Button title="Daycare calendar" variant="outline" onPress={()=>navigation.navigate("CalendarPage")} style={{marginTop:12}}/>
+    </Page>
+  );
 
   const report = () =>
     navigation.navigate("FullDailyReport", {
@@ -275,7 +307,7 @@ export function HomeScreen({ navigation }: any) {
   }
 
   return (
-    <Page>
+    <Page refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadDashboardData().finally(() => setRefreshing(false)); }}>
       <Text size={28} weight="bold" style={{ marginBottom: 16 }}>
         Hello, {user?.name?.split(" ")[0] || "Parent"}
       </Text>
@@ -503,17 +535,22 @@ export function HomeScreen({ navigation }: any) {
       {latestMessage && (
         <Card
           style={{ marginTop: 16, padding: 16 }}
-          onPress={() => navigation.navigate("CaregiverChat", {
-            recipientId: latestMessage.sender_id,
-            recipientName: latestMessage.sender_name,
-            recipientRole: latestMessage.sender_role,
-          })}
+          onPress={() => {
+            const chatWithId = latestMessage.sender_id === user?.id ? latestMessage.recipient_id : latestMessage.sender_id;
+            const chatWithName = latestMessage.sender_id === user?.id ? (latestMessage.recipient_name || "Daycare staff") : (latestMessage.sender_name || "Daycare staff");
+            const chatWithRole = latestMessage.sender_id === user?.id ? latestMessage.recipient_role : latestMessage.sender_role;
+            navigation.navigate("CaregiverChat", {
+              recipientId: chatWithId,
+              recipientName: chatWithName,
+              recipientRole: chatWithRole,
+            });
+          }}
         >
           <View style={s.row}>
             <ChatCircle size={22} color={colors.textSecondary} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text weight="semibold" numberOfLines={2}>
-                {latestMessage.sender_name || "Daycare message"}
+                {(latestMessage.sender_id === user?.id ? `To ${latestMessage.recipient_name || "staff"}` : latestMessage.sender_name) || "Daycare message"}
               </Text>
               <Text size={13} color={colors.textSecondary} numberOfLines={2}>
                 {latestMessage.body}
@@ -569,8 +606,8 @@ export function HomeScreen({ navigation }: any) {
           borderColor: colors.borderCard,
         }}
       >
-        <View style={[s.between, { flexWrap: "wrap", gap: 12 }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 190 }}>
+        <View style={[s.between, { flexWrap: "wrap", gap: 12, alignItems: "center" }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 140 }}>
             <View
               style={{
                 width: 40,

@@ -69,6 +69,7 @@ function renderHomeScreen() {
         };
       }
       if (name.endsWith('System')) return primitives;
+      if (name.endsWith('useRealtime')) return { useRealtime: () => {} };
       if (name.endsWith('api/client')) return { apiClient: { patch: async () => ({}) } };
       if (name.endsWith('AuthContext')) return { useAuth: () => ({ user: { id: 1, name: 'Hanna Tadesse' } }) };
       if (name.endsWith('ChildContext')) {

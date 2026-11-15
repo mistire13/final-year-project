@@ -4,7 +4,6 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
 import { Heart } from "phosphor-react-native/src/icons/Heart";
 import { Warning } from "phosphor-react-native/src/icons/Warning";
@@ -43,6 +42,7 @@ export function HealthNoticesScreen({ navigation, route }: any) {
   const {
     data: result,
     loading,
+    refreshing,
     error,
     refresh: loadHealthData,
   } = useRemoteResource<{ data: HealthRecord[]; disclaimer?: string }>(
@@ -54,8 +54,6 @@ export function HealthNoticesScreen({ navigation, route }: any) {
   const disclaimer =
     result.disclaimer ||
     "Reporting functionality only. This record does not constitute medical diagnosis or advice.";
-  const refreshing = loading;
-  const onRefresh = loadHealthData;
   useEffect(() => {
     const remove = navigation.addListener?.("focus", loadHealthData);
     return () => remove?.();
@@ -106,6 +104,8 @@ export function HealthNoticesScreen({ navigation, route }: any) {
 
   return (
     <Page
+      refreshing={refreshing}
+      onRefresh={loadHealthData}
       title="Health & Incidents"
       back
       tabs

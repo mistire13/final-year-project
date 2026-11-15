@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ActivityIndicator, Pressable } from "react-native";
+import { View, ActivityIndicator, Pressable, Linking } from "react-native";
 import { CalendarBlank } from "phosphor-react-native/src/icons/CalendarBlank";
 import { ChatCircle } from "phosphor-react-native/src/icons/ChatCircle";
 import { Heart } from "phosphor-react-native/src/icons/Heart";
@@ -36,6 +36,7 @@ export function ChildProfileScreen({ route, navigation }: any) {
   const {
     data: profile,
     loading,
+    refreshing,
     error,
     refresh: loadData,
   } = useRemoteResource<FullChildProfile | null>(
@@ -84,7 +85,7 @@ export function ChildProfileScreen({ route, navigation }: any) {
   const contacts = profile?.emergency_contacts || [];
 
   return (
-    <Page title="Child Profile" back tabs activeTab="Profile">
+    <Page title="Child Profile" back tabs activeTab="Profile" refreshing={refreshing} onRefresh={loadData}>
       {loading ? (
         <Card style={{ alignItems: "center", paddingVertical: 40 }}>
           <ActivityIndicator color="#061224" />
@@ -92,7 +93,7 @@ export function ChildProfileScreen({ route, navigation }: any) {
             Loading profile…
           </Text>
         </Card>
-      ) : error ? (
+      ) : error && !profile ? (
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>
           <Notice tone="error">{error}</Notice>
           <Button
@@ -104,6 +105,7 @@ export function ChildProfileScreen({ route, navigation }: any) {
         </Card>
       ) : (
         <>
+          {!!error && <Notice tone="error">{error}</Notice>}
           {/* Child Hero Card */}
           <Card style={{ alignItems: "center", paddingVertical: 28 }}>
             <Avatar source={profile?.photo_url ? {uri:profile.photo_url} : undefined} initials={childName.split(' ').map(n=>n[0]).join('').slice(0,2)} size={90} />
@@ -305,8 +307,8 @@ export function ChildProfileScreen({ route, navigation }: any) {
             {contacts.length > 0 ? (
               contacts.map((c, idx) => (
                 <View key={c.id || idx}>
-                  <View style={[s.between, { paddingVertical: 8 }]}>
-                    <View>
+                  <View style={[s.between, { paddingVertical: 8, flexWrap: "wrap", gap: 8 }]}>
+                    <View style={{ flexGrow: 1, flexShrink: 1, minWidth: 100 }}>
                       <Text weight="semibold" size={15}>
                         {c.name}
                       </Text>
@@ -314,7 +316,13 @@ export function ChildProfileScreen({ route, navigation }: any) {
                         {c.relationship || "Contact"}
                       </Text>
                     </View>
-                    <View
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel={`Call ${c.name || "emergency contact"} at ${c.phone}`}
+                      onPress={() => {
+                        const number = String(c.phone || "").replace(/[^\d+]/g, "");
+                        if (number) void Linking.openURL(`tel:${number}`).catch(() => {});
+                      }}
                       style={[
                         s.row,
                         {
@@ -322,6 +330,9 @@ export function ChildProfileScreen({ route, navigation }: any) {
                           paddingHorizontal: 12,
                           paddingVertical: 6,
                           borderRadius: 20,
+                          maxWidth: "100%",
+                          flexShrink: 1,
+                          minHeight: 44,
                         },
                       ]}
                     >
@@ -330,11 +341,11 @@ export function ChildProfileScreen({ route, navigation }: any) {
                         size={13}
                         weight="semibold"
                         color="#2D6A4F"
-                        style={{ marginLeft: 6 }}
+                        style={{ marginLeft: 6, flexShrink: 1 }}
                       >
                         {c.phone}
                       </Text>
-                    </View>
+                    </Pressable>
                   </View>
                   {idx < contacts.length - 1 && <View style={s.divider} />}
                 </View>

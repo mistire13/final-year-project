@@ -20,6 +20,7 @@ import {
 import { Badge, Button, Card, Empty, Icon, Person, Table } from "./ui.web";
 import { AttendanceChart, CenterOverviewChart } from "./PortalCharts.web";
 import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
+import { subscriptionDisplayState } from "./subscriptions";
 export type PageContext = {
   data: Dataset;
   date: string;
@@ -1866,13 +1867,10 @@ export function DaycareSettings(ctx: PageContext) {
   const staffCount = data.users?.filter((u) => ["admin", "caregiver"].includes(u.role)).length || 0;
   const groupCount = data.groups?.length || 0;
   const planName = dc.package_name || (dc.subscription_plan === "premium" ? "Plus" : dc.subscription_plan === "standard" ? "Standard" : "Active");
-  const subExpired = dc.subscription_active === false || (dc.subscription_ends_at && Date.parse(dc.subscription_ends_at) <= Date.now());
-  const subStatusLabel = subExpired
-    ? `Expired · ${planName}`
-    : dc.subscription_status === "cancelled"
-      ? `Cancelled · ${planName}`
-      : `Active · ${planName}`;
-  const subStatusTone = subExpired ? "amber" : dc.subscription_status === "cancelled" ? "gold" : "green";
+  const subState = subscriptionDisplayState(dc);
+  const stateLabel = { trial: "Trial", expired_trial: "Trial ended", active: "Active", cancelled: "Cancelled", expired: "Expired", unavailable: "Access unavailable", unknown: "Status unavailable" }[subState];
+  const subStatusLabel = `${stateLabel} · ${planName}`;
+  const subStatusTone = subState === "active" ? "green" : subState === "cancelled" ? "gold" : "amber";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>

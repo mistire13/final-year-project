@@ -40,6 +40,7 @@ export function FullDailyReportScreen({ navigation, route }: any) {
   const {
     data: report,
     loading,
+    refreshing,
     error,
     refresh: loadReport,
   } = useRemoteResource<DetailedDailyReport | null>(
@@ -140,7 +141,7 @@ export function FullDailyReportScreen({ navigation, route }: any) {
     );
   }
 
-  if (error || !report) {
+  if (!report) {
     return (
       <Page title="Daily Report" back tabs activeTab="Reports">
         <Card style={{ alignItems: "center", paddingVertical: 32 }}>
@@ -163,7 +164,10 @@ export function FullDailyReportScreen({ navigation, route }: any) {
       back
       tabs
       activeTab="Reports"
+      refreshing={refreshing}
+      onRefresh={loadReport}
     >
+      {!!error && <Notice tone="error">{error}</Notice>}
       {/* Child & Caregiver Banner */}
       <Card tint="#F2F0F8">
         <View style={s.row}>
@@ -383,7 +387,7 @@ export function FullDailyReportScreen({ navigation, route }: any) {
               Caregiver Note
             </Text>
             <Text color="#BDC9D7" size={12}>
-              From {report.caregiver_name || "Caregiver"}
+              From {report.caregiver_name?.replace(/\s*\(Director\)/i, "") || "Caregiver"}
             </Text>
           </View>
         </View>

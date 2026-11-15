@@ -25,6 +25,25 @@ const TIER_CORE_ITEMS = [
   'Individual front-desk duties and basic analytics',
 ];
 
+export function ScheduledPackageSummary({ change }: { change?: any }) {
+  if (!change) return null;
+  const terms = change.terms || {};
+  const confirmed = ['verified', 'consumed'].includes(change.payment_status) || ['paid', 'blocked'].includes(change.status);
+  return <section className="j-panel" aria-label="Scheduled package change">
+    <h4>Scheduled package change</h4>
+    <p>Current paid package stays in effect until {dateLabel(change.effective_at)}.</p>
+    <p>{terms.name || 'Next package'}{terms.max_children != null ? ` · ${terms.max_children} children` : ''}{terms.price != null ? ` · ${priceLabel(terms.price, terms.billing_cycle)}` : ''}</p>
+    <p>{confirmed ? 'Verified and held for activation' : 'Awaiting payment or verification'}{change.payment_reference ? ` · Reference ${change.payment_reference}` : ''}</p>
+    {change.status === 'blocked' && <p role="alert" className="j-error">{change.blocked_reason || 'Activation needs review.'} Contact platform support before paying again.</p>}
+  </section>;
+}
+
+export function renewalResultNotice(result: any): string {
+  if (result?.blocked) return result.message || 'The verified payment is held while activation is reviewed. Contact support before paying again.';
+  if (result?.scheduled) return 'Payment verified. Your current package stays in effect until the scheduled change.';
+  return 'Renewal recorded. Your subscription details have been refreshed.';
+}
+
 export function Summary({ value, showPlanBreakdown = false }: { value: any; showPlanBreakdown?: boolean }) {
   const terms = value.subscription_terms;
   const code = (value.package_code || terms?.code || value.subscription_plan || 'standard') === 'premium' ? 'premium' : 'standard';
@@ -53,7 +72,7 @@ export function Summary({ value, showPlanBreakdown = false }: { value: any; show
       <ul className="j-cap-list">
         {TIER_PLUS_ITEMS.map(([key, label]) => {
           const on = features[key] === true;
-          const stateText = on ? 'Included' : (code === 'premium' && expired ? 'Paused (expired)' : 'Plus only');
+          const stateText = on ? 'Included' : (code === 'premium' ? (expired ? 'Paused (expired)' : 'Unavailable') : 'Plus only');
           const cls = on ? 'j-cap-state' : (code === 'premium' && expired ? 'j-cap-state paused' : 'j-cap-state locked');
           return <li key={key} className="j-cap-row"><span>{label}</span><span className={cls}>{stateText}</span></li>;
         })}
@@ -103,13 +122,13 @@ export function DaycareSubscription() {
       saveIntent({ ...intent, ...result, token: intent.token });
       setNotice(result.message || 'Payment is pending review. If you already paid, do not pay again.');
       if (result.status === 'verified' || result.status === 'consumed') {
-        await portalApi.applyRenewalIntent(intent.id, intent.token);
+        const applied = await portalApi.applyRenewalIntent(intent.id, intent.token);
         try { window.sessionStorage.removeItem(`ankelba_renewal_${value.id}`); } catch { }
-        setIntent(null); setNotice('Renewal recorded. Your subscription details have been refreshed.'); await load();
+        setIntent(null); setNotice(renewalResultNotice(applied)); await load();
       }
     } catch (e) { setError(apiError(e)); } finally { setBusy(false); }
   };
-  const apply = async () => { setBusy(true); setError(''); try { await portalApi.applyRenewalIntent(intent.id, intent.token); try { window.sessionStorage.removeItem(`ankelba_renewal_${value.id}`); } catch { } setIntent(null); setNotice('Renewal recorded. Your subscription details have been refreshed.'); await load(); } catch (e) { setError(apiError(e)); } finally { setBusy(false); } };
+  const apply = async () => { setBusy(true); setError(''); try { const applied = await portalApi.applyRenewalIntent(intent.id, intent.token); try { window.sessionStorage.removeItem(`ankelba_renewal_${value.id}`); } catch { } setIntent(null); setNotice(renewalResultNotice(applied)); await load(); } catch (e) { setError(apiError(e)); } finally { setBusy(false); } };
   const restart = async () => {
     if (!intent || !restartAcknowledged) return;
     setBusy(true); setError('');
@@ -142,8 +161,8 @@ export function DaycareSubscription() {
       </div> : !['telebirr', 'cbe', 'abyssinia'].includes(intent.terms?.recipient_provider) ? <p>This session uses a previous payment method. Contact the platform team for review. If you already paid, do not pay again.</p> : <form className="j-form" onSubmit={e => { e.preventDefault(); void check(true); }}>
         <p><strong>{intent.recipient_institution}</strong></p>
         <ReceiptReference id={intent.id} token={intent.token} onReference={setReference} />
-        <label>{intent.terms?.recipient_provider === 'telebirr' ? 'Telebirr transaction reference' : 'Transaction reference or CBE receipt link'}<input required maxLength={intent.terms?.recipient_provider === 'cbe' ? 2048 : 150} value={reference} onChange={e => setReference(e.target.value)} /></label>
-        {intent.terms?.recipient_provider !== 'telebirr' && <><label>{intent.terms?.recipient_provider === 'abyssinia' ? 'Account suffix (5 digits)' : 'Account suffix (8 digits, when required)'}<input inputMode="numeric" autoComplete="off" required={intent.terms?.recipient_provider === 'abyssinia' || /^FT[A-Za-z0-9]{10}$/i.test(reference.trim())} pattern={intent.terms?.recipient_provider === 'abyssinia' ? '[0-9]{5}' : '[0-9]{8}'} maxLength={intent.terms?.recipient_provider === 'abyssinia' ? 5 : 8} value={suffix} onChange={event => setSuffix(event.target.value)} /></label><p>Use the account suffix required by your receipt verification details.</p></>}
+        <label>{intent.terms?.recipient_provider === 'telebirr' ? 'Telebirr transaction reference' : intent.terms?.recipient_provider === 'cbe' ? 'Complete CBE receipt link' : 'Transaction reference or CBE receipt link'}<input required type={intent.terms?.recipient_provider === 'cbe' ? 'url' : undefined} pattern={intent.terms?.recipient_provider === 'cbe' ? 'https://(mbreciept\\.cbe\\.com\\.et|apps\\.cbe\\.com\\.et:100)/.*' : undefined} maxLength={intent.terms?.recipient_provider === 'cbe' ? 2048 : 150} value={reference} onChange={e => setReference(e.target.value)} /></label>
+        {intent.terms?.recipient_provider === 'abyssinia' && <><label>Account suffix (5 digits)<input inputMode="numeric" autoComplete="off" required pattern="[0-9]{5}" maxLength={5} value={suffix} onChange={event => setSuffix(event.target.value)} /></label><p>Use the account suffix required by your receipt verification details.</p></>}
         <p>Use the reference shown on your receipt. Payments that cannot be verified remain pending for operator review.</p>{busy && <p role="status">Checking the reference and matching the payment details…</p>}{intent.message && <p role="status">{intent.message}</p>}
         <div className="j-actions"><Button type="submit" disabled={busy}>Verify payment</Button><Button type="button" variant="secondary" disabled={busy} onClick={() => void check(false)}>Refresh status</Button></div>
       </form>}</Card>}
@@ -270,7 +289,7 @@ function ManageSubscription({ value, offers, onSaved, onRefreshOffers }: { value
   const selectedOffer = offers.find(offer => offer.code === code && offer.available);
   const selectedPrice = selectedOffer && offerPrice(selectedOffer, cycle);
   const paidThrough = value.subscription_ends_at && new Date(value.subscription_ends_at).getTime() > Date.now();
-  const canChange = !paidThrough && selectedPrice != null && Number(selectedPrice) > 0;
+  const canChange = !value.scheduled_change && (!paidThrough || value.subscription_status === 'active') && selectedPrice != null && Number(selectedPrice) > 0;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (busy || !requestKey.current || (action === 'change_package' && !canChange) || (action === 'authorize_restart' && !restartAgreed)) return;
@@ -310,8 +329,9 @@ function ManageSubscription({ value, offers, onSaved, onRefreshOffers }: { value
       <label><input type="checkbox" checked={restartAgreed} disabled={busy} onChange={e => setRestartAgreed(e.target.checked)} /> The daycare has agreed to restart its paid period on payment verification.</label>
     </>}
     {action === 'change_package' && <>
-      <p>Agree the new package and billing period with the daycare first. Changes are available after the existing paid period ends and cannot reduce capacity below active enrollment.</p>
-      {paidThrough && <p role="status">The current paid period has not ended. Package terms cannot be changed yet.</p>}
+      <p>Agree the new package and billing period with the daycare first. Capacity must accommodate active enrollment when the change takes effect.</p>
+      {paidThrough && <p role="status">Current features and capacity stay in effect through {dateLabel(value.subscription_ends_at)}. The agreed package is scheduled for the next period and requires verified payment.</p>}
+      {value.scheduled_change && <p role="status">A future package change is already open. Resolve it before agreeing another change.</p>}
       <label>Package<select value={code} disabled={busy} onChange={e => setCode(e.target.value as typeof code)}>{offers.filter(offer => offer.available).map(offer => <option key={offer.code} value={offer.code}>{offer.name} · {offer.max_children} children</option>)}</select></label>
       <label>Billing period<select value={cycle} disabled={busy} onChange={e => setCycle(e.target.value as Cycle)}><option value="monthly">Monthly</option><option value="six_month">Six months</option><option value="annual">Annual</option></select></label>
       <p>{priceLabel(selectedPrice, cycle)}</p>

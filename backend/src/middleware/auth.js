@@ -57,6 +57,7 @@ const auth = async (req, res, next) => {
       trial_ends_at: account.trial_ends_at,
     };
     req.daycareId = account.daycare_id ? Number(account.daycare_id) : null;
+    req.pushSession = { kind:'legacy', state:decoded.auth_state, expires_at:new Date(decoded.exp * 1000).toISOString() };
 
     if (decoded.isImpersonating) {
       return res.status(401).json({ error: 'Impersonation sessions are no longer supported. Sign in with your own account.' });

@@ -113,6 +113,26 @@ export const portalApi = {
   async save(path: string, body: unknown, method: "post" | "patch" | "delete" = "post") {
     return (await (method === "delete" ? portalClient.delete(path,{data:body}) : portalClient[method](path, body))).data;
   },
+  async getBiometricSlots(): Promise<{ occupied_slots: number[]; next_slot: number | null; capacity: number }> {
+    const { data } = await portalClient.get("/biometric/slots");
+    return data;
+  },
+  async identifyBiometricBySlot(childId: number, slotId: number) {
+    const { data } = await portalClient.post("/biometric/identify", { child_id: childId, slot_id: slotId });
+    return data;
+  },
+  async enrollBiometricDevice(guardianLinkId: number, slotId: number, deviceId = "R307S") {
+    const { data } = await portalClient.post("/biometric/device-enroll", {
+      guardian_link_id: guardianLinkId,
+      slot_id: slotId,
+      device_id: deviceId,
+    });
+    return data;
+  },
+  async checkoutPickup(body: { child_id: number; method: "biometric" | "manual"; guardian_user_id?: number | null; pickup_guardian_id?: number | null; identity_confirmed?: boolean; reason?: string; match_score?: number }) {
+    const { data } = await portalClient.post("/portal/pickup/checkout", body);
+    return data;
+  },
   async enrollFamily(payload: any) {
     const { data } = await portalClient.post("/children/enroll-family", payload);
     return data;

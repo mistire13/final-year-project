@@ -1,2 +1,12 @@
 # Local database backups can contain private application and payment records.
 /tmp/subscription-backups/
+tmp/*.log
+tmp/codex*
+tmp/lan*
+tmp/android*
+tmp/metro*
+tmp/gradle*
+tmp/event-log/
+tmp/private-migration-backups/
+tmp/frontend-*.log
+

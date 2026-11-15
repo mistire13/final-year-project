@@ -8,6 +8,7 @@ const { Joi } = require('../../middleware/validator');
 
 const createReportSchema = Joi.object({
   child_id: Joi.number().integer().required(),
+  caregiver_id: Joi.number().integer().positive().allow(null).optional(),
   report_date: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).default(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Addis_Ababa', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())),
   sleep_duration_min: Joi.number().integer().min(0).allow(null),
   sleep_notes: Joi.string().allow(null, ''),

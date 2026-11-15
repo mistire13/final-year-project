@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { View, ActivityIndicator, Pressable, ScrollView, Modal } from "react-native";
 import { Receipt } from "phosphor-react-native/src/icons/Receipt";
 import { CheckCircle } from "phosphor-react-native/src/icons/CheckCircle";
@@ -18,11 +18,10 @@ import BillingReminderPreferences from "./BillingReminderPreferences";
 import ReceiptPaymentCard from '../payments/ReceiptPaymentCard';
 import {paymentProvenanceLabel} from '../../types/daycarePayments';
 import {invoiceIsOverdue} from '../../utils/billingDates';
+import {useRemoteResource} from '../../hooks/useRemoteResource';
 
 export function ParentBillsScreen({ navigation }: any) {
-  const [bills, setBills] = useState<ParentBill[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {data:bills,loading,loaded,refreshing,error,refresh:loadBills} = useRemoteResource<ParentBill[]>('bills',getMyBills,[]);
   const [selectedReceipt, setSelectedReceipt] = useState<{
     receipt: ParentPaymentReceipt;
     bill: ParentBill;
@@ -30,19 +29,6 @@ export function ParentBillsScreen({ navigation }: any) {
 
   const [activeTab, setActiveTab] = useState<"active" | "paid">("active");
   const [bankBill,setBankBill]=useState<number|null>(null);
-
-  const loadBills = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getMyBills();
-      setBills(data);
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || "Failed to load daycare bills");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     loadBills();
@@ -60,10 +46,11 @@ export function ParentBillsScreen({ navigation }: any) {
   const displayedBills = activeTab === "active" ? activeBills : paidBills;
 
   if (loading) return <Page title="Care Fees & Receipts" back><ActivityIndicator accessibilityLabel="Loading care fees" /></Page>;
-  if (error) return <Page title="Care Fees & Receipts" back><Notice>{error}</Notice><Button title="Retry" onPress={loadBills} /></Page>;
+  if (error && !loaded) return <Page title="Care Fees & Receipts" back refreshing={refreshing} onRefresh={loadBills}><Notice>{error}</Notice><Button title="Retry" onPress={loadBills} /></Page>;
 
   return (
-    <Page title="Care Fees & Receipts" back tabs activeTab="Profile">
+    <Page title="Care Fees & Receipts" back tabs activeTab="Profile" refreshing={refreshing} onRefresh={loadBills}>
+      {!!error && <Notice tone="error">{error}</Notice>}
       {/* Overview Card */}
       <Card
         style={{
@@ -162,8 +149,8 @@ export function ParentBillsScreen({ navigation }: any) {
           return (
             <Card key={b.id} style={{ marginBottom: 14, padding: 18 }}>
               {/* Card Header: Child & Status */}
-              <View style={[s.between, { alignItems: "flex-start", marginBottom: 10 }]}>
-                <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={[s.between, { alignItems: "flex-start", marginBottom: 10, flexWrap: "wrap", gap: 8 }]}>
+                <View style={{ flex: 1, minWidth: 160 }}>
                   <Text size={12} color="#64748B">
                     {b.child_name} · {b.billing_period}
                   </Text>

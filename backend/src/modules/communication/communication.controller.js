@@ -4,6 +4,7 @@
  * Controller for Announcements, Messages, and Alerts.
  */
 const svc = require('./communication.service');
+const realtime = require('../realtime/hub');
 
 // Announcements
 const createAnnouncement = async (req, res, next) => {
@@ -28,6 +29,7 @@ const listAnnouncements = async (req, res, next) => {
 const sendMessage = async (req, res, next) => {
   try {
     const result = await svc.sendMessage(req.body, req.user);
+    realtime.publishMessage(result);
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -46,6 +48,7 @@ const listMessages = async (req, res, next) => {
 const markMessageRead = async (req, res, next) => {
   try {
     const result = await svc.markMessageRead(req.params.id, req.user);
+    realtime.publishRead(result);
     res.json(result);
   } catch (e) {
     next(e);

@@ -103,7 +103,7 @@ export default function ReceiptPaymentCard({purpose,targetId,onApplied}:{purpose
           )}
           {request.provider==='abyssinia'&&<Field label={image?'Five-digit receipt suffix (if shown)':'Five-digit receipt account suffix'} value={suffix} onChangeText={setSuffix} keyboardType="number-pad" maxLength={5} editable={!busy&&!picking}/>}
           <Button title={image?'Choose another screenshot':'Choose receipt screenshot'} variant="outline" disabled={busy||picking} onPress={()=>void chooseScreenshot()}/>
-          {image&&<Text size={13}>Your screenshot will be sent to Veritas for verification.</Text>}
+          {image&&<Text size={13}>Ankelba reads the receipt details from your screenshot.</Text>}
           <Button title={busy?'Checking payment…':'Check this receipt'} disabled={busy||picking||(!image&&!reference.trim())||(request.provider==='abyssinia'&&(!image||!!suffix)&&!/^\d{5}$/.test(suffix))} onPress={()=>void action(()=>verifyDaycareReceipt(request,reference,suffix,image??undefined),!!image)}/>
         </>}
         <Button title="Refresh saved payment status" variant="outline" disabled={busy} onPress={()=>void action(()=>getReceiptRequest(request.id))}/>

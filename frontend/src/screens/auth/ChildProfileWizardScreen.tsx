@@ -25,6 +25,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Warning } from "phosphor-react-native/src/icons/Warning";
 import { Pill } from "phosphor-react-native/src/icons/Pill";
 import { Phone } from "phosphor-react-native/src/icons/Phone";
@@ -1796,12 +1797,12 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Header */}
-      <View
+      <SafeAreaView edges={["top"]}
         style={{
           backgroundColor: SURFACE,
-          paddingTop: 54,
-          paddingBottom: 16,
-          paddingHorizontal: 24,
+          paddingTop: 8,
+          paddingBottom: 12,
+          paddingHorizontal: 16,
           borderBottomWidth: 1,
           borderBottomColor: "#E8EDEA",
           shadowColor: "#000",
@@ -1815,10 +1816,12 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 12,
+            marginBottom: 10,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, flexShrink: 1 }}>
             <BrandMark size={26} />
             <Pressable
               accessibilityRole="button"
@@ -1830,6 +1833,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
                 backgroundColor: "#EBF3FF",
                 paddingHorizontal: 8,
                 paddingVertical: 4,
+                minHeight: 44,
                 borderRadius: 8,
               }}
             >
@@ -1840,7 +1844,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
             </Pressable>
           </View>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", flexShrink: 1, gap: 8 }}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Go to First Page / Welcome"
@@ -1855,6 +1859,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
                 borderColor: "#E2E4E8",
                 paddingHorizontal: 8,
                 paddingVertical: 5,
+                minHeight: 44,
                 borderRadius: 8,
               }}
             >
@@ -1878,6 +1883,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
                 borderColor: "#FED7D7",
                 paddingHorizontal: 8,
                 paddingVertical: 5,
+                minHeight: 44,
                 borderRadius: 8,
               }}
             >
@@ -1889,11 +1895,12 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
           </View>
         </View>
         <StepIndicator step={step} total={STEPS.length} />
-      </View>
+      </SafeAreaView>
 
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -1906,19 +1913,16 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View
+      <SafeAreaView edges={["bottom"]}
         style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
           backgroundColor: SURFACE,
           paddingHorizontal: 24,
           paddingTop: 14,
-          paddingBottom: Platform.OS === "ios" ? 34 : 20,
+          paddingBottom: 14,
           borderTopWidth: 1,
           borderTopColor: "#E8EDEA",
           flexDirection: "row",
+          flexWrap: "wrap",
           gap: 12,
         }}
       >
@@ -1929,6 +1933,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
             accessibilityLabel="Go to previous step"
             style={{
               flex: 1,
+              minWidth: 100,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -1952,6 +1957,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
             accessibilityLabel="Go to next step"
             style={{
               flex: 2,
+              minWidth: 140,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -1974,6 +1980,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
             accessibilityLabel="Submit profile and continue"
             style={{
               flex: 2,
+              minWidth: 140,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -1995,7 +2002,7 @@ export function ChildProfileWizardScreen({ navigation, route }: any) {
             )}
           </Pressable>
         )}
-      </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }

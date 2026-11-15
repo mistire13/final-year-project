@@ -23,6 +23,7 @@ function load(relative, modules = {}, globals = {}) {
       if (Object.hasOwn(modules, name)) return modules[name];
       if (name.startsWith("phosphor-react-native")) return modules["phosphor-react-native"] || {};
       if (name === "./previewPolicy") return load("../src/portal/previewPolicy.ts", modules, globals);
+      if (name === "./subscriptions") return load("../src/portal/subscriptions.ts", modules, globals);
       if (name === "./workspaceRoutes" || name === "./workspaceRoutes.ts") return load("../src/portal/workspaceRoutes.ts", modules, globals);
       if (name.includes("WebMotion")) return {
         WebMotionProvider: ({ children }) => children,
@@ -31,9 +32,16 @@ function load(relative, modules = {}, globals = {}) {
       if (name.includes("SurfaceBoundary")) return {
         SurfaceBoundary: ({ children }) => children,
       };
+      if (name.includes("BiometricModals")) return {
+        BiometricStatusBadge: () => null,
+        BiometricPickupModal: () => null,
+        BiometricEnrollModal: () => null,
+      };
       if (name.endsWith(".css")) return {};
       if (name.endsWith(".web") || name.endsWith(".web.tsx") || name.includes(".web")) return () => null;
       if (name === "../utils/host" || name === "../../utils/host") return { getApiBaseUrl: () => "http://localhost:5000/api", getWebPortalUrl: () => "http://localhost:5000" };
+      if (name === "../services/realtime" || name.includes("realtime")) return { subscribeRealtime: () => () => {} };
+      if (name.includes("biometricSerial")) return { biometricSerial: { isSupported: () => false, getStatus: () => "unsupported", subscribeStatus: () => () => {}, autoConnect: async () => false } };
       return localRequire(name);
     },
     ...globals,

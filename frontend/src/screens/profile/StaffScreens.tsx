@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, View, Pressable } from "react-native";
 import {
   Page,
@@ -11,6 +11,8 @@ import {
 } from "../../components/design/System";
 import { apiClient } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
+import { useRemoteResource } from "../../hooks/useRemoteResource";
+import { useRealtime } from "../../hooks/useRealtime";
 import {
   NativeDailyReportScreen,
   NativeReportHistory,
@@ -22,38 +24,36 @@ import { SignOut } from "phosphor-react-native/src/icons/SignOut";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
 import { X } from "phosphor-react-native/src/icons/X";
 function useAssigned() {
-  const [kids, setKids] = useState<any[]>([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
+  const resource = useRemoteResource<any[]>("staff-assigned", async () => {
       const { data } = await apiClient.get("/children", {
         params: { limit: 100 },
       });
-      setKids(data.data || []);
-      setError("");
-    } catch {
-      setError("Could not load assigned children. Please retry.");
-    } finally {
-      setLoading(false);
-    }
+      return data.data || [];
   }, []);
-  useEffect(() => {
-    void load();
-  }, [load]);
-  return { kids, error, loading, load };
+  return { kids:resource.data, error:resource.error, loading:resource.loading, refreshing:resource.refreshing, load:resource.refresh };
 }
 export function StaffHomeScreen({ navigation }: any) {
   const { user } = useAuth();
   const { kids, error, loading, load } = useAssigned();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [dismissed, setDismissed] = useState<number[]>([]);
+  const dismissedRef = useRef<number[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadAnnouncements = useCallback(async () => {
     try {
-      const { data } = await apiClient.get("/communication/announcements");
-      setAnnouncements(data.data || []);
+      const [annRes, prefsRes] = await Promise.all([
+        apiClient.get("/communication/announcements"),
+        apiClient.get("/notifications/preferences").catch(() => ({ data: {} })),
+      ]);
+      const list = annRes.data?.data || [];
+      const savedReadIds: number[] = Array.isArray(prefsRes?.data?.read_announcement_ids)
+        ? prefsRes.data.read_announcement_ids.map(Number)
+        : [];
+      const combinedDismissed = Array.from(new Set([...dismissedRef.current, ...savedReadIds]));
+      dismissedRef.current = combinedDismissed;
+      setAnnouncements(list);
+      setDismissed(combinedDismissed);
     } catch {}
   }, []);
 
@@ -64,12 +64,17 @@ export function StaffHomeScreen({ navigation }: any) {
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [navigation, loadAnnouncements]);
+  useRealtime(event => {
+    if (event.type === 'ready' || (event.type === 'resource.changed' && event.resource === 'announcements')) void loadAnnouncements();
+  });
 
   const activeAnn = announcements.find((a) => !dismissed.includes(a.id));
 
   return (
     <Page
       title={`Hello, ${user?.name?.split(" ")[0] || "team"}`}
+      refreshing={refreshing}
+      onRefresh={() => { setRefreshing(true); void Promise.all([load(), loadAnnouncements()]).finally(() => setRefreshing(false)); }}
     >
       {activeAnn && (
         <Card
@@ -130,7 +135,9 @@ export function StaffHomeScreen({ navigation }: any) {
               hitSlop={12}
               onPress={(e: any) => {
                 e?.stopPropagation?.();
-                setDismissed((prev) => [...prev, activeAnn.id]);
+                const nextDismissed = Array.from(new Set([...dismissedRef.current, activeAnn.id]));
+                dismissedRef.current = nextDismissed;
+                setDismissed(nextDismissed);
                 apiClient
                   .patch("/notifications/preferences", {
                     read_announcement_id: activeAnn.id,
@@ -199,7 +206,7 @@ export function StaffHomeScreen({ navigation }: any) {
       </Card>
       {loading ? (
         <ActivityIndicator />
-      ) : error ? (
+      ) : error && !kids.length ? (
         <>
           <Notice>{error}</Notice>
           <Button title="Retry" onPress={load} />
@@ -282,13 +289,14 @@ function StaffHealthComposeScreen({ route, navigation }: any) {
     <Page title="Health & incidents" back>
       {loading ? (
         <ActivityIndicator />
-      ) : error ? (
+      ) : error && !kids.length ? (
         <>
           <Notice>{error}</Notice>
           <Button title="Retry" onPress={load} />
         </>
       ) : (
         <>
+          {!!error && <Notice tone="error">{error}</Notice>}
           <Text weight="bold">Choose a child</Text>
           <View style={{ gap: 8, marginVertical: 12 }}>
             {kids
