@@ -148,10 +148,13 @@ export function Badge({ value, tone }: { value: unknown; tone?: string }) {
     </span>
   );
 }
-export function Person({ name, sub }: { name: string; sub?: string }) {
+export function Person({ name, sub, photo }: { name: string; sub?: string; photo?: string }) {
   return (
     <div className="p-person">
-      <span className="p-avatar">{initials(name || "?")}</span>
+      <span className={`p-avatar${photo ? " p-avatar-photo" : ""}`}>
+        {initials(name || "?")}
+        {photo && <img src={photo} alt="" onError={event => { event.currentTarget.hidden = true; }} />}
+      </span>
       <span>
         <strong>{name || "Unassigned"}</strong>
         {sub && <small>{sub}</small>}

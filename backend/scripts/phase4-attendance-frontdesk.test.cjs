@@ -616,7 +616,7 @@ test('Phase 4: Attendance, Front-Desk Shifts & Verified Pickup Transitions', asy
         () => mod.portalService.checkout({ ...release, child_id: f.childB.id, guardian_user_id: f.parentB.id }, f.caregiverA1),
         () => biometric.identifyGuardianBySlot(f.childB.id, 1, f.caregiverA1),
       ]) await assert.rejects(action, denied);
-      await db('front_desk_assignments').where({ id: duty.id }).update({ group_id: f.groupA.id });
+      await db('front_desk_assignments').where({ id: duty.id }).update({ group_id: f.childA1.group_id });
       await assert.rejects(mod.portalService.pickupChild(child.id, f.caregiverA1), denied);
       await db('front_desk_assignments').where({ id: duty.id }).update({ group_id: null });
       const results = await Promise.allSettled([mod.portalService.checkout(release, f.caregiverA1), mod.portalService.checkout(release, f.caregiverA1)]);

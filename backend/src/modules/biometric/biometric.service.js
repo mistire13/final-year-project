@@ -137,6 +137,9 @@ const identifyGuardianBySlot = async (childIdParam, slotIdParam, user) => {
 
   // Check the current account, daycare and pickup shift before reading guardian data.
   const child = await require('../portal/portal.service').pickupChild(childId, user);
+  if (child.daycare_id !== daycareId) {
+    throw Object.assign(new Error('Child not found in this daycare'), { statusCode: 403 });
+  }
 
   // 2. Find all active biometric references in this daycare
   const { rows: bioRows } = await db.query(
@@ -259,6 +262,7 @@ const verify = async (body, user) => {
   if (ref.daycare_id !== daycareId) {
     throw Object.assign(new Error('Guardian reference not found'), { statusCode: 404 });
   }
+  await require('../portal/portal.service').pickupChild(ref.child_id, user);
   const matchScore = typeof body?.match_score === 'number' ? body.match_score : 0.95;
   const verified = matchScore >= 0.85 && body?.match_failed !== true;
   return {

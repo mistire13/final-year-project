@@ -18,7 +18,6 @@ import "./portal.css";
 import {
   Dataset,
   Row,
-  allowedDuty,
   allowedAttendance,
   allowedPickup,
   attendanceStatus,
@@ -433,6 +432,14 @@ export default function Portal() {
     );
     return () => unsubscribe();
   }, [actor?.id, preview, effectiveDate]);
+  useEffect(() => {
+    if (preview || !actor || !deskPage) return;
+    // Shift starts/ends need a fresh roster even when no record was edited.
+    const syncDesk = () => { if (document.visibilityState === "visible") void refresh(true); };
+    const timer = window.setInterval(syncDesk, 30000);
+    window.addEventListener("focus", syncDesk);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", syncDesk); };
+  }, [actor?.id, preview, deskPage, effectiveDate]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 4500);
@@ -1375,7 +1382,7 @@ export default function Portal() {
             </a>
           </div>
           <div className="p-top-actions">
-            <BiometricStatusBadge />
+            {!deskPage && <BiometricStatusBadge />}
             {usesPageSearch && <label className="p-search">
               <Icon name="search" size={17} />
               <input
