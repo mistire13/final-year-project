@@ -127,13 +127,13 @@ export function Badge({ value, tone }: { value: unknown; tone?: string }) {
             : ["absent", "high", "failed", "inactive", "revoked"].includes(text)
               ? "red"
               : [
-                    "pending",
-                    "placed",
-                    "waitlist",
-                    "scheduled",
-                    "unpaid",
-                    "manual_fallback",
-                  ].includes(text)
+                "pending",
+                "placed",
+                "waitlist",
+                "scheduled",
+                "unpaid",
+                "manual_fallback",
+              ].includes(text)
                 ? "gold"
                 : "neutral"))
       }
@@ -220,10 +220,10 @@ export function Table({
   const sorted = [...rows].sort((a, b) =>
     sort.key
       ? String(a[sort.key] ?? "").localeCompare(
-          String(b[sort.key] ?? ""),
-          undefined,
-          { numeric: true },
-        ) * sort.direction
+        String(b[sort.key] ?? ""),
+        undefined,
+        { numeric: true },
+      ) * sort.direction
       : 0,
   );
   return (
@@ -285,7 +285,7 @@ export function Table({
           <span>
             {(current - 1) * pageSize + 1}–
             {Math.min(current * pageSize, rows.length)} of {rows.length}
-            <Button variant="quiet" icon="download" onClick={()=>downloadRecords(sorted)}>Export results</Button>
+            <Button variant="quiet" icon="download" onClick={() => downloadRecords(sorted)}>Export results</Button>
           </span>
           <div>
             <Button
@@ -829,8 +829,8 @@ export function RecordForm({
   );
 }
 
-export function downloadRecords(rows: Row[], filename='ankelba-records') {
- const keys=[...new Set(rows.flatMap(row=>Object.keys(row)))].filter(key=>rows.every(row=>row[key]==null||typeof row[key]!=='object') && !['password','password_hash'].includes(key));
- const blob=new Blob(['\uFEFF'+exportCsv(keys,rows.map(row=>keys.map(key=>row[key])))],{type:'text/csv;charset=utf-8'});
- const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename+'.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+export function downloadRecords(rows: Row[], filename = 'ankelba-records') {
+  const keys = [...new Set(rows.flatMap(row => Object.keys(row)))].filter(key => rows.every(row => row[key] == null || typeof row[key] !== 'object') && !['password', 'password_hash'].includes(key));
+  const blob = new Blob(['\uFEFF' + exportCsv(keys, rows.map(row => keys.map(key => row[key])))], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = filename + '.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

@@ -1,0 +1,3010 @@
+import PlusAnalytics from './PlusAnalytics.web';
+import PlusBillingAutomation from './PlusBillingAutomation.web';
+import PlusStaffScheduling from './PlusStaffScheduling.web';
+import SurfaceRecovery from './SurfaceRecovery.web';
+import {workspaceRouteFailure} from './workspaceRoutes';
+import SetupChecklist from './SetupChecklist.web';
+import { DaycareSubscription, SubscriptionNotice } from './SubscriptionViews.web';
+import { adminNavigationForFeatures, plusNavigationFeatures, subscriptionDisplayState } from './subscriptions';
+
+import { CaregiverPage } from "./CaregiverPages.web";
+import { DaycareFinances } from "./DaycareFinances.web";
+import DaycarePaymentManagement from "./DaycarePaymentManagement.web";
+import DashboardAttention from "./DashboardAttention.web";
+import { PageTransition } from "./WebMotion.web";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import "./portal.css";
+import {
+  Dataset,
+  Row,
+  allowedDuty,
+  allowedAttendance,
+  attendanceStatus,
+  dayOf,
+  dutyError,
+  metrics,
+  money,
+  label,
+  initials,
+  localDay,
+  makePreview,
+  emptyDataset,
+  today,
+} from "./model";
+import { portalApi, portalClient, portalTokenStorage, apiError } from "./api";
+import { subscribeRealtime } from "../services/realtime";
+import {
+  BiometricStatusBadge,
+  BiometricPickupModal,
+  BiometricEnrollModal,
+} from "./BiometricModals.web";
+import { isPortalPreviewPath } from "./previewPolicy";
+import {
+  Analytics,
+  Attendance,
+  Caregivers,
+  Children,
+  Duties,
+  Groups,
+  Monitoring,
+  Overview,
+  PageContext,
+  Registry,
+  Reports,
+  childName,
+  groupName,
+  userName,
+} from "./pages.web";
+import {
+  Badge,
+  Button,
+  Card,
+  FieldSpec,
+  Icon,
+  Modal,
+  Person,
+  RecordForm,
+  downloadRecords,
+  ImageDropzone,
+  openDataUrlSafe,
+} from "./ui.web";
+const logo = require("../../design/figma-exports/ankelba-symbol.png");
+
+export function calcAgeDetailed(dobString: string): { text: string; badge: string; isAppropriate: boolean } {
+  if (!dobString) return { text: "Date of birth required", badge: "", isAppropriate: false };
+  const birth = new Date(dobString);
+  if (isNaN(birth.getTime())) return { text: "Invalid date", badge: "", isAppropriate: false };
+  const now = new Date();
+  if (birth > now) return { text: "Date cannot be in the future", badge: "", isAppropriate: false };
+
+  let years = now.getFullYear() - birth.getFullYear();
+  let months = now.getMonth() - birth.getMonth();
+  let days = now.getDate() - birth.getDate();
+  if (days < 0) {
+    months -= 1;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  let text = "";
+  if (years === 0 && months === 0) {
+    text = "Newborn (< 1 month)";
+  } else if (years === 0) {
+    text = `${months} ${months === 1 ? "month" : "months"} old`;
+  } else if (months === 0) {
+    text = `${years} ${years === 1 ? "year" : "years"} old`;
+  } else {
+    text = `${years} ${years === 1 ? "year" : "years"}, ${months} ${months === 1 ? "month" : "months"} old`;
+  }
+
+  let groupCategory = "Toddler";
+  if (years === 0) groupCategory = "Infant (0–12 mo)";
+  else if (years === 1) groupCategory = "Toddler (1–2 yr)";
+  else if (years === 2) groupCategory = "Early Preschool (2–3 yr)";
+  else if (years >= 3 && years <= 5) groupCategory = "Preschool / Pre-K (3–5 yr)";
+  else groupCategory = "School-age (> 5 yr)";
+
+  return {
+    text,
+    badge: `${text} · ${groupCategory}`,
+    isAppropriate: years >= 0 && years <= 7,
+  };
+}
+
+export function DaycareTermsModal({ close, onAccept }: { close: () => void; onAccept: () => void }) {
+  return (
+    <Modal title="Ankelba Daycare Terms, Policies & Safety Guidelines" onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, maxHeight: "68vh", overflowY: "auto", paddingRight: 6 }}>
+        <div style={{ background: "#F0FDF4", padding: "12px 14px", borderRadius: 8, border: "1px solid #BBF7D0", fontSize: 14, color: "#166534" }}>
+          <strong>Parent Agreement &amp; Regulatory Compliance Baseline (FDRE Proclamation 1321/2024)</strong>
+          <p style={{ margin: "4px 0 0", fontSize: 14 }}>
+            This agreement outlines child safety, daily drop-off/pickup authentication, emergency medical care consent, and operational responsibilities for all enrolled families.
+          </p>
+        </div>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>1. Authorized Guardian Pickup &amp; Safety Verification</h4>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Children are released strictly to registered parents, legal guardians, and pre-authorized adult pickup contacts. All pickups require verified staff check-out, and adults may be verified using authorized biometric or photo credentials. Changes to pickup authorization must be registered in writing or via the verified parent app.
+          </p>
+        </section>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>2. Emergency Medical Treatment Authorization</h4>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            In the event of an acute illness or medical emergency, daycare staff will immediately attempt to contact registered parents/guardians and emergency contacts. The parent authorizes the daycare to administer first aid and, if urgent hospital care is needed, transport the child to an accredited medical facility.
+          </p>
+        </section>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>3. Attendance, Check-in / Check-out &amp; Illness Policy</h4>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Parents agree to log child check-in and pickup during designated center operational hours. Children exhibiting communicable symptoms (fever exceeding 38°C, vomiting, contagious rash) must remain home until cleared by a physician or 24 hours symptom-free to protect classroom health.
+          </p>
+        </section>
+
+        <section style={{ borderBottom: "1px solid #E5E7EB", paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>4. Monthly Care Fees &amp; Payment Terms</h4>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Daycare stay and care fees are payable on a monthly recurring basis according to the agreed plan. Invoices and payment receipts are available in the Ankelba parent mobile app.
+          </p>
+        </section>
+
+        <section style={{ paddingBottom: 10 }}>
+          <h4 style={{ fontSize: 14, color: "var(--navy)", margin: "0 0 6px" }}>5. Privacy, Records &amp; Data Protection</h4>
+          <p style={{ fontSize: 14, color: "#4B5563", margin: 0, lineHeight: 1.5 }}>
+            Child developmental notes, daily activity reports, photos, and health records are held strictly private within the daycare tenant. Access is restricted exclusively to assigned educators and registered parents/guardians in accordance with the Ethiopian Data Protection Proclamation No. 1321/2024.
+          </p>
+        </section>
+      </div>
+
+      <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+        <Button variant="secondary" onClick={close}>Close</Button>
+        <Button onClick={() => { onAccept(); close(); }}>
+          <Icon name="check" size={16} /> I Accept &amp; Confirm Terms
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+const nav = [
+  {
+    group: "Daily operations",
+    items: [
+      ["attendance", "Attendance & pickups", "check"],
+      ["biometric", "Guardian verification", "shield"],
+      ["front-desk", "Front-desk duties", "desk"],
+      ["staff-scheduling", "Front-desk shifts · Plus", "clock"],
+      ["reports", "Daily reports", "file"],
+      ["health", "Health & incidents", "heart"],
+    ],
+  },
+  {
+    group: "People & classrooms",
+    items: [
+      ["children", "Children & families", "child"],
+      ["caregivers", "Caregivers & staff", "people"],
+      ["groups", "Groups & classrooms", "leaf"],
+    ],
+  },
+  {
+    group: "Communications",
+    items: [
+      ["communication", "Messages & announcements", "message"],
+      ["events", "Events & calendar", "calendar"],
+    ],
+  },
+  {
+    group: "Finance",
+    items: [
+      ["finances", "Care fees & invoices", "file"],
+      ["bank-receipts", "Bank receipts", "file"],
+      ["billing-automation", "Billing automation · Plus", "clock"],
+    ],
+  },
+  {
+    group: "Shop",
+    items: [
+      ["store", "Shop & stock · Plus", "store"],
+      ["orders", "Orders & payments", "file"],
+    ],
+  },
+  {
+    group: "Analytics & reports",
+    items: [
+      ["analytics", "Care analytics", "chart"],
+      ["business", "Business reports · Plus", "chart"],
+    ],
+  },
+  {
+    group: "Settings",
+    items: [
+      ["settings", "Center profile", "leaf"],
+      ["subscription", "Platform subscription", "file"],
+      ["audit", "Audit history", "audit"],
+    ],
+  },
+];
+const num = (value: any) => (value ? Number(value) : null);
+const options = (rows: Row[], key = "name") =>
+  rows.map((r) => ({ value: String(r.id), label: r[key] }));
+function Brand({ daycareName, planName }: { daycareName?: string; planName?: string }) {
+  return (
+    <div className="p-brand p-workspace-brand">
+      <div className="p-workspace-wordmark">
+        <img src={typeof logo === "string" ? logo : logo.uri} alt="" />
+        <span>Ankelba</span>
+      </div>
+      {daycareName && (
+        <div className="p-workspace-center">
+          <Icon name="building" size={16} /> <span>{daycareName}{planName ? ` · ${planName}` : ""}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+export default function Portal() {
+  const path = window.location.pathname;
+  const preview = __DEV__ && isPortalPreviewPath(path);
+  const startStaff = path.startsWith("/staff");
+  const [actor, setActor] = useState<Row | null>(
+    preview
+      ? {
+          id: startStaff ? 11 : 1,
+          name: startStaff ? "Meron Alemu" : "Aster Alemayehu",
+          role: startStaff ? "caregiver" : "admin",
+        }
+      : null,
+  );
+  const [checking, setChecking] = useState(!preview);
+  const [loginError, setLoginError] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [location, setLocation] = useState(() => ({
+    page: path.split("/").filter(Boolean).at(-1) || "dashboard",
+    fragment: window.location.hash?.slice(1) || "",
+  }));
+  const { page, fragment } = location;
+  const [date, setDate] = useState(today());
+  const [query, setQuery] = useState("");
+  const [menu, setMenu] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>();
+  const workspace = useRef<HTMLElement>(null);
+  const [data, setData] = useState<Dataset>(() => preview ? makePreview() : emptyDataset());
+  const [loading, setLoading] = useState(!preview);
+  const [loadError, setLoadError] = useState("");
+  const [toast, setToast] = useState("");
+  const [modal, setModal] = useState<{ kind: string; row: Row } | null>(null);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [broadcast, setBroadcast] = useState<{ message: string; level: string; active: boolean } | null>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  const loadingRequest = useRef(0);
+  const staff = actor?.role === "caregiver";
+  useEffect(() => {
+    let live = true;
+    if (!actor || actor.role !== 'admin' || preview) { setSubscription(null); return; }
+    portalApi.subscription().then(value => { if (live) setSubscription(value); }).catch(() => { if (live) setSubscription(null); });
+    return () => { live = false; };
+  }, [actor?.id, actor?.role, preview, page]);
+  const base = `/${staff ? "staff" : "admin"}${preview ? "/preview" : ""}`;
+  const portalFeatures = data.daycare?.features || {};
+  const adminNav = adminNavigationForFeatures(nav, portalFeatures, preview);
+  const navigation = staff
+    ? [
+        {
+          group: "Your shift",
+          items: [
+            ["workspace", "Attendance & pickup", "desk"],
+            ["reports", "Daily reports", "file"],
+            ["health", "Health & incidents", "heart"],
+            ["communication", "Messages & announcements", "message"],
+            ["events", "Calendar", "calendar"],
+            ...((preview || portalFeatures.staff_scheduling)
+              ? [["staff-scheduling", preview ? "My front-desk shifts · Plus" : "My front-desk shifts", "clock"]]
+              : []),
+          ],
+        },
+      ]
+    : adminNav;
+  // An admin's bookmarked Plus page must still reach the locked explanation.
+  // Hiding navigation must not hide retained order and payment history.
+  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users", ...Object.keys(plusNavigationFeatures)])];
+  const normalizedPage = page === "users" ? "caregivers" : page;
+  const selected = available.includes(normalizedPage)
+    ? normalizedPage
+    : staff
+      ? "workspace"
+      : "dashboard";
+  const title =
+    navigation.flatMap((g) => g.items).find((i) => i[0] === selected)?.[1] ||
+    "Overview";
+  const usesDate = ["dashboard", "analytics", "groups", "front-desk", "attendance", "reports", "workspace"].includes(selected);
+  const usesPageSearch = ["children", "caregivers", "groups", "front-desk", "attendance", "reports", "health", "biometric", "communication", "events", "store", "orders", "audit", "workspace"].includes(selected);
+  const activeGroup = navigation.find(group => group.items.some(([key]) => key === selected))?.group;
+  const expandedGroup = openGroup === undefined ? activeGroup : openGroup;
+  const go = (next: string, anchor = "") => {
+    window.history.pushState({}, "", base + "/" + next + (anchor ? "#" + anchor : ""));
+    setLocation({ page: next, fragment: anchor });
+    setOpenGroup(undefined);
+    setQuery("");
+    setMenu(false);
+    workspace.current?.closest(".web-surface")?.scrollTo({ top: 0 });
+  };
+  useEffect(() => {
+    const change = () => {
+      setLocation({
+        page: window.location.pathname.split("/").filter(Boolean).at(-1) || "dashboard",
+        fragment: window.location.hash?.slice(1) || "",
+      });
+      setOpenGroup(undefined);
+      setQuery("");
+      setMenu(false);
+    };
+    window.addEventListener("popstate", change);
+    return () => window.removeEventListener("popstate", change);
+  }, []);
+  useEffect(() => {
+    document.title = actor ? title + " · Ankelba" : "Staff sign in · Ankelba";
+  }, [actor, title]);
+  useEffect(() => {
+    if (preview) return;
+    let active = true;
+    (async () => {
+      try {
+        let user = await portalApi.session();
+        if (user && user.role === "parent") {
+          user = null;
+        }
+        if (user && user.role === "super_admin") {
+          window.location.assign("/super-admin");
+          return;
+        }
+        if (active && user) {
+          setActor(user);
+        }
+      } catch (err) {
+        if (active) setLoginError("Your session could not be checked. Check your connection and reload to retry.");
+      } finally {
+        if (active) setChecking(false);
+      }
+    })();
+    portalApi.getBroadcast().then((b) => {
+      if (active && b && b.active) setBroadcast(b);
+    }).catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [preview]);
+  const refresh = async () => {
+    if (preview || !actor) return;
+    const request = ++loadingRequest.current;
+    setLoading(true);
+    setLoadError("");
+    try {
+      const snapshot = await portalApi.snapshot(staff ? today() : date, staff);
+      if (request === loadingRequest.current) setData(snapshot);
+    } catch (error: any) {
+      if (request !== loadingRequest.current) return;
+      if (error.response?.status === 401) {
+        if (!preview) {
+          setActor(null);
+          setLoginError("Your session has ended. Please sign in again.");
+        }
+      } else setLoadError(apiError(error));
+    } finally {
+      if (request === loadingRequest.current) setLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (actor && ["admin", "caregiver"].includes(actor.role)) {
+      if (["/login", "/signin", "/admin/login"].includes(window.location.pathname.replace(/\/$/, ""))) go(staff ? "workspace" : "dashboard");
+      void refresh();
+    }
+    return () => {
+      loadingRequest.current++;
+    };
+  }, [actor?.id, date]);
+  useEffect(() => {
+    if (preview || !actor) return;
+    const token = portalTokenStorage.getToken();
+    if (!token) return;
+    const unsubscribe = subscribeRealtime(
+      token,
+      (event) => {
+        if (
+          event.type === "message.changed" ||
+          event.type === "message.read" ||
+          event.type === "resource.changed"
+        ) {
+          void refresh();
+        }
+      },
+      actor.id,
+    );
+    return () => unsubscribe();
+  }, [actor?.id, preview]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(""), 4500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+  const submitLogin = async (email: string, pass: string) => {
+    if (preview) return;
+    setLoginBusy(true);
+    setLoginError("");
+    try {
+      const user = await portalApi.login(email.trim(), pass);
+      if (user.role === "parent") {
+        setLoginError(
+          "This workspace is for daycare staff. Open the parent app below.",
+        );
+        return;
+      }
+      if (user.role === "super_admin") {
+        window.location.assign("/super-admin");
+        return;
+      }
+      setActor(user);
+      let resumeRenewal = false;
+      try { resumeRenewal = user.role === 'admin' && !!window.sessionStorage.getItem('ankelba_renewal_resume'); } catch {}
+      const destination = user.role === 'caregiver' ? 'workspace' : resumeRenewal ? 'subscription' : 'dashboard';
+      setLocation({ page: destination, fragment: "" });
+      window.history.replaceState(
+        {},
+        "",
+        `/${user.role === "caregiver" ? "staff" : "admin"}/${destination}`,
+      );
+    } catch (error) {
+      setLoginError(apiError(error));
+    } finally {
+      setLoginBusy(false);
+    }
+  };
+  const login = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const values = new FormData(e.currentTarget);
+    await submitLogin(
+      String(values.get("email")),
+      String(values.get("password")),
+    );
+  };
+  const signOut = async () => {
+    if (preview) {
+      window.location.assign("/admin/login");
+      return;
+    }
+    await portalApi.logout().catch(() => {});
+    setActor(null);
+    setData(emptyDataset());
+    setLoading(true);
+    window.history.replaceState({}, "", "/admin/login");
+  };
+  const open = (kind: string, row: Row = { id: 0 }) => {
+    setFormError("");
+    setModal({ kind, row: ["guardian-request-create","announcement","refund-order"].includes(kind) ? {...row,request_key:`${Date.now()}-${Math.random().toString(36).slice(2)}`} : row });
+  };
+  const close = () => {
+    if (!saving) setModal(null);
+  };
+  const mutate = async (
+    path: string,
+    body: any,
+    apply: (d: Dataset) => Dataset,
+    method: "post" | "patch" | "delete" = "post",
+  ) => {
+    if (preview) {
+      setData((old) => {
+        const next = apply(old);
+        return {
+          ...next,
+          audit: [
+            {
+              id: Date.now(),
+              actor_id: actor!.id,
+              action: path.replace(/^\//, "").replaceAll("/", "_").toUpperCase(),
+              target_table: path.split("/")[1],
+              target_id: body.id || null,
+              created_at: new Date().toISOString(),
+            },
+            ...next.audit,
+          ],
+        };
+      });
+      setToast("Saved in local preview.");
+      return;
+    }
+    await portalApi.save(path, body, method);
+    await refresh();
+    setToast("Saved successfully.");
+  };
+  const upsert = (key: Exclude<keyof Dataset, "daycare">, row: Row) => (d: Dataset) => ({
+    ...d,
+    [key]:
+      row.id && ((d[key] as Row[]) || []).some((r: Row) => r.id === row.id)
+        ? ((d[key] as Row[]) || []).map((r: Row) => (r.id === row.id ? { ...r, ...row } : r))
+        : [{ ...row, id: row.id || Date.now() }, ...(((d[key] as Row[]) || []))],
+  });
+  const save = async (values: Record<string, any>) => {
+    if (!modal || saving) return;
+    setSaving(true);
+    setFormError("");
+    const { kind, row } = modal;
+    try {
+      if (kind === "caregiver" || (kind === "user" && row.role === "caregiver")) {
+        if (!values.name?.trim() || !values.email?.trim())
+          throw Error("Name and email are required.");
+        if (
+          data.users.some(
+            (u) =>
+              u.id !== row.id &&
+              u.email.toLowerCase() === values.email.trim().toLowerCase(),
+          )
+        )
+          throw Error("This email is already registered.");
+        if (!preview && !row.id && String(values.password || "").length < 8)
+          throw Error("Use a temporary password of at least 8 characters.");
+        const body: any = {
+          name: values.name.trim(),
+          email: values.email.trim().toLowerCase(),
+          phone: values.phone?.trim() || null,
+          title: values.title?.trim() || null,
+          shift: values.shift?.trim() || null,
+          qualifications: values.qualifications?.trim() || null,
+          emergency_contact: values.emergency_contact?.trim() || null,
+        };
+        if (!row.id) {
+          body.role = "caregiver";
+          body.password = values.password;
+        }
+        await mutate(
+          "/users" + (row.id ? "/" + row.id : ""),
+          body,
+          upsert("users", {
+            id: row.id,
+            name: body.name,
+            email: body.email,
+            phone: body.phone,
+            title: body.title,
+            shift: body.shift,
+            qualifications: body.qualifications,
+            emergency_contact: body.emergency_contact,
+            role: "caregiver",
+            status: row.status || "active",
+          }),
+          row.id ? "patch" : "post",
+        );
+      } else if (kind === "family") {
+        if (!values.parent_name?.trim() || !values.parent_email?.trim())
+          throw Error("Parent full name and email are required.");
+        if (!values.child_full_name?.trim() || !values.child_dob)
+          throw Error("Child name and birth date are required.");
+        if (values.child_dob > today())
+          throw Error("Birth date cannot be in the future.");
+        if (!preview && String(values.parent_password || "").length < 8)
+          throw Error("Set a parent app password of at least 8 characters.");
+
+        let assignedGroupId = num(values.child_group_id);
+        if (values.new_group_name?.trim()) {
+          if (preview) {
+            const newGId = Date.now();
+            setData((d) => ({
+              ...d,
+              groups: [{ id: newGId, name: values.new_group_name.trim(), description: "Classroom group" }, ...d.groups],
+            }));
+            assignedGroupId = newGId;
+          }
+        }
+
+        const payload = {
+          parent: {
+            name: values.parent_name.trim(),
+            email: values.parent_email.trim().toLowerCase(),
+            phone: values.parent_phone?.trim() || null,
+            password: values.parent_password || "Password123!",
+            relationship: values.parent_relationship || "Mother",
+          },
+          child: {
+            full_name: values.child_full_name.trim(),
+            dob: values.child_dob,
+            gender: values.child_gender || null,
+            group_id: assignedGroupId,
+            ...(!preview && values.new_group_name?.trim() ? {new_group_name: values.new_group_name.trim()} : {}),
+            caregiver_id: num(values.child_caregiver_id),
+            enrollment_status: "active",
+            monthly_care_fee: values.monthly_care_fee ? parseFloat(values.monthly_care_fee) : 3500.00,
+            photo_url: values.child_photo_url || null,
+            birth_certificate_url: values.child_birth_certificate_url || null,
+            agreement_signed: !!values.agreement_signed,
+            terms_accepted: !!values.terms_accepted,
+          },
+          emergency_contacts: values.sec_contact_name?.trim() ? [
+            {
+              name: values.sec_contact_name.trim(),
+              relationship: values.sec_contact_relationship?.trim() || "Emergency Contact",
+              phone: values.sec_contact_phone?.trim() || "",
+            }
+          ] : [],
+          care_instructions: [
+            ...(values.allergy_note?.trim() ? [{ category: "allergy", instruction_text: values.allergy_note.trim() }] : []),
+            ...(values.care_note?.trim() ? [{ category: "general", instruction_text: values.care_note.trim() }] : []),
+          ],
+        };
+
+        if (preview) {
+          const parentId = Date.now();
+          const childId = parentId + 1;
+          const newParent = {
+            id: parentId,
+            name: payload.parent.name,
+            email: payload.parent.email,
+            phone: payload.parent.phone,
+            role: "parent",
+            status: "active",
+          };
+          const newChild = {
+            id: childId,
+            full_name: payload.child.full_name,
+            dob: payload.child.dob,
+            gender: payload.child.gender,
+            group_id: payload.child.group_id,
+            caregiver_id: payload.child.caregiver_id,
+            enrollment_status: "active",
+            photo_url: payload.child.photo_url,
+            birth_certificate_url: payload.child.birth_certificate_url,
+            agreement_signed: payload.child.agreement_signed,
+            terms_accepted: payload.child.terms_accepted,
+            monthly_care_fee: payload.child.monthly_care_fee,
+            parent_name: payload.parent.name,
+            parent_email: payload.parent.email,
+            parent_phone: payload.parent.phone,
+            parent_relationship: payload.parent.relationship,
+            emergency_contacts: [
+              ...(payload.parent.phone ? [{ id: Date.now() + 2, child_id: childId, name: payload.parent.name, relationship: payload.parent.relationship, phone: payload.parent.phone }] : []),
+              ...payload.emergency_contacts.map((c, i) => ({ id: Date.now() + 3 + i, child_id: childId, ...c })),
+            ],
+            care_instructions: payload.care_instructions.map((ci, i) => ({ id: Date.now() + 10 + i, child_id: childId, ...ci })),
+          };
+          const newGuardian = {
+            id: Date.now() + 20,
+            child_id: childId,
+            user_id: parentId,
+            relationship: payload.parent.relationship,
+            pickup_authorized: true,
+          };
+          setData((d) => ({
+            ...d,
+            users: [newParent, ...d.users],
+            children: [newChild, ...d.children],
+            guardians: [newGuardian, ...d.guardians],
+          }));
+          setToast("Enrolled new family in preview.");
+          setModal(null);
+          return;
+        }
+
+        await portalApi.enrollFamily(payload);
+        await refresh();
+        setToast(`Enrolled ${payload.child.full_name} and linked ${payload.parent.name} successfully.`);
+        setModal(null);
+        return;
+      } else if (kind === "assign-caregiver") {
+        const childIds = values.child_ids as number[];
+        if (preview) {
+          setData((d) => ({
+            ...d,
+            children: d.children.map((c) =>
+              childIds.includes(c.id)
+                ? { ...c, caregiver_id: row.id }
+                : c.caregiver_id === row.id
+                ? { ...c, caregiver_id: null }
+                : c
+            ),
+          }));
+          setToast(`Assigned ${childIds.length} students to ${row.name} (preview).`);
+          setModal(null);
+          return;
+        }
+        await portalClient.post("/children/assign-caregiver", {
+          caregiver_id: row.id,
+          child_ids: childIds,
+          group_id: values.group_id || null,
+          group_version: data.groups.find(g=>g.id===Number(values.group_id))?.version,
+          child_versions: data.children.filter(c=>c.enrollment_status==='active' && (childIds.includes(c.id) || c.caregiver_id===row.id)).map(c=>({id:c.id,version:c.version})),
+        });
+        await refresh();
+        setToast(`Updated student assignments for ${row.name} successfully.`);
+        setModal(null);
+        return;
+      } else if (kind === "assign-child-caregiver") {
+        if (preview) {
+          setData((d) => ({
+            ...d,
+            children: d.children.map((c) =>
+              c.id === row.id ? { ...c, caregiver_id: values.caregiver_id, group_id: values.group_id } : c
+            ),
+          }));
+          setToast(`Updated assignment for ${row.full_name} (preview).`);
+          setModal(null);
+          return;
+        }
+        await portalClient.patch(`/children/${row.id}`, {
+          version: row.version,
+          caregiver_id: values.caregiver_id,
+          group_id: values.group_id,
+        });
+        await refresh();
+        setToast(`Updated assignment for ${row.full_name}.`);
+        setModal(null);
+        return;
+      } else if (kind === "assign-group-caregiver") {
+        if (preview) {
+          setData((d) => ({
+            ...d,
+            groups: d.groups.map((g) => (g.id === row.id ? { ...g, lead_caregiver_id: values.lead_caregiver_id } : g)),
+            children: values.assign_children && values.lead_caregiver_id
+              ? d.children.map((c) => (c.group_id === row.id ? { ...c, caregiver_id: values.lead_caregiver_id } : c))
+              : d.children,
+          }));
+          setToast(`Assigned caregiver to group ${row.name} (preview).`);
+          setModal(null);
+          return;
+        }
+        await portalClient.patch(`/groups/${row.id}`, {
+          version: row.version,
+          child_versions: data.children.filter(c=>c.group_id===row.id && c.enrollment_status==='active').map(c=>({id:c.id,version:c.version})),
+          lead_caregiver_id: values.lead_caregiver_id,
+          assign_children: values.assign_children,
+        });
+        await refresh();
+        setToast(`Assigned caregiver to group ${row.name}.`);
+        setModal(null);
+        return;
+      } else if (kind === "user-status") {
+        const status = row.status === "active" ? "inactive" : "active";
+        await mutate(
+          "/users/" + row.id + "/status",
+          { status },
+          upsert("users", { ...row, status }),
+          "patch",
+        );
+      } else if (kind === "child") {
+        if (values.dob > today())
+          throw Error("Birth date cannot be in the future.");
+        const body = {
+          ...(row.id ? {version:row.version} : {}),
+          full_name: values.full_name.trim(),
+          dob: values.dob,
+          gender: values.gender,
+          group_id: num(values.group_id),
+          caregiver_id: num(values.caregiver_id),
+          enrollment_status: values.enrollment_status,
+          agreement_signed: !!values.agreement_signed,
+          terms_accepted: !!values.terms_accepted,
+          ...(values.photo_url ? { photo_url: values.photo_url } : {}),
+          ...(values.birth_certificate_url ? { birth_certificate_url: values.birth_certificate_url } : {}),
+        };
+        await mutate(
+          "/children" + (row.id ? "/" + row.id : ""),
+          body,
+          upsert("children", { id: row.id, ...body }),
+          row.id ? "patch" : "post",
+        );
+      } else if (kind === "contact" || kind === "instruction") {
+        const contact=kind==="contact";
+        const child=data.children.find(c=>c.id===row.child_id)!;
+        const body=contact ? {child_version:child.version,name:values.name.trim(),relationship:values.relationship.trim(),phone:values.phone.trim()} : {child_version:child.version,category:values.category,instruction_text:values.instruction_text.trim()};
+        if(contact&&!/^[+0-9() -]{7,30}$/.test(values.phone.trim()))throw Error("Enter a valid contact phone number.");
+        const list=contact?"emergency_contacts":"care_instructions";
+        const rows=child[list]||[];
+        const saved={id:row.id||Date.now(),...body};
+        const updated=row.id?rows.map((r:Row)=>r.id===row.id?saved:r):[...rows,saved];
+        await mutate("/children/"+(row.id?(contact?"contacts/":"instructions/")+row.id:row.child_id+(contact?"/contacts":"/instructions")),body,upsert("children",{...child,[list]:updated}),row.id?"patch":"post");
+      } else if (kind === "guardian-request-review") {
+        await mutate(`/children/${row.child_id}/pickup-guardians/${row.id}`, {
+          decision: values.decision, version: row.version, review_note: values.review_note?.trim(),
+        }, upsert("guardianRequests", {...row,status:values.decision}), "patch");
+      } else if (kind === "guardian-request-create") {
+        await mutate(`/children/${values.child_id}/pickup-guardians`, {
+          name:values.name?.trim(),relationship:values.relationship?.trim(),phone:values.phone?.trim(),email:values.email?.trim(),
+          request_key:`admin-guardian-${row.request_key}`,
+        }, upsert("guardianRequests",{id:0,...values,status:"pending"}));
+      } else if (kind === "guardian") {
+        if (
+          data.guardians.some(
+            (g) => g.child_id === row.id && g.user_id === num(values.user_id),
+          )
+        )
+          throw Error("This guardian is already linked to this child.");
+        const body = {
+          user_id: num(values.user_id),
+          relationship: values.relationship,
+          pickup_authorized: !!values.pickup_authorized,
+        };
+        await mutate(
+          "/children/" + row.id + "/guardians",
+          body,
+          upsert("guardians", { id: 0, child_id: row.id, ...body }),
+        );
+      } else if (kind === "group") {
+        const body: any = {
+          ...(row.id ? {version:row.version} : {}),
+          child_versions: data.children.filter(c=>c.group_id===row.id && c.enrollment_status==='active').map(c=>({id:c.id,version:c.version})),
+          name: values.name.trim(),
+          description: values.description || "",
+          lead_caregiver_id: num(values.lead_caregiver_id),
+          assign_children: !!values.assign_children,
+        };
+        await mutate(
+          "/groups" + (row.id ? "/" + row.id : ""),
+          body,
+          upsert("groups", { id: row.id, ...body }),
+          row.id ? "patch" : "post",
+        );
+        if (body.assign_children && body.lead_caregiver_id) {
+          setData((prev) => ({
+            ...prev,
+            children: prev.children.map((c) =>
+              c.group_id === row.id ? { ...c, caregiver_id: body.lead_caregiver_id } : c,
+            ),
+          }));
+        }
+      } else if (kind === "duty") {
+        const body = {
+          staff_id: Number(values.staff_id),
+          group_id: num(values.group_id),
+          starts_at: values.date + "T" + values.start + ":00+03:00",
+          ends_at: values.date + "T" + values.end + ":00+03:00",
+          can_attendance: !!values.can_attendance,
+          can_pickup: !!values.can_pickup,
+        };
+        const error = dutyError(
+          data.users.find((u) => u.id === body.staff_id),
+          body.starts_at,
+          body.ends_at,
+          data.duties,
+        );
+        if (error) throw Error(error);
+        if (!body.can_attendance && !body.can_pickup)
+          throw Error("Choose at least one responsibility.");
+        await mutate(
+          "/portal/assignments",
+          body,
+          upsert("duties", { id: 0, ...body, status: "active" }),
+        );
+      } else if (kind === "revoke-duty") {
+        await mutate(
+          "/portal/assignments/" + row.id + "/revoke",
+          {},
+          upsert("duties", { ...row, status: "revoked" }),
+          "patch",
+        );
+      } else if (kind === "checkin" || kind === "absent") {
+        if (attendanceStatus(data, row.id, today()))
+          throw Error(
+            "Attendance has already changed. Refresh and review this child.",
+          );
+        if (
+          staff &&
+          !allowedAttendance(data.duties, actor!, row)
+        )
+          throw Error(
+            "Attendance requires assignment to this child or an active attendance shift.",
+          );
+        const body = {
+          child_id: row.id,
+          event_type: kind,
+          notes: values.notes || "",
+        };
+        await mutate(
+          "/portal/attendance",
+          body,
+          upsert("attendance", {
+            id: 0,
+            ...body,
+            event_time: new Date().toISOString(),
+            recorded_by: actor!.id,
+          }),
+        );
+      } else if (kind === "pickup") {
+        const isBiometric = values.method === "biometric";
+        if (!isBiometric) {
+          if (
+            !values.identity_confirmed ||
+            !values.reason ||
+            values.reason.trim().length < 12
+          )
+            throw Error(
+              "Confirm the identity check and describe how identity was verified (at least 12 characters).",
+            );
+        }
+        const [adultType, adultId] = String(values.guardian_key || "").split(":");
+        const userId = adultType === "user" ? Number(adultId) : null;
+        const pickupId = adultType === "pickup" ? Number(adultId) : null;
+        if (!(pickupId ? (data.guardianRequests || []).some(g=>g.id===pickupId && g.child_id===row.id && g.status==='approved') :
+          data.guardians.some(
+            (g) =>
+              g.child_id === row.id &&
+              g.user_id === userId &&
+              g.pickup_authorized,
+          )))
+          throw Error("Choose an approved pickup guardian.");
+        if (attendanceStatus(data, row.id, today())?.event_type !== "checkin")
+          throw Error("This child is no longer checked in.");
+        if (
+          staff &&
+          !allowedDuty(data.duties, actor!.id, row.group_id, "pickup")
+        )
+          throw Error(
+            "Your current shift does not permit pickup for this child.",
+          );
+        const body = {
+          child_id: row.id,
+          ...(pickupId ? { pickup_guardian_id: pickupId } : { guardian_user_id: userId }),
+          method: isBiometric ? "biometric" : "manual",
+          identity_confirmed: true,
+          ...(isBiometric
+            ? { reason: values.reason || "Biometric scan verified at front desk via R307S", match_score: 0.95 }
+            : { reason: values.reason.trim() }),
+        };
+        await mutate("/portal/checkout", body, (d) => ({
+          ...d,
+          attendance: [
+            {
+              id: Date.now(),
+              child_id: row.id,
+              event_type: "checkout",
+              event_time: new Date().toISOString(),
+              recorded_by: actor!.id,
+            },
+            ...d.attendance,
+          ],
+          verifications: [
+            {
+              id: Date.now(),
+              ...body,
+              result: isBiometric ? "verified" : "manual_fallback",
+              verified_by: actor!.id,
+              verified_at: new Date().toISOString(),
+            },
+            ...d.verifications,
+          ],
+        }));
+      } else if (kind === "event") {
+        const body = {
+          ...(row.id ? { version: row.version } : {}),
+          title: values.title.trim(),
+          event_date: values.event_date,
+          event_time: values.event_time || null,
+          event_type: values.event_type,
+          description: values.description || "",
+        };
+        await mutate(
+          "/events" + (row.id ? "/" + row.id : ""),
+          body,
+          upsert("events", {
+            ...row,
+            ...body,
+            cancelled: row.cancelled || false,
+          }),
+          row.id ? "patch" : "post",
+        );
+      } else if (kind === "cancel-event") {
+        await mutate("/events/"+row.id,{version:row.version},upsert("events",{...row,cancelled:true}),"delete");
+      } else if (kind === "announcement") {
+        const body = {
+          title: values.title.trim(),
+          body: values.body,
+          announcement_type: values.announcement_type || "general",
+          request_key: row.request_key,
+          audience: values.target_group_id ? "group" : "all",
+          target_group_id: num(values.target_group_id),
+        };
+        await mutate(
+          "/announcements",
+          body,
+          upsert("announcements", {
+            id: 0,
+            ...body,
+            created_at: new Date().toISOString(),
+          }),
+        );
+      } else if (kind === "message") {
+        const body = {
+          recipient_id: Number(values.recipient_id),
+          subject: values.subject || "",
+          body: values.body,
+        };
+        await mutate(
+          "/messages",
+          body,
+          upsert("messages", {
+            id: 0,
+            ...body,
+            sender_id: actor!.id,
+            created_at: new Date().toISOString(),
+          }),
+        );
+      } else if (kind === "product") {
+        const body = {
+          ...(row.id ? { version: row.version } : {}),
+          name: values.name.trim(),
+          price: Number(values.price),
+          stock_qty: Number(values.stock_qty),
+          available: !!values.available,
+          description: values.description || "",
+          image_url: values.image_url ? values.image_url.trim() : null,
+        };
+        if (
+          !Number.isInteger(body.stock_qty) ||
+          body.stock_qty < 0 ||
+          !Number.isFinite(body.price) ||
+          body.price < 0
+        )
+          throw Error("Enter a valid price and whole-number stock quantity.");
+        await mutate(
+          "/store/products" + (row.id ? "/" + row.id : ""),
+          body,
+          upsert("products", { id: row.id, ...body }),
+          row.id ? "patch" : "post",
+        );
+      } else if (kind === "refund-order") {
+        const returnedAt=String(values.refunded_at||'');
+        if(!returnedAt||values.refund_confirmed!==true)throw Error('Confirm that the cash was already returned and enter its return time.');
+        const body={version:row.version,amount:Number(values.amount),original_payment_reference:String(values.original_payment_reference||'').trim(),refund_reference:String(values.refund_reference||'').trim(),refunded_at:new Date(returnedAt+(returnedAt.length===16?':00':'')+'+03:00').toISOString(),stock_disposition:values.stock_disposition,reason:String(values.reason||'').trim(),refund_confirmed:true,request_key:row.request_key};
+        if(preview)throw Error('Refund evidence requires a signed-in administrator and an actual cash receipt.');
+        await portalClient.post(`/store/orders/${row.id}/refund`,body);
+        await refresh();setToast('Cash return recorded. No money was transferred by Ankelba.');
+      } else if (kind === "order") {
+        const body: any = { version: row.version, order_status: values.order_status };
+        if (values.payment_status) body.payment_status = values.payment_status;
+        if(values.payment_status==='paid'&&row.payment_status!=='paid')Object.assign(body,{amount_received:Number(values.amount_received),payment_confirmed:values.payment_confirmed===true,payment_reason:values.payment_reason});
+        await mutate(
+          "/store/orders/" + row.id + "/status",
+          body,
+          upsert("orders", { ...row, ...body }),
+          "patch",
+        );
+      } else if (kind === "edit-settings") {
+        const body = {
+          version: row.version,
+          name: values.name?.trim(),
+          license_number: values.license_number?.trim(),
+          contact_email: values.contact_email?.trim(),
+          contact_phone: values.contact_phone?.trim(),
+          address: values.address?.trim(),
+        };
+        const updated = await portalApi.updateDaycareSettings(body);
+        setData((old) => ({ ...old, daycare: updated }));
+        setToast("Daycare settings updated successfully.");
+
+      }
+      setModal(null);
+    } catch (error: any) {
+      setFormError(
+        error.response ? apiError(error) : error.message || "Unable to save.",
+      );
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+  const visibleData = useMemo(() => {
+    if (!staff || !preview) return data;
+    const hasActiveDuties = data.duties.some(
+      (d) => d.staff_id === actor!.id && d.status === "active",
+    );
+    const children = data.children.filter(
+      (c) =>
+        c.caregiver_id === actor!.id ||
+        data.duties.some(
+          (d) =>
+            d.staff_id === actor!.id &&
+            d.status === "active" &&
+            (!d.group_id || d.group_id === c.group_id),
+        ) ||
+        !hasActiveDuties,
+    );
+    const ids = new Set(children.map((c) => c.id));
+    return {
+      ...data,
+      children,
+      guardians: data.guardians.filter((g) => ids.has(g.child_id)),
+      attendance: data.attendance.filter((a) => ids.has(a.child_id)),
+      duties: data.duties.filter((d) => d.staff_id === actor!.id),
+    };
+  }, [data, actor, staff, preview]);
+  const ctx: PageContext = {
+    data: visibleData,
+    date,
+    query,
+    staff,
+    actor: actor || { id: 0 },
+    preview,
+    go,
+    open,
+  };
+  const download = () => { const m=metrics(visibleData,date); downloadRecords([{id:1,date,enrolled:m.total,present:m.present,collected:m.collected,absent:m.absent,not_marked:m.pending,reports_submitted:m.submitted,reports_missing:m.missing}], 'ankelba-summary-'+date+(preview?'-preview':'')); };
+  if (checking)
+    return (
+      <div
+        className="ankelba-portal p-login-card"
+        style={{ minHeight: "100vh" }}
+      >
+        <p>Opening your workspace…</p>
+      </div>
+    );
+  if (!actor || !["admin", "caregiver"].includes(actor.role))
+    return (
+      <div className="ankelba-portal p-login">
+        <div className="p-login-story">
+          <Brand />
+          <h1>Daycare workspace</h1>
+        </div>
+        <div className="p-login-card">
+          <div>
+            <h1>Staff sign in</h1>
+            <form onSubmit={login}>
+              <label>
+                Email address
+                <input
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  placeholder="you@daycare.com"
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Your password"
+                  required
+                />
+              </label>
+              {loginError && (
+                <div role="alert" className="p-error">
+                  {loginError}
+                </div>
+              )}
+              <Button type="submit" disabled={loginBusy}>
+                {loginBusy ? "Signing in…" : "Sign in to your workspace"}
+                <Icon name="arrow" size={16} />
+              </Button>
+            </form>
+            <footer>
+              <a href="/">Back to Ankelba</a>
+              <a href="/app">Parent sign in</a>
+              <a href="/application-status">Check application status</a>
+
+            </footer>
+          </div>
+        </div>
+      </div>
+    );
+  const plusPageFeature = plusNavigationFeatures;
+  const plusFeatureMeta: Record<string, { name: string; detail: string }> = {
+    business_analytics: { name: 'Business reports & CSV/PDF exports', detail: 'Track multi-period attendance comparisons, care-fee collections, capacity utilization and occupancy trends.' },
+    billing_automation: { name: 'Scheduled billing automation', detail: 'Automatically generate monthly care-fee invoices and notify parents with upcoming and overdue reminders.' },
+    staff_scheduling: { name: 'Front-desk shift scheduling', detail: 'Manage recurring attendance and pickup shift templates, staff availability, leave reviews and substitute assignments.' },
+    shop: { name: 'Daycare shop & stock control', detail: 'Publish essential supplies, track stock movements, receive family orders and record cash returns.' },
+  };
+  const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...nav.flatMap(group=>group.items.map(item=>item[0])),'dashboard','workspace','users'],available);
+  const plusFeature=plusPageFeature[selected];
+  const displayState = subscriptionDisplayState(visibleData.daycare);
+  const isTrial = displayState === 'trial' || displayState === 'expired_trial';
+  const isExpiredPlus = visibleData.daycare?.package_code === 'premium' && displayState === 'expired';
+  const lockedMeta = plusFeature ? plusFeatureMeta[plusFeature] : null;
+  const pageComponent = plusFeature&&(preview||!visibleData.daycare?.features?.[plusFeature]) ? (
+    <Card title={isExpiredPlus ? 'Plus subscription expired' : (lockedMeta?.name || 'Included with Ankelba Plus')}>
+      {preview ? (
+        <p>Open a live Plus daycare to manage {lockedMeta?.name?.toLowerCase() || 'these tools'}.</p>
+      ) : isExpiredPlus ? (
+        <p>Your Plus subscription period has ended. Essential child attendance, authorized pickup, health alerts, and existing invoice/order settlements stay available while Plus tools wait for renewal.</p>
+      ) : isTrial ? (
+        <p>This tool is not included in your current access. Review your subscription details for the available plans.</p>
+      ) : visibleData.daycare?.package_code === 'premium' ? (
+        <p>This tool is not currently available to your center. Review your subscription details or contact platform support.</p>
+      ) : (
+        <>
+          <p>{lockedMeta?.detail || 'Your current plan does not include this tool.'}</p>
+          <p style={{ color: 'var(--muted)', fontSize: 14 }}>
+            Your center is on the <strong>{visibleData.daycare?.package_name || 'Standard'}</strong> plan (up to {visibleData.daycare?.max_children ?? 50} active children). Upgrade to <strong>Ankelba Plus</strong> for up to 150 active children alongside Daycare Shop, Business Reports, Billing Automation and Shift Scheduling.
+          </p>
+        </>
+      )}
+      {!staff&&!preview&&<Button onClick={()=>go('subscription')}>{isExpiredPlus ? 'Renew subscription' : 'Review subscription & plans'}</Button>}
+    </Card>
+  ) : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
+    staff && ["reports","health","communication","events"].includes(selected) ? <CaregiverPage ctx={ctx} page={selected}/> : selected === "dashboard" ? (
+      <>
+        <DashboardAttention data={visibleData} date={date} preview={preview} go={go} />
+        {!preview && <SetupChecklist data={visibleData} />}
+        <Overview {...ctx} />
+      </>
+    ) : selected === "analytics" ? (
+      <Analytics {...ctx} />
+    ) : selected === "finances" ? (
+      <DaycareFinances ctx={ctx} />
+    ) : selected === "bank-receipts" ? (
+      preview ? <Card title="Bank receipts"><p>Sign in to review your daycare’s bank receipts.</p></Card> :
+        <DaycarePaymentManagement key={fragment} initialStatus={fragment} />
+    ) : selected === "subscription" ? (
+      <DaycareSubscription />
+    ) : ["caregivers", "users"].includes(selected) ? (
+      <Caregivers {...ctx} />
+    ) : selected === "children" ? (
+      <Children key={fragment} {...ctx} initialGroup={/^classroom-(\d+)$/.exec(fragment)?.[1]} />
+    ) : selected === "groups" ? (
+      <Groups {...ctx} />
+    ) : selected === "front-desk" ? (
+      <Duties {...ctx} />
+    ) : ["attendance", "workspace"].includes(selected) ? (
+      <Attendance {...ctx} />
+    ) : selected === "reports" ? (
+      <Reports {...ctx} />
+    ) : (
+      <Monitoring {...ctx} page={selected} />
+    );
+  return (
+    <div className="ankelba-portal">
+      {menu && <button type="button" className="p-nav-scrim" aria-label="Close navigation" onClick={() => setMenu(false)} />}
+      <aside
+        className={"p-sidebar " + (menu ? "open" : "")}
+        aria-label="Workspace navigation"
+        onKeyDown={event => { if (event.key === "Escape") setMenu(false); }}
+      >
+        <button type="button" className="p-icon-button p-sidebar-close" aria-label="Close workspace navigation" onClick={() => setMenu(false)}>
+          <Icon name="close" />
+        </button>
+        <Brand
+          daycareName={actor?.daycare_name}
+          planName={preview ? 'Preview' : (visibleData.daycare?.package_name || (visibleData.daycare?.subscription_plan === 'premium' ? 'Plus' : visibleData.daycare?.subscription_plan === 'standard' ? 'Standard' : undefined))}
+        />
+        {!staff && (
+          <a href={base + "/dashboard"} className={"p-nav-link p-nav-overview " + (selected === "dashboard" ? "active" : "")}
+            aria-current={selected === "dashboard" ? "page" : undefined}
+            onClick={event => {
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              event.preventDefault();
+              go("dashboard");
+            }}>
+            <Icon name="home" size={18} /> Overview
+          </a>
+        )}
+        {navigation.map((group, index) => {
+          const expanded = staff || expandedGroup === group.group;
+          const groupId = "workspace-nav-" + index;
+          return (
+          <div className="p-nav-section" key={group.group}>
+            {staff ? <div className="p-nav-group">{group.group}</div> :
+              <button type="button" className="p-nav-section-toggle" aria-expanded={expanded}
+                aria-controls={groupId} onClick={() => setOpenGroup(expanded ? null : group.group)}>
+                {group.group}
+                <span className="p-nav-chevron" aria-hidden="true" />
+              </button>}
+            <nav id={groupId} aria-label={group.group} hidden={!expanded}>
+              {group.items.map(([key, name, icon]) => (
+                <a
+                  href={base + "/" + key}
+                  key={key}
+                  className={"p-nav-link " + (selected === key ? "active" : "")}
+                  aria-current={selected === key ? "page" : undefined}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    go(key);
+                  }}
+                >
+                  <Icon name={icon} size={18} />
+                  {name}
+                </a>
+              ))}
+            </nav>
+          </div>
+          );
+        })}
+        <div className="p-sidebar-foot">
+          <nav className="p-mobile-surface-links" aria-label="Other Ankelba pages">
+            <a className="p-nav-link" href="/"><Icon name="globe" size={17} /> Ankelba website</a>
+            <a className="p-nav-link" href="/app"><Icon name="smartphone" size={17} /> Parent app</a>
+          </nav>
+          <button
+            className="p-nav-link"
+            style={{ border: 0, width: "100%", background: "transparent" }}
+            onClick={signOut}
+          >
+            <Icon name="logout" size={17} />
+            {preview ? "Leave preview" : "Sign out"}
+          </button>
+        </div>
+      </aside>
+      <main className="p-workspace" ref={workspace}>
+        <header className="p-topbar">
+          <button
+            className="p-icon-button p-menu-toggle"
+            aria-label="Toggle navigation"
+            aria-expanded={menu}
+            onClick={() => setMenu(!menu)}
+          >
+            <Icon name={menu ? "close" : "menu"} />
+          </button>
+          <div className="p-breadcrumb">
+            Ankelba <span>/</span>{" "}
+            <strong>{staff ? "Staff workspace" : "Administration"}</strong>
+          </div>
+          <div className="p-top-links">
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                window.history.pushState({}, "", "/");
+                window.dispatchEvent(new PopStateEvent("popstate"));
+              }}
+              style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="globe" size={13} /> Ankelba website
+            </a>
+            <a
+              href="/app"
+              onClick={(e) => {
+                e.preventDefault();
+                window.history.pushState({}, "", "/app");
+                window.dispatchEvent(new PopStateEvent("popstate"));
+              }}
+              style={{ fontSize: 14, fontWeight: 700, color: "var(--navy)", padding: "5px 12px", borderRadius: 8, background: "#f0ece1", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <Icon name="smartphone" size={13} /> Parent App
+            </a>
+          </div>
+          <div className="p-top-actions">
+            <BiometricStatusBadge />
+            {usesPageSearch && <label className="p-search">
+              <Icon name="search" size={17} />
+              <input
+                aria-label="Search this page"
+                placeholder="Search this page…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </label>}
+            <button
+              className="p-icon-button"
+              aria-label="Refresh data"
+              onClick={() =>
+                preview ? setToast("Preview is up to date.") : refresh()
+              }
+            >
+              <Icon name="refresh" size={17} />
+            </button>
+            <div className="p-admin-person">
+              <Person
+                name={actor.name}
+                sub={staff ? "Caregiver" : "Daycare administrator"}
+              />
+            </div>
+          </div>
+        </header>
+        <div className="p-content" key={selected}>
+          {broadcast?.active && broadcast?.message && (
+            <div
+              style={{
+                background:
+                  broadcast.level === "alert"
+                    ? "#FEF2F2"
+                    : broadcast.level === "warning"
+                    ? "#FFFBEB"
+                    : "#EFF6FF",
+                border: `1.5px solid ${
+                  broadcast.level === "alert"
+                    ? "#F87171"
+                    : broadcast.level === "warning"
+                    ? "#FCD34D"
+                    : "#93C5FD"
+                }`,
+                color:
+                  broadcast.level === "alert"
+                    ? "#991B1B"
+                    : broadcast.level === "warning"
+                    ? "#92400E"
+                    : "#1E40AF",
+                padding: "12px 18px",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                marginBottom: 20,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              }}
+            >
+              <span style={{ fontSize: 22 }}>
+                {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
+              </span>
+              <div style={{ flex: 1 }}>
+                <strong style={{ display: "block", fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Platform Notice ({broadcast.level})
+                </strong>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{broadcast.message}</span>
+              </div>
+            </div>
+          )}
+          {preview && (
+            <div className="p-preview">
+              <span>
+                <strong>Sample preview</strong> · Changes stay in this preview and reset when you leave.
+              </span>
+              <a
+                href={
+                  staff
+                    ? "/staff/workspace"
+                    : "/admin/dashboard"
+                }
+              >
+                {staff ? "Staff workspace" : "Production route"} ↗
+              </a>
+            </div>
+          )}
+          {staff && data.announcements && data.announcements.length > 0 && (
+            <div
+              style={{
+                background: "#FFFBEB",
+                border: "1.5px solid #FCD34D",
+                borderRadius: 14,
+                padding: "14px 18px",
+                marginBottom: 20,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+              }}
+            >
+              <span style={{ fontSize: 24 }}>📢</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <strong style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 0.6, color: "#92400E" }}>
+                    Daycare Bulletin & Directive
+                  </strong>
+                  <span style={{ background: "#BD4264", color: "#fff", fontSize: 14, fontWeight: 700, padding: "1px 6px", borderRadius: 8 }}>
+                    NEW
+                  </span>
+                </div>
+                <strong style={{ display: "block", fontSize: 14, color: "#1E293B", marginBottom: 2 }}>
+                  {data.announcements[0].title}
+                </strong>
+                <span style={{ fontSize: 14, color: "#475569" }}>{data.announcements[0].body}</span>
+              </div>
+              <button
+                onClick={() => go("communication")}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#92400E",
+                  background: "#FEF3C7",
+                  border: "1px solid #F59E0B",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                All Announcements →
+              </button>
+            </div>
+          )}
+          <div className="p-page-head">
+            <div>
+              <h1>{title}</h1>
+            </div>
+            <div className="p-head-actions">
+              {usesDate && <input
+                aria-label="Selected date"
+                type="date"
+                value={date}
+                disabled={staff}
+                onInput={(e) => { if(e.currentTarget.value) setDate(e.currentTarget.value); }}
+                onChange={(e) => {
+                  if (e.target.value) setDate(e.target.value);
+                }}
+              />}
+              {selected === "dashboard" && (
+                <Button variant="secondary" icon="download" onClick={download}>
+                  Export summary
+                </Button>
+              )}
+              {selected === "dashboard" && (
+                <Button icon="plus" onClick={() => open("family")}>
+                  Enroll Family
+                </Button>
+              )}
+            </div>
+          </div>
+          {!staff && selected !== 'subscription' && subscription && <SubscriptionNotice value={subscription} onOpen={() => go('subscription')} />}
+          {loadError ? (
+            <Card>
+              <div role="alert" className="p-error">
+                {loadError}
+              </div>
+              <Button onClick={refresh}>Retry loading</Button>
+            </Card>
+          ) : loading ? (
+            <Card>
+              <p role="status">Loading your daycare records…</p>
+            </Card>
+          ) : (
+            <PageTransition page={routeFailure||selected}>{routeFailure?<SurfaceRecovery kind={routeFailure} embedded workspaceHref={staff?'/staff/workspace':'/admin/dashboard'}/>:pageComponent}</PageTransition>
+          )}
+          <p className="p-kpi-note">
+            <span style={{ float: "right" }}>Times in Africa/Addis_Ababa</span>
+          </p>
+        </div>
+      </main>
+      {toast && (
+        <div role="status" className="p-toast">
+          {toast}
+        </div>
+      )}
+      {modal && (
+        <PortalModal
+          modal={modal}
+          ctx={ctx}
+          busy={saving}
+          error={formError}
+          save={save}
+          close={close}
+        />
+      )}
+    </div>
+  );
+}
+
+function PortalModal({
+  modal,
+  ctx,
+  busy,
+  error,
+  save,
+  close,
+}: {
+  modal: { kind: string; row: Row };
+  ctx: PageContext;
+  busy: boolean;
+  error: string;
+  save: (v: Record<string, any>) => void;
+  close: () => void;
+}) {
+  const { kind, row } = modal;
+  const { data, date, preview } = ctx;
+  let fields: FieldSpec[] = [];
+  let initial: Record<string, any> = { ...row };
+  let title = "Review record";
+  let submit = preview ? "Save in preview" : "Save changes";
+  let detail: React.ReactNode = null;
+  const field = (
+    key: string,
+    label: string,
+    type = "text",
+    required = true,
+    extra: Partial<FieldSpec> = {},
+  ): FieldSpec => ({ key, label, type, required, ...extra });
+  if (kind === "family") {
+    return (
+      <FamilyEnrollmentModal
+        ctx={ctx}
+        busy={busy}
+        error={error}
+        save={save}
+        close={close}
+      />
+    );
+  } else if (kind === "pickup") {
+    return (
+      <BiometricPickupModal
+        row={row}
+        data={data}
+        onSave={save}
+        onClose={close}
+      />
+    );
+  } else if (kind === "enroll-biometric") {
+    return (
+      <BiometricEnrollModal
+        row={row as any}
+        onSuccess={() => {}}
+        onClose={close}
+      />
+    );
+  } else if (kind === "assign-caregiver") {
+    return (
+      <AssignCaregiverModal
+        caregiver={row}
+        data={data}
+        busy={busy}
+        error={error}
+        close={close}
+        onSave={(child_ids, group_id) => save({ child_ids, group_id })}
+      />
+    );
+  } else if (kind === "assign-child-caregiver") {
+    return (
+      <AssignChildModal
+        child={row}
+        data={data}
+        busy={busy}
+        error={error}
+        close={close}
+        onSave={(caregiver_id, group_id) => save({ caregiver_id, group_id })}
+      />
+    );
+  } else if (kind === "assign-group-caregiver") {
+    return (
+      <AssignGroupCaregiverModal
+        group={row}
+        data={data}
+        busy={busy}
+        error={error}
+        close={close}
+        onSave={(lead_caregiver_id, assign_children) => save({ lead_caregiver_id, assign_children })}
+      />
+    );
+  } else if (kind === "caregiver" || (kind === "user" && row.role === "caregiver")) {
+    title = row.id ? "Edit Caregiver Profile" : "Register Caregiver";
+    initial = {
+      role: "caregiver",
+      ...row,
+    };
+    fields = [
+      field("name", "Full name"),
+      field("email", "Email address", "email"),
+      field("phone", "Phone number", "tel", false, {
+        hint: "Primary contact phone number for staff communication",
+      }),
+      field("title", "Job title / Designation", "text", false, {
+        hint: "e.g., Lead Infant Teacher, Preschool Caregiver, Assistant Teacher, Nurse",
+      }),
+      field("shift", "Working hours / Shift", "text", false, {
+        wide: true,
+        hint: "e.g., Morning Shift (07:30 – 15:30) or Full Day (08:00 – 17:00)",
+      }),
+      field("qualifications", "Qualifications & Certifications", "textarea", false, {
+        wide: true,
+        hint: "e.g., Early Childhood Education Diploma, CPR & First Aid Certified",
+      }),
+      field("emergency_contact", "Staff emergency contact", "text", false, {
+        wide: true,
+        hint: "Name and phone number of person to call in an emergency",
+      }),
+    ];
+    if (!row.id && !preview)
+      fields.push(
+        field("password", "Temporary account password", "password", true, {
+          wide: true,
+          hint: "At least 8 characters. Share securely with the caregiver.",
+        }),
+      );
+  } else if (kind === "user") {
+    title = (row.id ? "Edit " : "Register ") + (row.role === "parent" ? "parent / guardian" : "caregiver");
+    fields = [
+      field("name", "Full name"),
+      field("email", "Email address", "email"),
+    ];
+    if (!row.id && !preview)
+      fields.push(
+        field("password", "Temporary password", "password", true, {
+          wide: true,
+          hint: "At least 8 characters. Share securely with the account owner.",
+        }),
+      );
+  } else if (kind === "child") {
+    title = row.id ? "Edit child profile" : "Register a child";
+    initial = {
+      gender: "female",
+      enrollment_status: "active",
+      ...row,
+      dob: dayOf(row.dob),
+    };
+    fields = [
+      field("full_name", "Child’s full name"),
+      field("dob", "Date of birth", "date", true, { max: today() }),
+      field("gender", "Gender", "select", true, {
+        options: ["female", "male", "other"].map((v) => ({
+          value: v,
+          label: label(v),
+        })),
+      }),
+      field("enrollment_status", "Enrollment", "select", true, {
+        options: ["active", "waitlist", "inactive"].map((v) => ({
+          value: v,
+          label: label(v),
+        })),
+      }),
+      field("group_id", "Group", "select", false, {
+        options: options(data.groups),
+      }),
+      field("caregiver_id", "Assigned caregiver", "select", false, {
+        options: options(
+          data.users.filter(
+            (u) => u.role === "caregiver" && u.status === "active",
+          ),
+        ),
+      }),
+      field("agreement_signed", "Signed Daycare Agreement Form on File", "checkbox", false),
+      field("terms_accepted", "Daycare Terms of Service & Policies Accepted", "checkbox", false),
+      field("birth_certificate_url", "Official Birth Certificate (PDF or Image File)", "document", false, { wide: true }),
+    ];
+    detail = (
+      <div className="p-notice">
+        Register the child first, then link their parents and approved pickup
+        guardians from the children list.
+      </div>
+    );
+  } else if (kind === "checkin" || kind === "absent") {
+    title = `${kind === "checkin" ? "Check in" : "Record absence"} · ${row.full_name}`;
+    submit = kind === "checkin" ? "Confirm check-in" : "Confirm absence";
+    fields = [field("notes", "Attendance notes", "textarea", false, {wide:true})];
+    detail = <p>Confirm attendance for {row.full_name}. The server checks your current assignment and the child's attendance state.</p>;
+  } else if (kind === "pickup") {
+    title = `Verify pickup · ${row.full_name}`;
+    submit = "Verify guardian and check out";
+    initial = {guardian_key:"",identity_confirmed:false,reason:""};
+    const adults = [
+      ...data.guardians.filter(g=>g.child_id===row.id && g.pickup_authorized && data.users.some(u=>u.id===g.user_id && u.status==='active'))
+        .map(g=>({value:`user:${g.user_id}`,label:`${userName(data,g.user_id)} · ${g.relationship || 'Guardian'}`})),
+      ...(data.guardianRequests || []).filter(g=>g.child_id===row.id && g.status==='approved')
+        .map(g=>({value:`pickup:${g.id}`,label:`${g.name} · ${g.relationship}`})),
+    ];
+    fields = [field("guardian_key","Approved adult collecting this child","select",true,{options:adults,wide:true}),
+      field("identity_confirmed","I checked this adult's identity against the approved guardian record","checkbox",true,{wide:true}),
+      field("reason","How was identity verified? (at least 12 characters)","textarea",true,{wide:true})];
+    detail = <p>Child: {row.full_name}. Use the approved manual identity check. Biometric devices are unavailable. Selecting an adult alone does not confirm their identity.</p>;
+  } else if (kind === "group") {
+    title = row.id ? "Edit classroom" : "Create classroom";
+    fields = [field("name", "Classroom name"), field("description", "Description", "textarea", false),
+      field("lead_caregiver_id", "Lead caregiver", "select", false, {options: options(data.users.filter(u => u.role === "caregiver" && u.status === "active"))}),
+      field("assign_children", "Assign this caregiver to children in the classroom", "checkbox", false)];
+  } else if (kind === "duty") {
+    title = "Assign front desk duty";
+    initial = {date, start: "07:00", end: "18:00", can_attendance: true, can_pickup: false, ...row};
+    fields = [field("staff_id", "Staff member", "select", true, {options: options(data.users.filter(u => ["admin", "caregiver"].includes(u.role) && u.status === "active"))}),
+      field("group_id", "Classroom (blank for all)", "select", false, {options: options(data.groups)}),
+      field("date", "Duty date", "date"), field("start", "Start time (Addis Ababa)", "time"), field("end", "End time (Addis Ababa)", "time"),
+      field("can_attendance", "Manage attendance", "checkbox", false), field("can_pickup", "Verify pickups", "checkbox", false)];
+  } else if (["revoke-duty", "cancel-event", "user-status"].includes(kind)) {
+    title = kind === "revoke-duty" ? "Revoke duty" : kind === "cancel-event" ? "Cancel event" : `${row.status === "active" ? "Deactivate" : "Activate"} account`;
+    submit = "Confirm";
+    detail = <p>Confirm this change for {row.name || row.title || "the selected duty"}. Historical records will remain available.</p>;
+  } else if (kind === "contact") {
+    title = row.id ? "Edit emergency contact" : "Add emergency contact";
+    fields = [field("name", "Contact name"), field("relationship", "Relationship"), field("phone", "Phone number", "tel")];
+  } else if (kind === "instruction") {
+    title = row.id ? "Edit care instruction" : "Add care instruction";
+    initial = {category: "general", ...row};
+    fields = [field("category", "Category", "select", true, {options: ["allergy", "dietary", "medical_note", "general"].map(value => ({value,label:label(value)}))}), field("instruction_text", "Care instruction", "textarea", true, {wide:true})];
+  } else if (kind === "guardian") {
+    title = `Link guardian · ${row.full_name}`;
+    initial = {relationship:"parent", pickup_authorized:false};
+    fields = [field("user_id", "Parent account", "select", true, {options:options(data.users.filter(u => u.role === "parent" && u.status === "active" && !data.guardians.some(g => g.child_id === row.id && g.user_id === u.id)))}), field("relationship", "Relationship"), field("pickup_authorized", "Authorize pickup", "checkbox", false)];
+  } else if (kind === "guardian-request-create") {
+    title = "Request pickup guardian approval";
+    fields = [field("child_id", "Child", "select", true, {options:options(data.children, "full_name")}), field("name", "Guardian name"), field("relationship", "Relationship"), field("phone", "Phone number", "tel"), field("email", "Email address", "email", false)];
+    detail = <p>This request must be reviewed before the guardian can collect a child.</p>;
+  } else if (kind === "guardian-request-review") {
+    title = `Review pickup guardian · ${row.name}`;
+    initial = {...row, decision:row.status === "approved" ? "revoked" : "approved", review_note:""};
+    fields = [field("decision", "Decision", "select", true, {options:(row.status === "approved" ? ["revoked"] : ["approved","rejected"]).map(value=>({value,label:label(value)}))}), field("review_note", "Verification notes (at least 12 characters)", "textarea", true, {wide:true})];
+    detail = <p>{row.relationship} · {row.phone}. Verify the guardian's identity and authorization before approving.</p>;
+  } else if (kind === "event") {
+    title = row.id ? "Edit event" : "Create event";
+    initial = {event_type:"activity_day", event_date:date, ...row, ...(row.event_date ? {event_date:dayOf(row.event_date)} : {})};
+    fields = [field("title", "Event title"), field("event_date", "Event date", "date"), field("event_time", "Event time", "time", false), field("event_type", "Event type", "select", true, {options:["holiday","meeting","activity_day","special_program","closing_date"].map(value=>({value,label:label(value)}))}), field("description", "Description", "textarea", false, {wide:true})];
+  } else if (kind === "announcement") {
+    title = "Publish announcement";
+    initial = {announcement_type:"general", ...row};
+    fields = [field("title", "Announcement title"), field("announcement_type", "Type", "select", true, {options:["general","alert","meal_plan"].map(value=>({value,label:label(value)}))}), field("target_group_id", "Classroom (blank for everyone)", "select", false, {options:options(data.groups)}), field("body", "Announcement", "textarea", true, {wide:true})];
+  } else if (kind === "message") {
+    title = "Send message";
+    fields = [field("recipient_id", "Recipient", "select", true, {options:options(data.users.filter(u=>u.id !== ctx.actor?.id && u.status === "active"))}), field("subject", "Subject", "text", false), field("body", "Message", "textarea", true, {wide:true})];
+  } else if (kind === "product") {
+    title = row.id ? "Edit product" : "Add product";
+    initial = {price:0, stock_qty:0, available:true, ...row};
+    fields = [field("name", "Product name"), field("price", "Price (ETB)", "number", true, {min:"0"}), field("stock_qty", "Stock quantity", "number", true, {min:"0"}), field("available", "Available for purchase", "checkbox", false), field("description", "Description", "textarea", false), field("image_url", "Image URL", "url", false)];
+  } else if (kind === "refund-order") {
+    title=`Record cash returned · order #${row.id}`;submit='Record completed cash return';
+    initial={amount:row.total,original_payment_reference:row.payment_reference,refund_reference:'',refunded_at:new Date(Date.now()+3*3600000).toISOString().slice(0,19),stock_disposition:'',reason:'',refund_confirmed:false};
+    detail=<p>Use this after independently returning the full cash payment to the parent. Ankelba records the evidence and closes the order; it does not transfer money. The original payment receipt remains available.</p>;
+    fields=[field('amount','Full cash amount returned (ETB)','number',true,{step:'0.01',min:'0.01'}),field('original_payment_reference','Original cash receipt reference'),field('refund_reference','Return receipt or external refund evidence reference'),field('refunded_at','Cash returned at · Addis Ababa','datetime-local',true,{step:'1'}),field('stock_disposition','What happened to the goods?','select',true,{options:[{value:'',label:'Choose inventory outcome'},...(row.order_status==='collected'?[{value:'returned_to_stock',label:'Returned in saleable condition — restore stock'}]:[{value:'not_handed_over',label:'Never handed over — release reserved stock'}]),{value:'not_restocked',label:'Cannot be restocked — explain in the reason'}]}),field('reason','Reason and independent refund evidence','textarea'),field('refund_confirmed','I have independently confirmed that the full cash amount was returned','checkbox')];
+  } else if (kind === "order") {
+    title = `Update order #${row.id}`;
+    fields = [field("order_status", "Order status", "select", true, {options:["placed","confirmed","ready_for_pickup","collected","cancelled"].map(value=>({value,label:label(value)}))}), field("payment_status", "Payment status", "select", false, {options:["unpaid","pending","paid","failed"].map(value=>({value,label:label(value)}))})];
+    if(row.payment_status!=='paid')fields.push(field("amount_received","Cash amount received (must equal the order total)","number",false),field("payment_reason","Cash payment record / reason","textarea",false),field("payment_confirmed","I have received and checked this cash payment","checkbox",false));
+  } else if (kind === "edit-settings") {
+    title = "Edit daycare settings";
+    fields = [field("name", "Daycare name"), field("license_number", "License number", "text", false), field("contact_email", "Contact email", "email", false), field("contact_phone", "Contact phone", "tel", false), field("address", "Address", "textarea", false, {wide:true})];
+  } else if (kind === "child-profile") {
+    const guardian = (data.guardians || []).find((g) => g.child_id === row.id);
+    const parentUser = guardian ? (data.users || []).find((u) => u.id === guardian.user_id) : null;
+    const parentName = row.parent_name || parentUser?.name || "Unlinked";
+    const parentEmail = row.parent_email || parentUser?.email || "—";
+    const parentRel = row.parent_relationship || guardian?.relationship || "Parent / Guardian";
+    const parentPhone = row.parent_phone || parentUser?.phone || "—";
+    const group = (data.groups || []).find((g) => g.id === row.group_id)?.name || "Unassigned Group";
+    const caregiverUser = (data.users || []).find((u) => u.id === row.caregiver_id);
+    const caregiverName = caregiverUser?.name || userName(data, row.caregiver_id) || "Unassigned";
+    const allergies = (row.care_instructions || []).filter((ci: any) => ci.category === "allergy");
+    const dietary = (row.care_instructions || []).filter((ci: any) => ci.category === "dietary");
+    const generalInstructions = (row.care_instructions || []).filter((ci: any) => !["allergy", "dietary"].includes(ci.category));
+    const emergencyContacts = row.emergency_contacts || [];
+    const ageInfo = calcAgeDetailed(row.dob);
+
+    const hasBirthCert = !!row.birth_certificate_url;
+
+    return (
+      <Modal title={`${row.full_name} · Child Profile & Verification`} onClose={close}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Header Card with Photo and Identity */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+            {row.photo_url ? (
+              <img
+                src={row.photo_url}
+                alt={row.full_name}
+                style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid #008794", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: "50%",
+                  background: "var(--navy)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  fontWeight: 700,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                }}
+              >
+                {initials(row.full_name || "Child")}
+              </div>
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--navy)" }}>{row.full_name}</h2>
+                <Badge value={row.enrollment_status || "active"} tone="green" />
+              </div>
+              <div style={{ fontSize: 14, color: "#64748b", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span>Born {dayOf(row.dob)}</span>
+                <span>•</span>
+                <span style={{ fontWeight: 600, color: "var(--navy)" }}>{ageInfo.text}</span>
+                {row.gender && <><span>•</span><span style={{ textTransform: "capitalize" }}>{row.gender}</span></>}
+              </div>
+            </div>
+            {!ctx.staff && (
+              <Button variant="secondary small" onClick={() => ctx.open("child", row)}>
+                Edit Profile
+              </Button>
+            )}
+          </div>
+
+          {/* Section: Classroom & Educator */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Classroom &amp; Primary Educator
+              </span>
+              {!ctx.staff && (
+                <Button variant="quiet small" onClick={() => ctx.open("assign-child-caregiver", row)}>
+                  Change Assignment
+                </Button>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <small style={{ color: "#64748b", display: "block" }}>Classroom Group</small>
+                <strong style={{ fontSize: 14, color: "var(--navy)" }}>{group}</strong>
+              </div>
+              <div>
+                <small style={{ color: "#64748b", display: "block" }}>Primary Caregiver</small>
+                <strong style={{ fontSize: 14, color: "var(--navy)" }}>{caregiverName} {caregiverUser?.title ? `(${caregiverUser.title})` : ""}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Documents & Compliance Verification */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
+              Documents &amp; Enrollment Compliance
+            </span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ padding: "8px 12px", background: hasBirthCert ? "#f0fdf4" : "#fef2f2", borderRadius: 8, border: `1px solid ${hasBirthCert ? "#bbf7d0" : "#fecaca"}` }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Icon name="file" size={16} />
+                    <strong style={{ fontSize: 14, color: hasBirthCert ? "#166534" : "#991b1b" }}>
+                      {hasBirthCert ? "Birth Certificate Attached" : "No Birth Certificate"}
+                    </strong>
+                  </div>
+                  {hasBirthCert && (
+                    <button
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#008794", fontSize: 14, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+                      onClick={() => openDataUrlSafe(row.birth_certificate_url, (row.full_name || "child") + "_birth_certificate")}
+                    >
+                      View
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding: "8px 12px", background: row.agreement_signed ? "#f0fdf4" : "#fffbeb", borderRadius: 8, border: `1px solid ${row.agreement_signed ? "#bbf7d0" : "#fef3c7"}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="shield" size={16} />
+                  <strong style={{ fontSize: 14, color: row.agreement_signed ? "#166534" : "#92400e" }}>
+                    {row.agreement_signed ? "Agreement Signed & On File" : "Agreement Form Pending"}
+                  </strong>
+                </div>
+              </div>
+
+              <div style={{ padding: "8px 12px", background: row.terms_accepted ? "#f0fdf4" : "#f8fafc", borderRadius: 8, border: `1px solid ${row.terms_accepted ? "#bbf7d0" : "#e2e8f0"}`, gridColumn: "1 / -1" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="checkCircle" size={16} />
+                  <strong style={{ fontSize: 14, color: row.terms_accepted ? "#166534" : "#64748b" }}>
+                    {row.terms_accepted ? "Daycare Terms of Service & Child Safety Policies Accepted" : "Policies Pending Acceptance"}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Parents & Pickup */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 8 }}>
+              Registered Parents &amp; Authorized Pickup
+            </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {data.guardians.filter((g) => g.child_id === row.id).map((g) => (
+                <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <Person name={userName(data, g.user_id)} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || "No phone on record"}`} />
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <Badge value={g.pickup_authorized ? "Approved for Pickup" : "Not authorized"} tone={g.pickup_authorized ? "green" : "quiet"} />
+                    {g.pickup_authorized && !ctx.staff && (
+                      <Button
+                        variant="secondary small"
+                        onClick={() =>
+                          ctx.open("enroll-biometric", {
+                            id: g.id,
+                            guardian_link_id: g.id,
+                            child_id: row.id,
+                            user_id: g.user_id,
+                            guardian_name: userName(data, g.user_id),
+                            child_name: row.full_name,
+                          } as any)
+                        }
+                      >
+                        Enroll Fingerprint
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {!data.guardians.some((g) => g.child_id === row.id) && (
+                <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>No linked parent accounts.</p>
+              )}
+            </div>
+
+            {/* Additional Pickup Contacts */}
+            {(data.guardianRequests || []).filter((g) => g.child_id === row.id).length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <small style={{ fontSize: 14, color: "#64748b", textTransform: "uppercase", fontWeight: 700, display: "block", marginBottom: 4 }}>
+                  Additional Pickup Contacts
+                </small>
+                {(data.guardianRequests || []).filter((g) => g.child_id === row.id).map((g) => (
+                  <div key={'req-' + g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                    <Person name={g.name} sub={`${g.relationship} · ${g.phone}`} />
+                    <Badge value={g.status === 'approved' ? 'Approved' : g.status === 'pending' ? 'Pending review' : 'Rejected'} tone={g.status === 'approved' ? 'green' : 'gold'} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!ctx.staff && (
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <Button variant="secondary small" onClick={() => ctx.open("guardian", row)}>Link Parent Account</Button>
+                <Button variant="secondary small" onClick={() => ctx.open("guardian-request-create", { id: 0, child_id: row.id })}>Add Pickup Contact</Button>
+              </div>
+            )}
+          </div>
+
+          {/* Section: Emergency Contacts */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Emergency Contacts
+              </span>
+              {!ctx.staff && (
+                <Button variant="quiet small" onClick={() => ctx.open("contact", { id: 0, child_id: row.id })}>
+                  + Add Contact
+                </Button>
+              )}
+            </div>
+            {emergencyContacts.length > 0 ? (
+              emergencyContacts.map((c: any) => (
+                <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <div>
+                    <strong>{c.name}</strong> <span style={{ fontSize: 14, color: "#64748b" }}>({c.relationship})</span>
+                  </div>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: "#2563eb" }}>{c.phone}</span>
+                </div>
+              ))
+            ) : (
+              <p style={{ fontSize: 14, color: "#9ca3af", margin: 0 }}>No emergency contacts recorded.</p>
+            )}
+          </div>
+
+          {/* Section: Allergies & Care Instructions */}
+          <div style={{ background: "#ffffff", padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Allergies &amp; Care Instructions
+              </span>
+              {!ctx.staff && (
+                <Button variant="quiet small" onClick={() => ctx.open("instruction", { id: 0, child_id: row.id })}>
+                  + Add Care Note
+                </Button>
+              )}
+            </div>
+            {allergies.length > 0 ? (
+              <div className="p-care-list" style={{ maxWidth: "100%", flexDirection: "column", gap: 6 }}>
+                {allergies.map((a: any, i: number) => (
+                  <div key={a.id ?? i} className="p-care-item is-allergy">
+                    <span className="p-care-item-kind">Allergy:</span>
+                    <span>{a.instruction_text}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: 14, color: "#166534", margin: "0 0 6px", fontWeight: 500 }}>✓ No known allergies recorded.</p>
+            )}
+            {dietary.map((item: any) => (
+              <div key={item.id} className="p-care-item is-dietary" style={{ marginTop: 6 }}>
+                <span className="p-care-item-kind">Dietary:</span>
+                <span>{item.instruction_text}</span>
+              </div>
+            ))}
+            {generalInstructions.map((gi: any, i: number) => (
+              <div key={gi.id ?? i} className="p-care-item is-medical" style={{ marginTop: 6 }}>
+                <span className="p-care-item-kind">{label(gi.category)}:</span>
+                <span>{gi.instruction_text}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-dialog-footer">
+            <Button onClick={close}>Done</Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  } else {
+    title =
+      kind === "report-detail"
+        ? "Daily report"
+        : kind === "health-detail"
+          ? "Health / incident record"
+          : kind === "message-detail"
+            ? "Message"
+            : "Attendance history";
+    const lines =
+      kind === "report-detail"
+        ? {
+            Child: childName(data, row.child_id),
+            Caregiver: userName(data, row.caregiver_id),
+            Date: dayOf(row.report_date),
+            Mood: label(row.mood),
+            "Sleep (minutes)": row.sleep_duration_min ?? "—",
+            "Sleep notes": row.sleep_notes || "No sleep notes recorded",
+            "Behavior notes": row.behavior_notes || "No behavior notes recorded",
+            Observations:
+              row.general_observations || "No observations recorded",
+            Meals: (row.meals && row.meals.length > 0)
+              ? row.meals.map((m: any) => `${label(m.meal_type)}: ${m.description || ""}${m.portion ? ` (${m.portion})` : ""}`).join("\n")
+              : "No meals recorded",
+            Activities: (row.activities && row.activities.length > 0)
+              ? row.activities.map((a: any) => `${label(a.activity_type)}: ${a.description || ""}${a.location ? ` (${a.location})` : ""}`).join("\n")
+              : "No activities recorded",
+          }
+        : kind === "health-detail"
+          ? {
+              Child: childName(data, row.child_id),
+              Type: row.record_type,
+              Severity: row.severity,
+              Description: row.description,
+              "Parent informed": row.parent_notified ? "Yes" : "Pending",
+            }
+          : kind === "message-detail"
+            ? {
+                From: userName(data, row.sender_id),
+                To: userName(data, row.recipient_id),
+                Subject: row.subject || "No subject",
+                Message: row.body,
+              }
+            : {
+                Child: row.full_name,
+                History: data.attendance
+                  .filter((a) => a.child_id === row.id)
+                  .map(
+                    (a) => localDay(a.event_time) + " · " + label(a.event_type),
+                  )
+                  .slice(0, 30)
+                  .join("\n"),
+              };
+    return (
+      <Modal title={title} onClose={close}>
+        <div className="p-detail-grid">
+          {Object.entries(lines).map(([key, value]) => (
+            <div key={key}>
+              <small>{key}</small>
+              <p>{String(value ?? "—")}</p>
+            </div>
+          ))}
+        </div>
+        <div className="p-dialog-footer">
+          <Button onClick={close}>Done</Button>
+        </div>
+      </Modal>
+    );
+  }
+  return (
+    <Modal title={title} onClose={close}>
+      {detail}
+      <RecordForm
+        fields={fields}
+        initial={initial}
+        onSave={save}
+        onCancel={close}
+        busy={busy}
+        error={error}
+        submit={submit}
+      />
+    </Modal>
+  );
+}
+
+function FamilyEnrollmentModal({
+  ctx,
+  busy,
+  error,
+  save,
+  close,
+}: {
+  ctx: PageContext;
+  busy: boolean;
+  error: string;
+  save: (values: Record<string, any>) => void;
+  close: () => void;
+}) {
+  const { data, preview } = ctx;
+  const [isNewGroup, setIsNewGroup] = useState(data.groups.length === 0);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [validationError, setValidationError] = useState("");
+
+  const initialGroupId = data.groups[0]?.id ? String(data.groups[0].id) : "";
+  const initialGroup = data.groups.find((g) => String(g.id) === initialGroupId);
+  const initialCaregiverId = initialGroup?.lead_caregiver_id ? String(initialGroup.lead_caregiver_id) : "";
+
+  const [formData, setFormData] = useState({
+    parent_name: "",
+    parent_email: "",
+    parent_phone: "",
+    parent_relationship: "Mother",
+    parent_password: "",
+    child_full_name: "",
+    child_dob: "",
+    child_gender: "female",
+    child_photo_url: "",
+    child_birth_certificate_url: "",
+    child_group_id: initialGroupId,
+    child_caregiver_id: initialCaregiverId,
+    monthly_care_fee: "3500.00",
+    allergy_note: "",
+    care_note: "",
+    sec_contact_name: "",
+    sec_contact_relationship: "Father",
+    sec_contact_phone: "",
+    agreement_signed: false,
+    terms_accepted: false,
+  });
+
+  const ageInfo = useMemo(() => calcAgeDetailed(formData.child_dob), [formData.child_dob]);
+
+  const handleChange = (key: string, val: any) => {
+    setFormData((prev) => ({ ...prev, [key]: val }));
+    if (key === "terms_accepted" && val) {
+      setValidationError("");
+    }
+  };
+
+  const handleGroupSelect = (grpId: string) => {
+    const selectedGroup = data.groups.find((g) => String(g.id) === grpId);
+    setFormData((prev) => ({
+      ...prev,
+      child_group_id: grpId,
+      // If the selected group has a designated lead caregiver, automatically pre-select them
+      child_caregiver_id: selectedGroup?.lead_caregiver_id ? String(selectedGroup.lead_caregiver_id) : prev.child_caregiver_id,
+    }));
+  };
+
+  const selectedGroupObj = data.groups.find((g) => String(g.id) === formData.child_group_id);
+  const groupLeadName = selectedGroupObj?.lead_caregiver_name || userName(data, selectedGroupObj?.lead_caregiver_id);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submitted = new FormData(e.currentTarget as HTMLFormElement);
+    const values = {...formData, ...Object.fromEntries(submitted.entries()), terms_accepted:submitted.has("terms_accepted"), agreement_signed:submitted.has("agreement_signed")};
+    if (!values.terms_accepted) {
+      setValidationError("Please review and confirm that the parent/guardian accepts the Daycare Terms & Policies before proceeding.");
+      return;
+    }
+    setValidationError("");
+    save({
+      ...values,
+      new_group_name: isNewGroup ? newGroupName.trim() : "",
+    });
+  };
+
+  return (
+    <>
+      {showTermsModal && (
+        <DaycareTermsModal
+          close={() => setShowTermsModal(false)}
+          onAccept={() => handleChange("terms_accepted", true)}
+        />
+      )}
+
+      <Modal title="Enroll New Family (Student, Parent & Caregiver)" onClose={close}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <p style={{ margin: "0 0 4px", fontSize: "14px", color: "var(--muted)" }}>
+            Complete full enrollment in one unified flow: student records, parent user access, verified compliance documents, and classroom/caregiver assignment.
+          </p>
+
+          {/* Section 1: Parent Information */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="user" size={17} /></span>
+              <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Parent / Guardian Account</strong>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <label>
+                Full name *
+                <input
+                  required
+                  placeholder="e.g., Sara Mengistu"
+                  value={formData.parent_name}
+                  name="parent_name"
+                  onInput={(e) => handleChange("parent_name", e.currentTarget.value)}
+                  onChange={(e) => handleChange("parent_name", e.target.value)}
+                />
+              </label>
+              <label>
+                Email address (login username) *
+                <input
+                  type="email"
+                  required
+                  placeholder="sara@example.com"
+                  value={formData.parent_email}
+                  name="parent_email"
+                  onInput={(e) => handleChange("parent_email", e.currentTarget.value)}
+                  onChange={(e) => handleChange("parent_email", e.target.value)}
+                />
+              </label>
+              <label>
+                Phone number *
+                <input
+                  type="tel"
+                  required
+                  placeholder="+251 911 223 344"
+                  value={formData.parent_phone}
+                  name="parent_phone"
+                  onInput={(e) => handleChange("parent_phone", e.currentTarget.value)}
+                  onChange={(e) => handleChange("parent_phone", e.target.value)}
+                />
+              </label>
+              <label>
+                Relationship to child
+                <select
+                  value={formData.parent_relationship}
+                  name="parent_relationship"
+                  onInput={(e) => handleChange("parent_relationship", e.currentTarget.value)}
+                  onChange={(e) => handleChange("parent_relationship", e.target.value)}
+                >
+                  <option value="Mother">Mother</option>
+                  <option value="Father">Father</option>
+                  <option value="Legal Guardian">Legal Guardian</option>
+                  <option value="Grandmother">Grandmother</option>
+                  <option value="Grandfather">Grandfather</option>
+                  <option value="Aunt">Aunt</option>
+                  <option value="Uncle">Uncle</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Parent app temporary password *
+                <input
+                  type="password"
+                  required={!preview}
+                  minLength={8}
+                  placeholder="At least 8 characters (e.g., Welcome123!)"
+                  value={formData.parent_password}
+                  name="parent_password"
+                  onInput={(e) => handleChange("parent_password", e.currentTarget.value)}
+                  onChange={(e) => handleChange("parent_password", e.target.value)}
+                />
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
+                  The parent will sign in to the Ankelba Parent mobile app with this password.
+                </small>
+              </label>
+            </div>
+          </div>
+
+          {/* Section 2: Child Profile & Documents */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="child" size={17} /></span>
+              <div>
+                <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Child Information &amp; Official Documents</strong>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--muted)" }}>
+                  Age is automatically calculated from date of birth. Attach photo and birth certificate for official file.
+                </p>
+              </div>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <label>
+                Child’s full name *
+                <input
+                  required
+                  placeholder="e.g., Nathaniel Dawit"
+                  value={formData.child_full_name}
+                  name="child_full_name"
+                  onInput={(e) => handleChange("child_full_name", e.currentTarget.value)}
+                  onChange={(e) => handleChange("child_full_name", e.target.value)}
+                />
+              </label>
+              <label>
+                Date of birth *
+                <input
+                  type="date"
+                  required
+                  max={today()}
+                  value={formData.child_dob}
+                  name="child_dob"
+                  onInput={(e) => handleChange("child_dob", e.currentTarget.value)}
+                  onChange={(e) => handleChange("child_dob", e.target.value)}
+                />
+                {formData.child_dob && (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 8px", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 6, color: "#1E40AF", fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+                    <Icon name="clock" size={12} />
+                    <span>Calculated Age: <strong>{ageInfo.text}</strong></span>
+                  </div>
+                )}
+              </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Gender
+                <select
+                  value={formData.child_gender}
+                  name="child_gender"
+                  onInput={(e) => handleChange("child_gender", e.currentTarget.value)}
+                  onChange={(e) => handleChange("child_gender", e.target.value)}
+                >
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+
+              {/* Child Photo Dropzone */}
+              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                <ImageDropzone
+                  label="Child Portrait Photo (Attendance & Identification)"
+                  value={formData.child_photo_url}
+                  onChange={(url) => handleChange("child_photo_url", url)}
+                  promptTitle="Drop child photo here, or browse files"
+                  promptSubtitle="Clear front face portrait · PNG, JPG · Displayed on classroom attendance roster"
+                  icon="child"
+                  circlePreview={true}
+                />
+              </div>
+
+              {/* Birth Certificate Document Dropzone */}
+              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                <ImageDropzone
+                  label="Official Birth Certificate (Upload Photo or PDF File)"
+                  value={formData.child_birth_certificate_url}
+                  onChange={(url) => handleChange("child_birth_certificate_url", url)}
+                  promptTitle="Choose or drag birth certificate file here (Photo or PDF)"
+                  promptSubtitle="Supports PDF, PNG, JPG from your device · Uploaded and stored directly"
+                  icon="file"
+                  allowPdf={true}
+                  allowUrl={false}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Classroom & Primary Caregiver Assignment */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="leaf" size={17} /></span>
+              <div>
+                <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Classroom &amp; Primary Caregiver Assignment</strong>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--muted)" }}>
+                  Assigning right here directly enrolls the child onto the classroom educator's daily attendance and care roster.
+                </p>
+              </div>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--navy)" }}>Classroom group *</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsNewGroup(!isNewGroup)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#008794",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    {isNewGroup ? "← Choose existing" : "+ Create new group here"}
+                  </button>
+                </div>
+                {isNewGroup ? (
+                  <input
+                    required
+                    aria-label="New classroom group name"
+                    placeholder="e.g., Little Sprouts (Toddler Room)"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #D1D5DB" }}
+                  />
+                ) : (
+                  <select
+                    aria-label="Classroom group"
+                    value={formData.child_group_id}
+                  name="child_group_id"
+                    onChange={(e) => handleGroupSelect(e.target.value)}
+                  >
+                    <option value="">Select classroom group</option>
+                    {data.groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {selectedGroupObj && groupLeadName && (
+                  <small style={{ color: "#008794", marginTop: 4, display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 600 }}>
+                    <Icon name="checkCircle" size={13} /> Group Lead Teacher: {groupLeadName}
+                  </small>
+                )}
+              </div>
+
+              <label>
+                Assigned primary caregiver (Lead Teacher)
+                <select
+                  value={formData.child_caregiver_id}
+                  name="child_caregiver_id"
+                  onInput={(e) => handleChange("child_caregiver_id", e.currentTarget.value)}
+                  onChange={(e) => handleChange("child_caregiver_id", e.target.value)}
+                >
+                  <option value="">Unassigned (Select educator)</option>
+                  {data.users
+                    .filter((u) => u.role === "caregiver" && u.status === "active")
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} {u.title ? `(${u.title})` : ""}
+                      </option>
+                    ))}
+                </select>
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block", fontSize: 14 }}>
+                  This educator records daily activities, meals, napping, and check-ins for the child.
+                </small>
+              </label>
+
+              <label style={{ gridColumn: "1 / -1" }}>
+                Monthly care fee (ETB) *
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="3500.00"
+                  value={formData.monthly_care_fee}
+                  name="monthly_care_fee"
+                  onInput={(e) => handleChange("monthly_care_fee", e.currentTarget.value)}
+                  onChange={(e) => handleChange("monthly_care_fee", e.target.value)}
+                />
+                <small style={{ color: "#6B7280", marginTop: 4, display: "block" }}>
+                  Agreed baseline monthly care fee for this child
+                </small>
+              </label>
+            </div>
+          </div>
+
+          {/* Section 4: Care, Allergies & Emergency Contacts */}
+          <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="heart" size={17} /></span>
+              <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Care, Allergies &amp; Secondary Emergency Contact</strong>
+            </div>
+            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Allergies or dietary restrictions
+                <input
+                  placeholder="e.g., Peanut allergy — carries EpiPen (or leave empty if none)"
+                  value={formData.allergy_note}
+                  name="allergy_note"
+                  onInput={(e) => handleChange("allergy_note", e.currentTarget.value)}
+                  onChange={(e) => handleChange("allergy_note", e.target.value)}
+                />
+              </label>
+              <label style={{ gridColumn: "1 / -1" }}>
+                Special care / sleep / medical instructions
+                <textarea
+                  placeholder="e.g., Sleeps best with stuffed rabbit. Needs water bottle refilled at noon."
+                  value={formData.care_note}
+                  name="care_note"
+                  onInput={(e) => handleChange("care_note", e.currentTarget.value)}
+                  onChange={(e) => handleChange("care_note", e.target.value)}
+                  rows={2}
+                />
+              </label>
+              <label>
+                Secondary contact name (optional)
+                <input
+                  placeholder="e.g., Dawit Abebe"
+                  value={formData.sec_contact_name}
+                  name="sec_contact_name"
+                  onInput={(e) => handleChange("sec_contact_name", e.currentTarget.value)}
+                  onChange={(e) => handleChange("sec_contact_name", e.target.value)}
+                />
+              </label>
+              <label>
+                Secondary contact phone
+                <input
+                  type="tel"
+                  placeholder="+251 911 554 433"
+                  value={formData.sec_contact_phone}
+                  name="sec_contact_phone"
+                  onInput={(e) => handleChange("sec_contact_phone", e.currentTarget.value)}
+                  onChange={(e) => handleChange("sec_contact_phone", e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Section 5: Legal Agreement & Safety Policies */}
+          <div style={{ background: "#F8FAFC", border: "1px solid #CBD5E1", borderRadius: 12, padding: "16px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="shield" size={17} /></span>
+              <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Enrollment Agreement &amp; Policy Acceptance</strong>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.agreement_signed}
+                  name="agreement_signed"
+                  onChange={(e) => handleChange("agreement_signed", e.target.checked)}
+                  style={{ marginTop: 3 }}
+                />
+                <div>
+                  <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--navy)" }}>
+                    Signed Parent-Daycare Agreement Form Verified &amp; on File
+                  </span>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748B" }}>
+                    Confirm that the family has signed the physical or electronic daycare enrollment contract and medical emergency consent form.
+                  </p>
+                </div>
+              </label>
+
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.terms_accepted}
+                  name="terms_accepted"
+                  onChange={(e) => handleChange("terms_accepted", e.target.checked)}
+                  style={{ marginTop: 3 }}
+                />
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--navy)" }}>
+                      I confirm the parent/guardian has read, understood, and agreed to the Daycare Terms of Service &amp; Safety Policies *
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#008794",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        padding: 0,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Review Terms &amp; Policies
+                    </button>
+                  </div>
+                  <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748B" }}>
+                    Mandatory compliance requirement before enrolling a student into the daycare management system.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {(validationError || error) && (
+            <div role="alert" className="p-error" style={{ margin: "4px 0" }}>
+              {validationError || error}
+            </div>
+          )}
+
+          <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Enrolling Family…" : "Complete Family Enrollment"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+function AssignCaregiverModal({
+  caregiver,
+  data,
+  busy,
+  error,
+  close,
+  onSave,
+}: {
+  caregiver: Row;
+  data: Dataset;
+  busy: boolean;
+  error: string;
+  close: () => void;
+  onSave: (childIds: number[], groupId?: number) => void;
+}) {
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+  const initialAssigned = useMemo(
+    () => new Set(data.children.filter((c) => c.caregiver_id === caregiver.id && c.enrollment_status === "active").map((c) => c.id)),
+    [data.children, caregiver.id]
+  );
+  const [selectedChildren, setSelectedChildren] = useState<Set<number>>(initialAssigned);
+  const [searchFilter, setSearchFilter] = useState("");
+
+  const handleGroupSelect = (grpId: string) => {
+    setSelectedGroup(grpId);
+    if (!grpId) return;
+    const gId = Number(grpId);
+    const inGroup = data.children.filter((c) => c.group_id === gId && c.enrollment_status === "active").map((c) => c.id);
+    setSelectedChildren((prev) => {
+      const next = new Set(prev);
+      inGroup.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const toggleChild = (id: number) => {
+    setSelectedChildren((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedChildren(new Set(data.children.filter((c) => c.enrollment_status === "active").map((c) => c.id)));
+  };
+
+  const clearAll = () => {
+    setSelectedChildren(new Set());
+  };
+
+  const filteredChildren = data.children.filter(
+    (c) =>
+      c.enrollment_status === "active" &&
+      (!searchFilter || c.full_name.toLowerCase().includes(searchFilter.toLowerCase()))
+  );
+
+  return (
+    <Modal title={`Assign Students to ${caregiver.name}`} onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
+          Select children or an entire classroom to assign to <strong>{caregiver.name}</strong> ({caregiver.title || "Caregiver"}). Assigned caregivers record daily activities, naps, meals, and attendance.
+          {' '}Previously assigned active children you deselect will be unassigned. The classroom lead changes only when all active children in that classroom are selected.
+        </p>
+
+        {/* Quick Group Bulk-Assign */}
+        <div style={{ padding: "12px 14px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+          <strong style={{ fontSize: 14, color: "var(--navy)", display: "block", marginBottom: 6 }}>
+            Quick Assign Entire Classroom Group
+          </strong>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <select
+              style={{ flex: 1 }}
+              value={selectedGroup}
+              onChange={(e) => handleGroupSelect(e.target.value)}
+            >
+              <option value="">Choose a classroom to select all its students…</option>
+              {data.groups.map((g) => {
+                const count = data.children.filter((c) => c.group_id === g.id && c.enrollment_status === "active").length;
+                return (
+                  <option key={g.id} value={g.id}>
+                    {g.name} ({count} active children)
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        {/* Individual Student Selection */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <strong style={{ fontSize: 14, color: "var(--navy)" }}>
+              Assigned Students ({selectedChildren.size} selected)
+            </strong>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button variant="quiet small" type="button" onClick={selectAll}>Select All</Button>
+              <Button variant="quiet small" type="button" onClick={clearAll}>Deselect All</Button>
+            </div>
+          </div>
+
+          <input
+            type="search"
+            placeholder="Search students by name…"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            style={{ marginBottom: 10, width: "100%" }}
+          />
+
+          <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {filteredChildren.length === 0 ? (
+              <div style={{ padding: 12, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>No active students found</div>
+            ) : (
+              filteredChildren.map((c) => {
+                const checked = selectedChildren.has(c.id);
+                const currentCaregiver = data.users.find((u) => u.id === c.caregiver_id);
+                const group = data.groups.find((g) => g.id === c.group_id);
+                return (
+                  <label
+                    key={c.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      borderRadius: 6,
+                      background: checked ? "#eff6ff" : "#fff",
+                      cursor: "pointer",
+                      border: checked ? "1px solid #bfdbfe" : "1px solid #f1f5f9",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleChild(c.id)}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: "var(--navy)" }}>{c.full_name}</div>
+                      <div style={{ fontSize: 14, color: "#64748b" }}>
+                        {group?.name || "No classroom"} · {currentCaregiver ? (currentCaregiver.id === caregiver.id ? "✓ Currently assigned to this caregiver" : `Assigned to: ${currentCaregiver.name}`) : "Unassigned"}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div role="alert" className="p-error">
+            {error}
+          </div>
+        )}
+
+        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(Array.from(selectedChildren), selectedGroup ? Number(selectedGroup) : undefined)}
+          >
+            {busy ? "Saving…" : `Save Assignments (${selectedChildren.size} children)`}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function AssignChildModal({
+  child,
+  data,
+  busy,
+  error,
+  close,
+  onSave,
+}: {
+  child: Row;
+  data: Dataset;
+  busy: boolean;
+  error: string;
+  close: () => void;
+  onSave: (caregiverId: number | null, groupId: number | null) => void;
+}) {
+  const [caregiverId, setCaregiverId] = useState<string>(child.caregiver_id ? String(child.caregiver_id) : "");
+  const [groupId, setGroupId] = useState<string>(child.group_id ? String(child.group_id) : "");
+
+  return (
+    <Modal title={`Assign Caregiver & Group: ${child.full_name}`} onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
+          Set the assigned educator and classroom for <strong>{child.full_name}</strong>.
+        </p>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 600, color: "var(--navy)" }}>
+          Primary Caregiver / Educator
+          <select
+            value={caregiverId}
+            onChange={(e) => setCaregiverId(e.target.value)}
+          >
+            <option value="">Unassigned (No caregiver)</option>
+            {data.users
+              .filter((u) => u.role === "caregiver" && u.status === "active")
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} {u.title ? `(${u.title})` : ""}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 600, color: "var(--navy)" }}>
+          Classroom Group
+          <select
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+          >
+            <option value="">Unassigned (No classroom group)</option>
+            {data.groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="p-notice" style={{ margin: 0 }}>
+          Assigned caregivers have direct access to log daily reports, health observations, and front-desk attendance for this child.
+        </div>
+
+        {error && (
+          <div role="alert" className="p-error">
+            {error}
+          </div>
+        )}
+
+        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(caregiverId ? Number(caregiverId) : null, groupId ? Number(groupId) : null)}
+          >
+            {busy ? "Saving…" : "Save Assignment"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function AssignGroupCaregiverModal({
+  group,
+  data,
+  busy,
+  error,
+  close,
+  onSave,
+}: {
+  group: Row;
+  data: Dataset;
+  busy: boolean;
+  error: string;
+  close: () => void;
+  onSave: (caregiverId: number | null, assignChildren: boolean) => void;
+}) {
+  const [caregiverId, setCaregiverId] = useState<string>(group.lead_caregiver_id ? String(group.lead_caregiver_id) : "");
+  const [assignChildren, setAssignChildren] = useState(true);
+  const activeChildrenCount = data.children.filter((c) => c.group_id === group.id && c.enrollment_status === "active").length;
+
+  return (
+    <Modal title={`Assign Lead Caregiver to ${group.name}`} onClose={close}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>
+          Select the lead teacher or educator responsible for the <strong>{group.name}</strong> classroom.
+        </p>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, fontWeight: 600, color: "var(--navy)" }}>
+          Lead Teacher / Primary Caregiver
+          <select
+            value={caregiverId}
+            onChange={(e) => setCaregiverId(e.target.value)}
+          >
+            <option value="">Unassigned (No lead caregiver)</option>
+            {data.users
+              .filter((u) => u.role === "caregiver" && u.status === "active")
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} {u.title ? `(${u.title})` : ""}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={assignChildren}
+            onChange={(e) => setAssignChildren(e.target.checked)}
+          />
+          <span>
+            Also assign all <strong>{activeChildrenCount} active children</strong> in this group to this caregiver
+          </span>
+        </label>
+
+        {error && (
+          <div role="alert" className="p-error">
+            {error}
+          </div>
+        )}
+
+        <div className="p-dialog-footer" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Button variant="secondary" type="button" onClick={close} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            onClick={() => onSave(caregiverId ? Number(caregiverId) : null, assignChildren)}
+          >
+            {busy ? "Saving…" : "Save Group Assignment"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
