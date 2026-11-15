@@ -34,6 +34,14 @@ async function assertScope(client,user,child,action,regular=false) {
  if(!rows.length)throw failure('No active front-desk assignment for this child and action.',403);
  return actor;
 }
+// Identification reads must honor the same live shift and tenant boundaries as release.
+async function pickupChild(childId,user) {return transaction(async client=>{
+ const [child]=await queryRows(client,'SELECT * FROM children WHERE id=$1 FOR SHARE',[childId]);
+ if(!child)throw failure('Child not found.',404);
+ await assertScope(client,user,child,'pickup');
+ if(child.enrollment_status!=='active')throw failure('Active child not found.',404);
+ return child;
+});}
 async function saveDuty(body,user) {
  if(!body.can_attendance&&!body.can_pickup)throw failure('Choose at least one responsibility.');
  const problem=shiftError(body.starts_at,body.ends_at); if(problem)throw failure(problem);
@@ -223,4 +231,4 @@ async function renewPlan(body, user) {
   throw failure('Subscription changes require platform approval. Contact platform support.', 403);
 }
 
-module.exports={saveDuty,revokeDuty,recordAttendance,checkout,snapshot,updateSettings,renewPlan};
+module.exports={saveDuty,revokeDuty,recordAttendance,checkout,snapshot,updateSettings,renewPlan,pickupChild};

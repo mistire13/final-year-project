@@ -1,3 +1,73 @@
+/* Front desk: quick arrivals and focused pickup verification. */
+.ankelba-portal .p-desk-page { display: grid; gap: 22px; }
+.p-desk-intro, .p-desk-coverage, .p-desk-counts, .p-scanner-line, .p-desk-child-summary { display: flex; align-items: center; gap: 16px; }
+.p-desk-intro { justify-content: space-between; }
+.p-desk-intro h2 { margin: 0 0 5px; font-size: 25px; letter-spacing: -.5px; }
+.p-desk-intro p, .p-desk-muted, .p-desk-empty p, .p-verification-state p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.p-desk-date { color: var(--muted); white-space: nowrap; font-size: 14px; }
+.p-desk-coverage { font-size: 13px; color: var(--muted); padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.p-desk-coverage svg { color: var(--green); flex-shrink: 0; }
+.p-desk-coverage small { margin-left: auto; }
+.p-desk-counts { gap: 32px; flex-wrap: wrap; }
+.p-desk-counts > span { display: flex; align-items: baseline; gap: 10px; color: var(--muted); font-size: 13px; }
+.p-desk-counts strong { font-size: 28px; font-variant-numeric: tabular-nums; }
+.p-pickup-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 1.05fr); gap: 24px; align-items: start; }
+.ankelba-portal .p-desk-roster, .ankelba-portal .p-pickup-panel { padding: 0; overflow: hidden; box-shadow: var(--shadow-xs); border: 1px solid var(--line); background: var(--cream-card); }
+.p-desk-roster-head { padding: 22px 22px 0; }
+.p-desk-roster-head h3, .p-pickup-panel-head h3 { font-size: 18px; margin: 0 0 16px; }
+.p-desk-tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); }
+.p-desk-tabs > button { min-height: 46px; padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; }
+.p-desk-tabs > button[aria-pressed="true"] { color: var(--navy); border-bottom-color: var(--green); }
+.p-desk-tabs > button:focus-visible, .p-desk-filters :is(input, select):focus-visible, .p-manual-check :is(input, select, textarea):focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.p-desk-filters { display: flex; padding: 18px 22px; gap: 10px; flex-wrap: wrap; }
+.p-desk-search { display: flex; align-items: center; gap: 10px; flex: 1 1 200px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 0 12px; color: var(--muted); background: var(--cream-card); }
+.ankelba-portal .p-desk-search input { width: 100%; min-width: 0; border: 0; background: transparent; padding: 12px 0; font-size: 14px; box-shadow: none; }
+.p-desk-filters select, .p-manual-check select, .p-manual-check textarea { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--cream-card); color: var(--navy); font: inherit; font-size: 14px; max-width: 100%; }
+.p-desk-child-row { display: flex; align-items: center; gap: 16px; justify-content: space-between; padding: 17px 22px; border-top: 1px solid var(--line-light); }
+.p-desk-child-row.selected { background: var(--cream-soft); box-shadow: inset 3px 0 var(--green); }
+.p-desk-child-row .p-person { min-width: 0; }
+.p-desk-child-row .p-person strong { font-size: 14px; }
+.p-desk-child-row .p-person small { font-size: 12px; }
+.p-desk-row-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.p-desk-row-actions small { color: var(--muted); font-size: 12px; }
+.p-desk-page .p-button, .p-pickup-verify .p-button { min-height: 44px; font-size: 13px; }
+.p-desk-empty { padding: 36px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+.p-desk-empty > svg { color: var(--muted-light); }
+.p-desk-empty h3 { font-size: 17px; margin: 0; }
+.p-desk-empty p { max-width: 340px; }
+.p-pickup-panel-head { padding: 22px 24px 0; }
+.p-desk-eyebrow { display: block; font-size: 10px; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+.p-pickup-steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.p-pickup-verify { display: grid; gap: 20px; padding: 0 24px 22px; }
+.p-dialog .p-pickup-verify { padding: 0; }
+.p-desk-child-summary { justify-content: space-between; flex-wrap: wrap; padding: 16px 0; border-top: 1px solid var(--line); }
+.p-scanner-line { justify-content: space-between; flex-wrap: wrap; }
+.p-verification-state { display: flex; align-items: flex-start; gap: 16px; padding: 22px 0; min-height: 150px; }
+.p-verification-state h3 { margin: 0 0 8px; font-size: 18px; }
+.p-verification-icon { color: var(--navy); flex-shrink: 0; }
+.p-verification-state.verified .p-verification-icon { color: var(--green); }
+.p-desk-action-footer { border-top: 1px solid var(--line); padding-top: 18px; }
+.p-desk-action-footer > p { color: var(--muted); font-size: 12px; margin: 0 0 14px; }
+.p-desk-action-footer > div { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.p-manual-check { display: grid; gap: 18px; }
+.p-manual-check > label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600; }
+.p-manual-check small { color: var(--muted); font-size: 12px; font-weight: 500; }
+.p-manual-check textarea { resize: vertical; }
+.p-manual-check > .p-identity-confirm { flex-direction: row; align-items: flex-start; font-size: 13px; font-weight: 500; line-height: 1.6; padding: 12px 0; min-height: 44px; }
+.p-identity-confirm input { flex-shrink: 0; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--green); }
+.p-desk-notice { display: flex; gap: 10px; align-items: center; border-left: 3px solid var(--green); padding: 10px 14px; color: var(--navy); background: var(--cream-card); font-size: 14px; }
+@media (max-width: 1100px) { .p-pickup-workspace { grid-template-columns: 1fr; } .p-pickup-panel { order: -1; } }
+@media (max-width: 600px) {
+  .p-desk-intro { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .p-desk-intro h2 { font-size: 21px; }
+  .p-desk-counts { gap: 20px; }
+  .p-desk-child-row { align-items: flex-start; flex-direction: column; gap: 12px; padding: 16px; }
+  .p-desk-row-actions { align-self: flex-end; }
+  .p-desk-filters, .p-desk-roster-head { padding-left: 16px; padding-right: 16px; }
+  .p-desk-filters select { flex: 1; min-width: 0; }
+  .p-pickup-verify { padding-left: 16px; padding-right: 16px; }
+  .p-desk-tabs { gap: 16px; }
+}
 /* ==========================================================================
    Ankelba Portal Stylesheet — Pro Max Design System
    Sleek modern typography, glassmorphism, refined elevations, and WCAG 2.2 accessibility

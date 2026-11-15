@@ -4,6 +4,11 @@ const m={exports:{}};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/portal/workspaceRoutes.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{module:m,exports:m.exports});
 const route=m.exports.workspaceRouteFailure;
 const known=['dashboard','workspace','caregivers','finances','reports'];
+test('separate arrival and pickup pages and legacy staff bookmarks resolve', () => {
+  const pages = [...known, 'arrivals', 'pickups', 'attendance'];
+  for (const page of ['arrivals', 'pickups', 'workspace']) assert.equal(route('/staff/' + page, 'caregiver', pages, ['arrivals', 'pickups']), null);
+  for (const page of ['arrivals', 'pickups', 'attendance']) assert.equal(route('/admin/' + page, 'admin', pages, pages), null);
+});
 test('workspace routes distinguish unknown addresses from known pages forbidden to the role',()=>{
   for(const address of ['/admin/missing','/admin/reports/extra','/staff/missing','/admin/preview/missing'])assert.equal(route(address,'admin',known,['dashboard','finances','reports']),'not-found');
   assert.equal(route('/staff/finances','caregiver',known,['workspace','reports']),'forbidden');

@@ -7,6 +7,7 @@ import {
   addDays,
   allowedDuty,
   allowedAttendance,
+  allowedPickup,
   attendanceStatus,
   dayOf,
   dutyState,
@@ -240,11 +241,11 @@ export function Overview(ctx: PageContext) {
                 render: (r) => (
                   <div className="p-row-actions">
                     {r.event_type === "not_marked" ? (
-                      (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "attendance")) ? (
+                      (allowedAttendance(data.duties, actor, r)) ? (
                         <Button variant="secondary small" onClick={() => open("checkin", r)}>Check in</Button>
                       ) : null
                     ) : r.event_type === "checkin" ? (
-                      (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "pickup")) ? (
+                      (allowedPickup(data.duties, actor, r)) ? (
                         <Button variant="secondary small" onClick={() => open("pickup", r)}>Verify & Checkout</Button>
                       ) : null
                     ) : (
@@ -377,11 +378,11 @@ export function Overview(ctx: PageContext) {
               render: (r) => (
                 <div className="p-row-actions">
                   {r.event_type === "not_marked" ? (
-                    (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "attendance")) ? (
+                    (allowedAttendance(data.duties, actor, r)) ? (
                       <Button variant="secondary small" onClick={() => open("checkin", r)}>Check in</Button>
                     ) : null
                   ) : r.event_type === "checkin" ? (
-                    (!staff || allowedDuty(data.duties, actor?.id, r.group_id, "pickup")) ? (
+                    (allowedPickup(data.duties, actor, r)) ? (
                       <Button variant="secondary small" onClick={() => open("pickup", r)}>Checkout</Button>
                     ) : null
                   ) : null}
@@ -1274,7 +1275,7 @@ export function Attendance(ctx: PageContext) {
                       </>
                     ) : null
                   ) : r.event_type === "checkin" ? (
-                    (!staff || allowedDuty(data.duties, actor.id, r.group_id, "pickup")) ? (
+                    (allowedPickup(data.duties, actor, r)) ? (
                       <Button
                         variant="secondary small"
                         disabled={!editable}

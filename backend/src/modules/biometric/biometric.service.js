@@ -89,7 +89,7 @@ const getAvailableSlots = async (user) => {
      FROM biometric_references br
      JOIN guardian_links gl ON gl.id = br.guardian_link_id
      JOIN children c ON c.id = gl.child_id
-     WHERE c.daycare_id = $1 AND br.active = TRUE`,
+     WHERE c.daycare_id = $1 AND u.daycare_id = $1 AND br.active = TRUE`,
     [daycareId]
   );
 
@@ -135,15 +135,8 @@ const identifyGuardianBySlot = async (childIdParam, slotIdParam, user) => {
     throw Object.assign(new Error('child_id and slot_id are required'), { statusCode: 400 });
   }
 
-  // 1. Verify child belongs to this daycare
-  const { rows: childRows } = await db.query(
-    `SELECT id, daycare_id, full_name, enrollment_status FROM children WHERE id = $1`,
-    [childId]
-  );
-  if (childRows.length === 0 || childRows[0].daycare_id !== daycareId) {
-    throw Object.assign(new Error('Child not found in this daycare'), { statusCode: 404 });
-  }
-  const child = childRows[0];
+  // Check the current account, daycare and pickup shift before reading guardian data.
+  const child = await require('../portal/portal.service').pickupChild(childId, user);
 
   // 2. Find all active biometric references in this daycare
   const { rows: bioRows } = await db.query(
@@ -154,7 +147,7 @@ const identifyGuardianBySlot = async (childIdParam, slotIdParam, user) => {
      JOIN users u ON u.id = br.user_id
      JOIN guardian_links gl ON gl.id = br.guardian_link_id
      JOIN children c ON c.id = gl.child_id
-     WHERE c.daycare_id = $1 AND br.active = TRUE`,
+     WHERE c.daycare_id = $1 AND u.daycare_id = $1 AND br.active = TRUE`,
     [daycareId]
   );
 

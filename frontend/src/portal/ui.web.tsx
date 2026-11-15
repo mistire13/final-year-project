@@ -315,16 +315,18 @@ export function Modal({
   title,
   children,
   onClose,
+  closeDisabled = false,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  closeDisabled?: boolean;
 }) {
   const [ref, animate] = useAnimate<HTMLDialogElement>();
   const reduce = useReducedMotion();
   const closing = useRef(false);
   const close = async () => {
-    if (closing.current) return;
+    if (closing.current || closeDisabled) return;
     closing.current = true;
     if (!reduce && ref.current) await animate(ref.current, { opacity: 0, transform: "translateY(8px) scale(.99)" }, { duration: .14 });
     onClose();
@@ -352,6 +354,7 @@ export function Modal({
         <button
           className="p-icon-button"
           aria-label="Close dialog"
+          disabled={closeDisabled}
           onClick={() => void close()}
         >
           <Icon name="close" />

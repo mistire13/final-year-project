@@ -588,5 +588,47 @@ test('Phase 4: Attendance, Front-Desk Shifts & Verified Pickup Transitions', asy
       );
     });
 
+    await t.test('Daycare-wide desk shift exposes only its daycare and enforces each capability on reads and writes', async () => {
+      await db('front_desk_assignments').where({ staff_id: f.caregiverA1.id }).update({ status: 'revoked' });
+      const [group] = await db('groups').insert({ name: 'Additional classroom', daycare_id: f.daycareA.id }).returning('*');
+      const [child] = await db('children').insert({ full_name: 'Desk scope test child', dob: '2022-01-01', daycare_id: f.daycareA.id, group_id: group.id, caregiver_id: f.caregiverA2.id, enrollment_status: 'active' }).returning('*');
+      await db('guardian_links').insert({ child_id: child.id, user_id: f.parentA.id, relationship: 'Parent', pickup_authorized: true, created_by: f.adminA.id, daycare_id: f.daycareA.id });
+      const duty = await mod.portalService.saveDuty({ staff_id: f.caregiverA1.id, group_id: null,
+        starts_at: new Date(Date.now() - 60000).toISOString(), ends_at: new Date(Date.now() + 3600000).toISOString(),
+        can_attendance: true, can_pickup: false }, f.adminA);
+      const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Addis_Ababa', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const snapshot = await mod.portalService.snapshot(date, 1, f.caregiverA1, true);
+      assert.ok(snapshot.children.some(c => c.id === child.id));
+      assert.ok(snapshot.children.some(c => c.id === f.childA2.id));
+      assert.ok(snapshot.children.every(c => c.daycare_id === f.daycareA.id));
+      assert.ok(snapshot.users.every(u => ![f.adminB.id, f.caregiverB.id, f.parentB.id].includes(u.id)));
+      const denied = e => e.statusCode === 403;
+      const biometric = require('../src/modules/biometric/biometric.service');
+      await assert.rejects(biometric.identifyGuardianBySlot(child.id, 1, f.caregiverA1), denied);
+      const checkin = await mod.portalService.recordAttendance({ child_id: child.id, event_type: 'checkin' }, f.caregiverA1);
+      assert.equal(checkin.daycare_id, f.daycareA.id);
+      const release = { child_id: child.id, guardian_user_id: f.parentA.id, method: 'manual', identity_confirmed: true, reason: 'Photo ID checked against guardian record.' };
+      await assert.rejects(mod.portalService.checkout(release, f.caregiverA1), denied);
+      await db('front_desk_assignments').where({ id: duty.id }).update({ can_pickup: true, can_attendance: false });
+      await assert.rejects(mod.portalService.recordAttendance({ child_id: child.id, event_type: 'checkin' }, f.caregiverA1), denied);
+      for (const action of [
+        () => mod.portalService.recordAttendance({ child_id: f.childB.id, event_type: 'checkin' }, f.caregiverA1),
+        () => mod.portalService.checkout({ ...release, child_id: f.childB.id, guardian_user_id: f.parentB.id }, f.caregiverA1),
+        () => biometric.identifyGuardianBySlot(f.childB.id, 1, f.caregiverA1),
+      ]) await assert.rejects(action, denied);
+      await db('front_desk_assignments').where({ id: duty.id }).update({ group_id: f.groupA.id });
+      await assert.rejects(mod.portalService.pickupChild(child.id, f.caregiverA1), denied);
+      await db('front_desk_assignments').where({ id: duty.id }).update({ group_id: null });
+      const results = await Promise.allSettled([mod.portalService.checkout(release, f.caregiverA1), mod.portalService.checkout(release, f.caregiverA1)]);
+      assert.equal(results.filter(r => r.status === 'fulfilled').length, 1);
+      assert.equal((await db('attendance').where({ child_id: child.id, event_type: 'checkout' })).length, 1);
+      await db('front_desk_assignments').where({ id: duty.id }).update({ ends_at: new Date(Date.now() - 1000).toISOString() });
+      await assert.rejects(mod.portalService.pickupChild(child.id, f.caregiverA1), denied);
+      const expired = await mod.portalService.snapshot(date, 1, f.caregiverA1, true);
+      assert.ok(!expired.children.some(c => c.id === child.id));
+      await db('front_desk_assignments').where({ id: duty.id }).update({ ends_at: new Date(Date.now() + 3600000).toISOString(), status: 'revoked' });
+      await assert.rejects(mod.portalService.pickupChild(child.id, f.caregiverA1), denied);
+    });
+
   });
 });

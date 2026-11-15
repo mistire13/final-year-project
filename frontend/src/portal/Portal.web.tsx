@@ -1,3 +1,4 @@
+import { DeskPage } from "./DeskPages.web";
 import PlusAnalytics from './PlusAnalytics.web';
 import PlusBillingAutomation from './PlusBillingAutomation.web';
 import PlusStaffScheduling from './PlusStaffScheduling.web';
@@ -19,6 +20,7 @@ import {
   Row,
   allowedDuty,
   allowedAttendance,
+  allowedPickup,
   attendanceStatus,
   dayOf,
   dutyError,
@@ -173,7 +175,9 @@ const nav = [
   {
     group: "Daily operations",
     items: [
-      ["attendance", "Attendance & pickups", "check"],
+      ["arrivals", "Arrivals", "check"],
+      ["pickups", "Pickups", "shield"],
+      ["attendance", "Attendance history", "clock"],
       ["biometric", "Guardian verification", "shield"],
       ["front-desk", "Front-desk duties", "desk"],
       ["staff-scheduling", "Front-desk shifts · Plus", "clock"],
@@ -255,6 +259,7 @@ export default function Portal() {
           id: startStaff ? 11 : 1,
           name: startStaff ? "Meron Alemu" : "Aster Alemayehu",
           role: startStaff ? "caregiver" : "admin",
+          daycare_id: 1, status: "active",
         }
       : null,
   );
@@ -296,7 +301,8 @@ export default function Portal() {
         {
           group: "Your shift",
           items: [
-            ["workspace", "Attendance & pickup", "desk"],
+            ["arrivals", "Arrivals", "check"],
+            ["pickups", "Pickups", "shield"],
             ["reports", "Daily reports", "file"],
             ["health", "Health & incidents", "heart"],
             ["communication", "Messages & announcements", "message"],
@@ -311,15 +317,17 @@ export default function Portal() {
   // An admin's bookmarked Plus page must still reach the locked explanation.
   // Hiding navigation must not hide retained order and payment history.
   const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users", ...Object.keys(plusNavigationFeatures)])];
-  const normalizedPage = page === "users" ? "caregivers" : page;
+  const normalizedPage = page === "users" ? "caregivers" : page === "workspace" ? "arrivals" : page;
   const selected = available.includes(normalizedPage)
     ? normalizedPage
     : staff
-      ? "workspace"
+      ? "arrivals"
       : "dashboard";
   const title =
     navigation.flatMap((g) => g.items).find((i) => i[0] === selected)?.[1] ||
     "Overview";
+  const deskPage = ["arrivals", "pickups"].includes(selected);
+  const effectiveDate = deskPage ? today() : date;
   const usesDate = ["dashboard", "analytics", "groups", "front-desk", "attendance", "reports", "workspace"].includes(selected);
   const usesPageSearch = ["children", "caregivers", "groups", "front-desk", "attendance", "reports", "health", "biometric", "communication", "events", "store", "orders", "audit", "workspace"].includes(selected);
   const activeGroup = navigation.find(group => group.items.some(([key]) => key === selected))?.group;
@@ -377,13 +385,13 @@ export default function Portal() {
       active = false;
     };
   }, [preview]);
-  const refresh = async () => {
+  const refresh = async (background: boolean | unknown = false) => {
     if (preview || !actor) return;
     const request = ++loadingRequest.current;
-    setLoading(true);
+    if (background !== true) setLoading(true);
     setLoadError("");
     try {
-      const snapshot = await portalApi.snapshot(staff ? today() : date, staff);
+      const snapshot = await portalApi.snapshot(staff ? today() : effectiveDate, staff);
       if (request === loadingRequest.current) setData(snapshot);
     } catch (error: any) {
       if (request !== loadingRequest.current) return;
@@ -405,7 +413,7 @@ export default function Portal() {
     return () => {
       loadingRequest.current++;
     };
-  }, [actor?.id, date]);
+  }, [actor?.id, effectiveDate]);
   useEffect(() => {
     if (preview || !actor) return;
     const token = portalTokenStorage.getToken();
@@ -418,13 +426,13 @@ export default function Portal() {
           event.type === "message.read" ||
           event.type === "resource.changed"
         ) {
-          void refresh();
+          void refresh(true);
         }
       },
       actor.id,
     );
     return () => unsubscribe();
-  }, [actor?.id, preview]);
+  }, [actor?.id, preview, effectiveDate]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 4500);
@@ -516,7 +524,7 @@ export default function Portal() {
       return;
     }
     await portalApi.save(path, body, method);
-    await refresh();
+    await refresh(true);
     setToast("Saved successfully.");
   };
   const upsert = (key: Exclude<keyof Dataset, "daycare">, row: Row) => (d: Dataset) => ({
@@ -526,11 +534,15 @@ export default function Portal() {
         ? ((d[key] as Row[]) || []).map((r: Row) => (r.id === row.id ? { ...r, ...row } : r))
         : [{ ...row, id: row.id || Date.now() }, ...(((d[key] as Row[]) || []))],
   });
-  const save = async (values: Record<string, any>) => {
-    if (!modal || saving) return;
+  const savePending = useRef(false);
+  const save = async (values: Record<string, any>, target?: { kind: string; row: Row }) => {
+    const operation = target || modal;
+    if (!operation) return;
+    if (savePending.current) throw Error("Please wait for the current action to finish.");
+    savePending.current = true;
     setSaving(true);
     setFormError("");
-    const { kind, row } = modal;
+    const { kind, row } = operation;
     try {
       if (kind === "caregiver" || (kind === "user" && row.role === "caregiver")) {
         if (!values.name?.trim() || !values.email?.trim())
@@ -886,7 +898,6 @@ export default function Portal() {
             "Attendance has already changed. Refresh and review this child.",
           );
         if (
-          staff &&
           !allowedAttendance(data.duties, actor!, row)
         )
           throw Error(
@@ -933,8 +944,7 @@ export default function Portal() {
         if (attendanceStatus(data, row.id, today())?.event_type !== "checkin")
           throw Error("This child is no longer checked in.");
         if (
-          staff &&
-          !allowedDuty(data.duties, actor!.id, row.group_id, "pickup")
+          !allowedPickup(data.duties, actor!, row)
         )
           throw Error(
             "Your current shift does not permit pickup for this child.",
@@ -1087,6 +1097,7 @@ export default function Portal() {
       );
       throw error;
     } finally {
+      savePending.current = false;
       setSaving(false);
     }
   };
@@ -1243,6 +1254,8 @@ export default function Portal() {
       <Groups {...ctx} />
     ) : selected === "front-desk" ? (
       <Duties {...ctx} />
+    ) : ["arrivals", "pickups"].includes(selected) ? (
+      <DeskPage key={selected} {...ctx} mode={selected as "arrivals" | "pickups"} onAction={(kind, row, values) => save(values, { kind, row })} />
     ) : ["attendance", "workspace"].includes(selected) ? (
       <Attendance {...ctx} />
     ) : selected === "reports" ? (
@@ -1769,7 +1782,7 @@ function PortalModal({
     title = "Assign front desk duty";
     initial = {date, start: "07:00", end: "18:00", can_attendance: true, can_pickup: false, ...row};
     fields = [field("staff_id", "Staff member", "select", true, {options: options(data.users.filter(u => ["admin", "caregiver"].includes(u.role) && u.status === "active"))}),
-      field("group_id", "Classroom (blank for all)", "select", false, {options: options(data.groups)}),
+      field("group_id", "Classroom (leave blank for the whole daycare)", "select", false, {options: options(data.groups), hint: "All classrooms means this daycare only. Each permission applies only during the active shift."}),
       field("date", "Duty date", "date"), field("start", "Start time (Addis Ababa)", "time"), field("end", "End time (Addis Ababa)", "time"),
       field("can_attendance", "Manage attendance", "checkbox", false), field("can_pickup", "Verify pickups", "checkbox", false)];
   } else if (["revoke-duty", "cancel-event", "user-status"].includes(kind)) {

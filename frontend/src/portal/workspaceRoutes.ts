@@ -4,7 +4,7 @@ export function workspaceRouteFailure(path:string,role:string,knownPages:string[
   const match=/^\/(admin|staff)(?:\/(?:preview(?:\/([^/]+))?|([^/]+)))?$/.exec(clean);
   if(!match)return 'not-found';
   const page=match[2]||match[3]||(match[1]==='staff'?'workspace':'dashboard');
-  const normalized=page==='users'?'caregivers':page;
+  const normalized=page==='users'?'caregivers':page==='workspace'&&allowedPages.includes('arrivals')?'arrivals':page;
   if(!knownPages.includes(normalized))return 'not-found';
   if((match[1]==='staff'&&role!=='caregiver')||(match[1]==='admin'&&role!=='admin'))return 'forbidden';
   return allowedPages.includes(normalized)?null:'forbidden';
