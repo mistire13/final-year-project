@@ -1,0 +1,7 @@
+/* Expo's body is locked for native screens; each HTML workspace must scroll. */
+.web-surface {
+  height: 100dvh;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}

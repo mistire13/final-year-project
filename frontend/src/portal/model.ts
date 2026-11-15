@@ -101,6 +101,7 @@ export function metrics(data: Dataset, date: string, group = "") {
 }
 export function dutyState(duty: Row, now = new Date()) {
   if (duty.status === "revoked") return "revoked";
+  if (duty.status !== "active" || !Number.isFinite(Date.parse(duty.starts_at)) || !Number.isFinite(Date.parse(duty.ends_at))) return "ended";
   if (now.getTime() < Date.parse(duty.starts_at)) return "scheduled";
   if (now.getTime() >= Date.parse(duty.ends_at)) return "ended";
   return "on_duty";
@@ -283,9 +284,10 @@ export function makePreview(date = today()): Dataset {
     enrolled: i % 4 !== 0,
   }));
   return {
-    users,
-    children,
-    groups,
+    daycare: { id: 1, name: "Ankelba Preview Daycare" },
+    users: users.map(row => ({ ...row, daycare_id: 1 })),
+    children: children.map(row => ({ ...row, daycare_id: 1 })),
+    groups: groups.map(row => ({ ...row, daycare_id: 1 })),
     attendance,
     reports,
     guardians,
@@ -293,6 +295,7 @@ export function makePreview(date = today()): Dataset {
       {
         id: 1,
         staff_id: 10,
+        daycare_id: 1,
         group_id: null,
         starts_at: date + "T07:00:00+03:00",
         ends_at: date + "T13:00:00+03:00",
@@ -303,6 +306,7 @@ export function makePreview(date = today()): Dataset {
       {
         id: 2,
         staff_id: 11,
+        daycare_id: 1,
         group_id: null,
         starts_at: date + "T00:00:00+03:00",
         ends_at: date + "T23:59:59+03:00",
@@ -446,9 +450,14 @@ export function makePreview(date = today()): Dataset {
 
 // Classroom assignment permits attendance, but never grants pickup permission.
 export function allowedAttendance(duties: Row[], actor: Row, child: Row, now = new Date()): boolean {
-  if (actor.status && actor.status !== "active") return false;
-  if (actor.daycare_id && child.daycare_id && actor.daycare_id !== child.daycare_id) return false;
+  if (actor.status !== "active" || !actor.daycare_id || actor.daycare_id !== child.daycare_id) return false;
   return actor.role === "admin" || (actor.role === "caregiver" && (
-    child.caregiver_id === actor.id || allowedDuty(duties, actor.id, child.group_id, "attendance", now)
+    child.caregiver_id === actor.id || allowedDuty(duties.filter(d => d.daycare_id === actor.daycare_id), actor.id, child.group_id, "attendance", now)
   ));
+}
+
+export function allowedPickup(duties: Row[], actor: Row, child: Row, now = new Date()): boolean {
+  if (actor.status !== "active" || !actor.daycare_id || actor.daycare_id !== child.daycare_id) return false;
+  return actor.role === "admin" || (actor.role === "caregiver" &&
+    allowedDuty(duties.filter(d => d.daycare_id === actor.daycare_id), actor.id, child.group_id, "pickup", now));
 }

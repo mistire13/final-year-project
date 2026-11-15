@@ -1,0 +1,23 @@
+.app-showcase { width: min(100%, 940px); position: relative; }
+.centered-home-experiment .ankelba-home-nav-actions .btn-pill { white-space: nowrap; }
+.app-screen-track { display: grid; grid-template-columns: 1fr 1.12fr 1fr; align-items: start; gap: 28px; padding: 12px 32px 40px; }
+.app-screen { margin: 0; min-width: 0; }
+.screen-reports { padding-top: 48px; transform: rotate(-5deg); }
+.screen-messages { padding-top: 48px; transform: rotate(5deg); }
+.screen-home { position: relative; z-index: 1; }
+.app-screen-frame { display: block; padding: 8px; background: var(--ankelba-card); border: 1px solid var(--ankelba-border); border-radius: 32px; overflow: hidden; box-shadow: 0 26px 58px -20px rgba(6,18,36,.23), 0 10px 25px -12px rgba(183,121,31,.18); transition: transform .25s ease, box-shadow .25s ease; }
+.app-screen-frame:hover { transform: translateY(-5px); box-shadow: 0 32px 60px -20px rgba(6,18,36,.27); }
+.app-screen-frame img { display: block; width: 100%; height: auto; border-radius: 24px; background: var(--ankelba-cream); }
+.app-screen figcaption { text-align: center; margin-top: 20px; font-size: 12px; font-weight: 600; color: var(--ankelba-muted); }
+.app-screen-track:focus-visible { outline: 3px solid var(--ankelba-green); outline-offset: 5px; border-radius: 24px; }
+@media (max-width: 900px) { .app-screen-track { gap: 20px; padding-inline: 12px; } .app-screen-frame { border-radius: 26px; padding: 6px; } .app-screen-frame img { border-radius: 20px; } .screen-reports,.screen-messages { padding-top: 32px; } }
+@media (max-width: 600px) {
+  .app-showcase { width: calc(100% + 48px); max-width: none; }
+  .app-screen-track { display: flex; gap: 24px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding: 12px max(24px, calc((100% - 280px) / 2)) 40px; scrollbar-width: thin; scrollbar-color: var(--ankelba-border) transparent; }
+  .app-screen { flex: 0 0 min(280px, 78vw); transform: none; padding-top: 0; scroll-snap-align: center; }
+  .screen-home { order: -1; }
+  .app-screen-frame { padding: 7px; border-radius: 30px; }
+  .app-screen-frame img { border-radius: 23px; }
+  .app-screen figcaption { margin-top: 16px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .app-screen-frame { transition: none; } .app-screen-frame:hover { transform: none; } .app-screen-track { scroll-behavior: auto; } }
