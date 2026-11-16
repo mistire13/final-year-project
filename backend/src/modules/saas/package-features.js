@@ -1,10 +1,10 @@
 'use strict';
 const FEATURE_POLICY_VERSION = 1;
 const FEATURE_KEYS = ['shop', 'business_analytics', 'billing_automation', 'staff_scheduling'];
-const PACKAGE_CODES = ['standard', 'premium'];
+const PACKAGE_CODES = ['standard', 'premium', 'plus'];
 
 function catalogFeatures(code) {
-  return Object.fromEntries(FEATURE_KEYS.map((key) => [key, code === 'premium']));
+  return Object.fromEntries(FEATURE_KEYS.map((key) => [key, code === 'premium' || code === 'plus']));
 }
 
 function featureTerms(terms) {
@@ -23,7 +23,8 @@ function sameFeatureTerms(a, b) {
 
 function effectiveFeatures(row, now = Date.now()) {
   const hasTerms = !!row?.subscription_terms;
-  const rawCode = hasTerms ? row.subscription_terms?.code : row?.subscription_plan;
+  let rawCode = hasTerms ? row.subscription_terms?.code : row?.subscription_plan;
+  if (rawCode === 'plus') rawCode = 'premium';
   const code = PACKAGE_CODES.includes(rawCode) ? rawCode : 'standard';
   const end = row?.subscription_ends_at;
   const endMs = end ? Date.parse(end) : NaN;
@@ -50,7 +51,7 @@ function effectiveFeatures(row, now = Date.now()) {
     features,
     active,
     package_code: code,
-    package_name: code === 'premium' ? 'Plus' : 'Standard',
+    package_name: (code === 'premium' || code === 'plus') ? 'Plus' : 'Standard',
     expires_at: end || (trialActive ? row?.trial_ends_at : null) || null,
     feature_policy_version: FEATURE_POLICY_VERSION,
   };

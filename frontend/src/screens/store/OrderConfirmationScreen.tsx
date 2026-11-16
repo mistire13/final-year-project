@@ -119,10 +119,46 @@ export function OrderConfirmationScreen({ navigation, route }: any) {
           <Text size={17} weight="semibold">
             Payment Method
           </Text>
-          <Badge title={totalAmount===0?'No charge':'Pay at Pickup'} tone={totalAmount===0?'green':'gold'} />
+          <Badge
+            title={
+              totalAmount === 0
+                ? 'No charge'
+                : route.params?.paymentVerified
+                ? 'Paid (Verified)'
+                : route.params?.reviewPending
+                ? 'Receipt Submitted · Pending Review'
+                : route.params?.paymentMethod && route.params?.paymentMethod !== 'pay_at_daycare'
+                ? 'Online Payment'
+                : 'Pay at Pickup'
+            }
+            tone={
+              totalAmount === 0 || route.params?.paymentVerified
+                ? 'green'
+                : 'gold'
+            }
+          />
         </View>
-        <Text size={13} color="#6C7380" style={{ marginTop: 8 }}>
-          {totalAmount===0?'No payment is required for this zero-total order.':'Pay in person at daycare front desk upon collection.'}
+        <Text size={14} weight="medium" color="#10263D" style={{ marginTop: 6 }}>
+          {route.params?.paymentMethod === 'cbe'
+            ? 'Commercial Bank of Ethiopia (CBE)'
+            : route.params?.paymentMethod === 'telebirr'
+            ? 'Telebirr'
+            : route.params?.paymentMethod === 'abyssinia'
+            ? 'Bank of Abyssinia'
+            : totalAmount === 0
+            ? 'No charge'
+            : 'Pay at Daycare Front Desk'}
+        </Text>
+        <Text size={13} color="#6C7380" style={{ marginTop: 4 }}>
+          {totalAmount === 0
+            ? 'No payment is required for this zero-total order.'
+            : route.params?.paymentVerified
+            ? 'Your payment was confirmed. The verified receipt is recorded in your daycare order history.'
+            : route.params?.reviewPending
+            ? 'Your payment proof has been submitted. The daycare administration will review and confirm your order.'
+            : route.params?.statusMessage
+            ? route.params.statusMessage
+            : 'Pay in person at daycare front desk upon collection.'}
         </Text>
       </Card>
 

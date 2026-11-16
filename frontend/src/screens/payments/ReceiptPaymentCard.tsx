@@ -99,11 +99,24 @@ export default function ReceiptPaymentCard({purpose,targetId,onApplied}:{purpose
               <Button title="Use receipt details instead" variant="outline" disabled={busy||picking} onPress={()=>setImage(null)}/>
             </>
           ) : (
-            <Field label={request.provider==='cbe'?'Complete CBE receipt link':'Transaction reference'} value={reference} onChangeText={setReference} autoCapitalize="none" autoCorrect={false} editable={!busy&&!picking}/>
+            <Field
+              label={
+                request.provider === 'cbe'
+                  ? 'Complete CBE receipt link (https://apps.cbe.com.et/...)'
+                  : request.provider === 'telebirr'
+                  ? 'Telebirr transaction reference number'
+                  : 'Transaction reference'
+              }
+              value={reference}
+              onChangeText={setReference}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!busy&&!picking}
+            />
           )}
           {request.provider==='abyssinia'&&<Field label={image?'Five-digit receipt suffix (if shown)':'Five-digit receipt account suffix'} value={suffix} onChangeText={setSuffix} keyboardType="number-pad" maxLength={5} editable={!busy&&!picking}/>}
-          <Button title={image?'Choose another screenshot':'Choose receipt screenshot'} variant="outline" disabled={busy||picking} onPress={()=>void chooseScreenshot()}/>
-          {image&&<Text size={13}>Ankelba reads the receipt details from your screenshot.</Text>}
+          <Button title={image?'Choose another screenshot':'Upload payment screenshot'} variant="outline" disabled={busy||picking} onPress={()=>void chooseScreenshot()}/>
+          {image&&<Text size={13}>Screenshot ready. Ankelba reads the receipt reference automatically.</Text>}
           <Button title={busy?'Checking payment…':'Check this receipt'} disabled={busy||picking||(!image&&!reference.trim())||(request.provider==='abyssinia'&&(!image||!!suffix)&&!/^\d{5}$/.test(suffix))} onPress={()=>void action(()=>verifyDaycareReceipt(request,reference,suffix,image??undefined),!!image)}/>
         </>}
         <Button title="Refresh saved payment status" variant="outline" disabled={busy} onPress={()=>void action(()=>getReceiptRequest(request.id))}/>
