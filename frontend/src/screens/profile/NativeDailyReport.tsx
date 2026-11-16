@@ -78,7 +78,8 @@ export function NativeDailyReportScreen({ route, navigation }: any) {
     [activities, setActivities] = useState<ActivityDraft[]>([emptyActivity()]);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
-    [saved, setSaved] = useState<number>();
+    [saved, setSaved] = useState<number>(),
+    [searchQuery, setSearchQuery] = useState("");
   const selected = assigned.data.find(
     (c) => c.id === child && c.enrollment_status === "active",
   );
@@ -161,8 +162,21 @@ export function NativeDailyReportScreen({ route, navigation }: any) {
       ) : (
         <>
           <Text weight="bold">Assigned child</Text>
+          <Field
+            label="Search student by name"
+            placeholder="Search students..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
           {assigned.data
-            .filter((c) => c.enrollment_status === "active")
+            .filter(
+              (c) =>
+                c.enrollment_status === "active" &&
+                (!searchQuery.trim() ||
+                  c.full_name
+                    .toLowerCase()
+                    .includes(searchQuery.trim().toLowerCase())),
+            )
             .map((c) => (
               <Button
                 key={c.id}

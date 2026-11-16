@@ -33,7 +33,7 @@ const listUsers = async ({ page = 1, limit = 20, role, status }, actor = null) =
 
   params.push(limit, offset);
   const { rows } = await db.query(
-    `SELECT u.id, u.name, u.email, u.status, u.daycare_id, r.name AS role, u.created_at${extraCols}
+    `SELECT u.id, u.name, u.email, u.status, u.daycare_id, r.name AS role, u.created_at, to_jsonb(u)->>'photo_url' AS photo_url${extraCols}
      FROM users u JOIN roles r ON r.id = u.role_id
      ${whereClause}
      ORDER BY u.created_at DESC
@@ -56,7 +56,7 @@ const getUserById = async (id, actor = null) => {
   const extraCols = cols.length > 0 ? ', u.phone, u.title, u.qualifications, u.emergency_contact, u.shift' : '';
 
   const { rows } = await db.query(
-    `SELECT u.id, u.name, u.email, u.status, u.daycare_id, r.name AS role, u.created_at, u.updated_at${extraCols}
+    `SELECT u.id, u.name, u.email, u.status, u.daycare_id, r.name AS role, u.created_at, u.updated_at, to_jsonb(u)->>'photo_url' AS photo_url${extraCols}
      FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
     [id]
   );
@@ -122,6 +122,10 @@ const createUser = async (body, actor) => {
     }
 
     const { rows } = await client.query(insertSql, vals);
+    if (Object.hasOwn(body, 'photo_url')) {
+      const {rows:[portrait]} = await client.query('UPDATE users SET photo_url=$1 WHERE id=$2 RETURNING photo_url', [body.photo_url || null, rows[0].id]);
+      rows[0].photo_url = portrait.photo_url;
+    }
     return rows[0];
   }, { role }, daycareId);
 };
@@ -139,6 +143,10 @@ const updateUser = async (id, body, actor) => {
     const values = [];
     let idx = 1;
 
+    if (Object.hasOwn(body, 'photo_url')) {
+      fields.push(`photo_url = $${idx++}`);
+      values.push(body.photo_url || null);
+    }
     if (body.name) {
       fields.push(`name = $${idx++}`);
       values.push(body.name.trim());
@@ -179,7 +187,7 @@ const updateUser = async (id, body, actor) => {
     values.push(id);
 
     const { rows } = await client.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, name, email, status, daycare_id, updated_at`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, name, email, status, daycare_id, updated_at, to_jsonb(users)->>'photo_url' AS photo_url`,
       values
     );
     if (!rows[0]) throw Object.assign(new Error('User not found'), { statusCode: 404 });

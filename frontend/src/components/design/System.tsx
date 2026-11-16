@@ -1,5 +1,5 @@
 import {usePackageFeatures} from '../../context/PackageFeaturesContext';
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState } from "react";
 import { MotionPressable, MotionView, useReducedMotion } from "./Motion";
 import {
   View,
@@ -534,6 +534,7 @@ export function Field({
   style,
   ...props
 }: TextInputProps & { label?: string; icon?: any }) {
+  const [passwordVisible, setPasswordVisible] = useState(false);
   return (
     <View style={{ marginBottom: 20 }}>
       {!!label && (
@@ -545,6 +546,7 @@ export function Field({
         {Icon && <Icon size={21} color={colors.textSecondary} />}
         <TextInput
           {...props}
+          secureTextEntry={props.secureTextEntry && !passwordVisible}
           accessibilityLabel={
             props.accessibilityLabel || label || props.placeholder
           }
@@ -557,6 +559,15 @@ export function Field({
             style,
           ]}
         />
+        {props.secureTextEntry && <MotionPressable
+          accessibilityRole="button"
+          accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+          accessibilityState={{ disabled: props.editable === false }}
+          disabled={props.editable === false}
+          onPress={() => setPasswordVisible(value => !value)}
+          style={{ minWidth: 48, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Text size={13} weight="semibold">{passwordVisible ? 'Hide' : 'Show'}</Text>
+        </MotionPressable>}
       </View>
     </View>
   );

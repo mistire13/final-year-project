@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { apiError, portalApi } from '../portal/api';
 import { Cycle, PackageOffer } from '../portal/subscriptions';
-import { Icon } from '../portal/ui.web';
+import { Icon, PasswordInput } from '../portal/ui.web';
 import SubscriptionPayment, { clearApplicationPayment, PaymentSession } from './SubscriptionPayment.web';
 
 export type EnrollmentSelection = { offer: PackageOffer; cycle: Cycle };
@@ -82,14 +82,14 @@ export default function EnrollmentCheckout({ selection, resume, onSession, onSta
     {error&&<div ref={errorNotice} tabIndex={-1} role="alert" className="pricing-form-error">{error}</div>}
     <form onSubmit={submit} aria-busy={busy}>
       <fieldset disabled={busy} className="pricing-application-fields"><legend className="comparison-sr-only">Daycare and director details</legend>
-        {fields.map(field=><div className="form-group" key={field.key}>
+        {fields.map(field=>{const Input = field.type === 'password' ? PasswordInput : 'input'; return <div className="form-group" key={field.key}>
           <label htmlFor={field.key}>{field.label}{field.required?' *':''}</label>
-          <input id={field.key} type={field.type||'text'} required={field.required} placeholder={field.placeholder}
+          <Input id={field.key} type={field.type||'text'} required={field.required} placeholder={field.placeholder}
             value={form[field.key]} minLength={field.key==='adminPassword'?6:undefined} maxLength={field.key==='adminPassword'?72:field.key==='citySubcity'?500:field.key==='licenseNumber'?100:['daycareName','adminName'].includes(field.key)?200:255}
             autoComplete={field.key==='adminPassword'?'new-password':field.key==='daycareName'?'organization':undefined}
             readOnly={field.key==='adminEmail'&&!!payment.email}
             onChange={event=>setForm(previous=>({...previous,[field.key]:event.target.value}))}/>
-        </div>)}
+        </div>;})}
       </fieldset>
       {busy&&<p role="status">Submitting your application. Please keep this page open.</p>}
       <div className="pricing-submit-row"><p>Your subscription begins after approval. Already applied? <a href="/application-status">Check your status.</a></p>

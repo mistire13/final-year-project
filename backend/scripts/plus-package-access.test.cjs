@@ -31,12 +31,13 @@ test('Standard cannot create shop sales; existing orders retain audited cash set
     const admin={...await makeUser(plus,1,'admin','plus-shop-admin'),role:'admin'},parent={...await makeUser(plus,3,'parent','plus-shop-parent'),role:'parent'};
     await assert.rejects(requireFeature(pool,standard.id,'shop'),error=>error.code==='FEATURE_NOT_INCLUDED');
     const catalog=await createSubscriptions(pool).catalog();assert.equal(catalog.find(p=>p.code==='standard').features.shop,false);assert.equal(catalog.find(p=>p.code==='premium').features.shop,true);
-    const dbPath=require.resolve('../src/config/db'),storePath=require.resolve('../src/modules/store/store.service');
+    const dbPath=require.resolve('../src/config/db'),storePath=require.resolve('../src/modules/store/store.service'),portalPath=require.resolve('../src/modules/portal/portal.service');
     let paused=null;
     const pauseBefore=async sql=>{if(paused?.pattern.test(sql)){const gate=paused;paused=null;gate.arrived();await gate.wait;}};
     const servicePool={query:async(sql,args)=>{await pauseBefore(sql);return pool.query(sql,args);},connect:async()=>{const c=await pool.connect();return {query:async(sql,args)=>{await pauseBefore(sql);return c.query(sql,args);},release:()=>c.release()};}};
-    const oldDb=require.cache[dbPath],oldStore=require.cache[storePath];require.cache[dbPath]={id:dbPath,filename:dbPath,loaded:true,exports:servicePool};delete require.cache[storePath];
+    const oldDb=require.cache[dbPath],oldStore=require.cache[storePath],oldPortal=require.cache[portalPath];require.cache[dbPath]={id:dbPath,filename:dbPath,loaded:true,exports:servicePool};delete require.cache[storePath];delete require.cache[portalPath];
     const store=require(storePath);
+    const portal=require(portalPath);
     // Pause immediately before the catalogue write and prove that a competing
     // package change cannot acquire its daycare lock until that write commits.
     const protectedMutation=async(pattern,run)=>{
@@ -52,6 +53,9 @@ test('Standard cannot create shop sales; existing orders retain audited cash set
       const result=await pending;if(failure)throw failure;return result;
     };
     try{
+      const today=new Date().toISOString().slice(0,10);
+      assert.equal((await portal.snapshot(today,30,standardAdmin)).daycare.has_shop_orders,false);
+      await db('daycares').where({id:standard.id}).update({subscription_terms:JSON.stringify({code:'standard'}),legacy_shop_access_until:future()});
       await assert.rejects(store.listProducts({},standardAdmin),error=>error.statusCode===403);
       await assert.rejects(store.createProduct({name:'Blocked',price:10,stock_qty:1},standardAdmin),error=>error.statusCode===403);
       let product=await store.createProduct({name:'Synthetic supplies',price:120,stock_qty:3,available:true},admin);
@@ -75,6 +79,14 @@ test('Standard cannot create shop sales; existing orders retain audited cash set
       await assert.rejects(store.updateCategory(category.id,{name:'Blocked category edit'},admin),error=>error.statusCode===403);
       await assert.rejects(store.deleteCategory(category.id,admin),error=>error.statusCode===403);
       assert.equal((await store.listMyOrders(parent)).data.length,2);
+      await db('orders').where({daycare_id:plus.id}).update({created_at:new Date(Date.now()-90*86400000)});
+      order.version=(await db('orders').where({id:order.id}).first()).version;
+      const history=await portal.snapshot(today,30,admin);
+      assert.equal(history.daycare.features.shop,false);
+      assert.equal(history.daycare.has_shop_orders,true,'history visibility is independent of snapshot dates');
+      assert.equal(history.orders.length,0);
+      assert.equal((await store.listAllOrders({},admin)).data.length,2,'readable history includes older orders');
+      assert.equal((await portal.snapshot(today,30,standardAdmin)).daycare.has_shop_orders,false,'history is tenant scoped');
       await assert.rejects(store.updateOrderStatus(order.id,{version:order.version,payment_status:'paid'},admin),error=>error.statusCode===422);
       await assert.rejects(store.updateOrderStatus(order.id,{version:order.version,payment_status:'paid',amount_received:239,payment_confirmed:true,payment_reason:'Synthetic payment amount check'},admin),error=>error.statusCode===422);
       const paid=await store.updateOrderStatus(order.id,{version:order.version,order_status:'confirmed',payment_status:'paid',amount_received:240,payment_confirmed:true,payment_reason:'Synthetic cash physically received'},admin);
@@ -82,6 +94,6 @@ test('Standard cannot create shop sales; existing orders retain audited cash set
       const ready=await store.updateOrderStatus(order.id,{version:paid.version,order_status:'ready_for_pickup'},admin);
       assert.equal((await store.updateOrderStatus(order.id,{version:ready.version,order_status:'collected'},admin)).order_status,'collected');
       const unrelatedParent={...parent,id:standardAdmin.id,daycare_id:standard.id};assert.equal((await store.listMyOrders(unrelatedParent)).data.length,0);
-    }finally{if(oldDb)require.cache[dbPath]=oldDb;else delete require.cache[dbPath];if(oldStore)require.cache[storePath]=oldStore;else delete require.cache[storePath];}
+    }finally{if(oldDb)require.cache[dbPath]=oldDb;else delete require.cache[dbPath];if(oldStore)require.cache[storePath]=oldStore;else delete require.cache[storePath];if(oldPortal)require.cache[portalPath]=oldPortal;else delete require.cache[portalPath];}
   });
 });

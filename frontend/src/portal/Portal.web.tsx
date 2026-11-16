@@ -9,6 +9,7 @@ import SetupChecklist from './SetupChecklist.web';
 import { DaycareSubscription, SubscriptionNotice } from './SubscriptionViews.web';
 import { adminNavigationForFeatures, plusNavigationFeatures, shouldEmbedStaffScheduling, subscriptionDisplayState } from './subscriptions';
 import OrderHistory from './OrderHistory.web';
+import { PasswordInput } from './ui.web';
 
 import { CaregiverPage } from "./CaregiverPages.web";
 import { DaycareFinances } from "./DaycareFinances.web";
@@ -602,6 +603,14 @@ export default function Portal() {
           }),
           row.id ? "patch" : "post",
         );
+      } else if (kind === "user") {
+        const body: any = {
+          name: values.name?.trim(), email: values.email?.trim().toLowerCase(),
+          phone: values.phone?.trim() || null, photo_url: values.photo_url || null,
+        };
+        if (!row.id) Object.assign(body, { role: 'parent', password: values.password });
+        await mutate('/users' + (row.id ? '/' + row.id : ''), body,
+          upsert('users', { ...row, ...body, role: 'parent', status: row.status || 'active', password: undefined }), row.id ? 'patch' : 'post');
       } else if (kind === "family") {
         if (!values.parent_name?.trim() || !values.parent_email?.trim())
           throw Error("Parent full name and email are required.");
@@ -629,6 +638,7 @@ export default function Portal() {
             name: values.parent_name.trim(),
             email: values.parent_email.trim().toLowerCase(),
             phone: values.parent_phone?.trim() || null,
+            photo_url: values.parent_photo_url || null,
             password: values.parent_password || "Password123!",
             relationship: values.parent_relationship || "Mother",
           },
@@ -667,6 +677,7 @@ export default function Portal() {
             name: payload.parent.name,
             email: payload.parent.email,
             phone: payload.parent.phone,
+            photo_url: payload.parent.photo_url,
             role: "parent",
             status: "active",
           };
@@ -711,10 +722,19 @@ export default function Portal() {
           return;
         }
 
-        await portalApi.enrollFamily(payload);
+        const enrolled = await portalApi.enrollFamily(payload);
+        // Continue with the saved IDs, so a scanner retry never re-registers the family.
+        setModal({ kind: 'enroll-biometric', row: {
+          id: enrolled.guardian_link.id,
+          guardian_link_id: enrolled.guardian_link.id,
+          child_id: enrolled.child.id,
+          user_id: enrolled.parent.id,
+          guardian_name: enrolled.parent.name,
+          child_name: enrolled.child.full_name,
+          registration: true,
+        } });
         await refresh();
-        setToast(`Enrolled ${payload.child.full_name} and linked ${payload.parent.name} successfully.`);
-        setModal(null);
+        setToast(`Family saved. Register ${payload.parent.name}’s fingerprint next.`);
         return;
       } else if (kind === "assign-caregiver") {
         const childIds = values.child_ids as number[];
@@ -1187,7 +1207,7 @@ export default function Portal() {
               </label>
               <label>
                 Password
-                <input
+                <PasswordInput
                   name="password"
                   type="password"
                   autoComplete="current-password"
@@ -1549,7 +1569,10 @@ export default function Portal() {
           busy={saving}
           error={formError}
           save={save}
-          close={close}
+          close={() => {
+            if (modal.kind === 'enroll-biometric') void refresh(true);
+            close();
+          }}
         />
       )}
     </div>
@@ -1681,10 +1704,12 @@ function PortalModal({
         }),
       );
   } else if (kind === "user") {
-    title = (row.id ? "Edit " : "Register ") + (row.role === "parent" ? "parent / guardian" : "caregiver");
+    title = (row.id ? "Edit " : "Register ") + "parent / guardian";
     fields = [
       field("name", "Full name"),
       field("email", "Email address", "email"),
+      field("phone", "Phone number", "tel", false),
+      field("photo_url", "Parent / guardian photo", "image", false, { wide: true }),
     ];
     if (!row.id && !preview)
       fields.push(
@@ -1705,7 +1730,7 @@ function PortalModal({
       field("full_name", "Child’s full name"),
       field("dob", "Date of birth", "date", true, { max: today() }),
       field("gender", "Gender", "select", true, {
-        options: ["female", "male", "other"].map((v) => ({
+        options: ["female", "male"].map((v) => ({
           value: v,
           label: label(v),
         })),
@@ -1962,9 +1987,10 @@ function PortalModal({
             </span>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {data.guardians.filter((g) => g.child_id === row.id).map((g) => (
-                <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
-                  <Person name={userName(data, g.user_id)} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || "No phone on record"}`} />
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div key={g.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, padding: "6px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <Person name={userName(data, g.user_id)} photo={data.users.find((u) => u.id === g.user_id)?.photo_url} sub={`${g.relationship} · ${data.users.find((u) => u.id === g.user_id)?.phone || "No phone on record"}`} />
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    {!ctx.staff && <Button variant="quiet small" onClick={() => ctx.open('user', data.users.find(u => u.id === g.user_id))}>Edit parent</Button>}
                     <Badge value={g.pickup_authorized ? "Approved for Pickup" : "Not authorized"} tone={g.pickup_authorized ? "green" : "quiet"} />
                     {g.pickup_authorized && !ctx.staff && (
                       <Button
@@ -2196,6 +2222,7 @@ function FamilyEnrollmentModal({
     parent_name: "",
     parent_email: "",
     parent_phone: "",
+    parent_photo_url: "",
     parent_relationship: "Mother",
     parent_password: "",
     child_full_name: "",
@@ -2262,10 +2289,10 @@ function FamilyEnrollmentModal({
         />
       )}
 
-      <Modal title="Enroll New Family (Student, Parent & Caregiver)" onClose={close}>
+      <Modal title="Register family" onClose={close} closeDisabled={busy}>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <p style={{ margin: "0 0 4px", fontSize: "14px", color: "var(--muted)" }}>
-            Complete full enrollment in one unified flow: student records, parent user access, verified compliance documents, and classroom/caregiver assignment.
+            {preview ? 'Enter family details.' : 'Step 1 of 2 · Family details. Parent fingerprint enrollment follows.'}
           </p>
 
           {/* Section 1: Parent Information */}
@@ -2274,7 +2301,7 @@ function FamilyEnrollmentModal({
               <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="user" size={17} /></span>
               <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Parent / Guardian Account</strong>
             </div>
-            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="p-form-grid" style={{ gap: 14 }}>
               <label>
                 Full name *
                 <input
@@ -2330,7 +2357,7 @@ function FamilyEnrollmentModal({
               </label>
               <label style={{ gridColumn: "1 / -1" }}>
                 Parent app temporary password *
-                <input
+                <PasswordInput
                   type="password"
                   required={!preview}
                   minLength={8}
@@ -2347,6 +2374,11 @@ function FamilyEnrollmentModal({
             </div>
           </div>
 
+          <ImageDropzone label="Parent / guardian photo" value={formData.parent_photo_url}
+            onChange={url => handleChange('parent_photo_url', url)} disabled={busy}
+            promptTitle="Choose parent photo" promptSubtitle="Clear face photo · JPG, PNG or WebP"
+            icon="user" circlePreview />
+
           {/* Section 2: Child Profile & Documents */}
           <div style={{ background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -2358,7 +2390,7 @@ function FamilyEnrollmentModal({
                 </p>
               </div>
             </div>
-            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="p-form-grid" style={{ gap: 14 }}>
               <label>
                 Child’s full name *
                 <input
@@ -2398,7 +2430,6 @@ function FamilyEnrollmentModal({
                 >
                   <option value="female">Female</option>
                   <option value="male">Male</option>
-                  <option value="other">Other</option>
                 </select>
               </label>
 
@@ -2442,7 +2473,7 @@ function FamilyEnrollmentModal({
                 </p>
               </div>
             </div>
-            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="p-form-grid" style={{ gap: 14 }}>
               <div>
                 <label>
                   Classroom group *
@@ -2517,7 +2548,7 @@ function FamilyEnrollmentModal({
               <span style={{ color: "var(--navy)", display: "flex", alignItems: "center" }}><Icon name="heart" size={17} /></span>
               <strong style={{ fontSize: "15px", color: "var(--navy)" }}>Care, Allergies &amp; Secondary Emergency Contact</strong>
             </div>
-            <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="p-form-grid" style={{ gap: 14 }}>
               <label style={{ gridColumn: "1 / -1" }}>
                 Allergies or dietary restrictions
                 <input
@@ -2637,7 +2668,7 @@ function FamilyEnrollmentModal({
               Cancel
             </Button>
             <Button type="submit" disabled={busy}>
-              {busy ? "Enrolling Family…" : "Complete Family Enrollment"}
+              {busy ? "Saving family…" : preview ? "Register family in preview" : "Save & enroll fingerprint"}
             </Button>
           </div>
         </form>

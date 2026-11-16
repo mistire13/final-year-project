@@ -4,7 +4,7 @@ import { PageTransition } from "./WebMotion.web";
 import "./saas.css";
 import { operatorApi as portalApi, apiError } from "./api";
 
-import { Badge, Button, Card, Icon, Modal } from "./ui.web";
+import { Badge, Button, Card, Icon, Modal, PasswordInput } from "./ui.web";
 import { formatTargetEntity, formatAuditDetails } from "./auditUtils";
 import { OperatorSubscriptions } from "./SubscriptionViews.web";
 
@@ -587,7 +587,7 @@ export default function SuperAdmin() {
             <label htmlFor="platform-password" style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#10263B", marginBottom: 6 }}>
               Password
             </label>
-            <input
+            <PasswordInput
               id="platform-password"
               autoComplete="current-password"
               type="password"

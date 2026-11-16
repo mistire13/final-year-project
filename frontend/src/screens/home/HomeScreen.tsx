@@ -16,6 +16,8 @@ import { Heart } from "phosphor-react-native/src/icons/Heart";
 import { SpeakerHigh } from "phosphor-react-native/src/icons/SpeakerHigh";
 import { X } from "phosphor-react-native/src/icons/X";
 import { CreditCard } from "phosphor-react-native/src/icons/CreditCard";
+import { FirstAid } from "phosphor-react-native/src/icons/FirstAid";
+import { Warning } from "phosphor-react-native/src/icons/Warning";
 import { MotionPressable } from "../../components/design/Motion";
 import { colors, radii } from "../../theme/tokens";
 import {
@@ -48,6 +50,8 @@ import {
   CalendarEvent,
   DirectMessage,
   DaycareAnnouncement,
+  getChildHealth,
+  HealthRecord,
 } from "../../api/parentApi";
 
 export function HomeScreen({ navigation }: any) {
@@ -82,6 +86,10 @@ export function HomeScreen({ navigation }: any) {
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
   const dismissedAnnouncementsRef = useRef<number[]>([]);
   const announcementsListRef = useRef<DaycareAnnouncement[]>([]);
+  const [latestHealthNotice, setLatestHealthNotice] = useState<HealthRecord | null>(null);
+  const [dismissedHealthNotices, setDismissedHealthNotices] = useState<number[]>([]);
+  const dismissedHealthNoticesRef = useRef<number[]>([]);
+  const healthRecordsListRef = useRef<HealthRecord[]>([]);
 
   const formatEventTime = (isoString?: string) => {
     if (!isoString) return "";
@@ -100,7 +108,8 @@ export function HomeScreen({ navigation }: any) {
         Promise<CalendarEvent[]>,
         Promise<DirectMessage[]>,
         Promise<DaycareAnnouncement[]>,
-        Promise<any>
+        Promise<any>,
+        Promise<{ data: HealthRecord[] }>
       ] = [
         childId ? getChildAttendance(childId) : Promise.resolve([]),
         childId ? getChildReports(childId) : Promise.resolve([]),
@@ -108,8 +117,9 @@ export function HomeScreen({ navigation }: any) {
         getDirectMessages().catch(() => []),
         getAnnouncements().catch(() => []),
         apiClient.get('/notifications/preferences').catch(() => ({ data: {} })),
+        childId ? getChildHealth(childId).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ];
-      const [attendance, reports, events, messages, announcements, prefsRes] = await Promise.all(promises);
+      const [attendance, reports, events, messages, announcements, prefsRes, healthRes] = await Promise.all(promises);
       const localDay = (value: string | Date) => new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
       const todayKey = localDay(new Date());
       const currentReport = reports.find(report => localDay(report.report_date) === todayKey);
@@ -130,6 +140,11 @@ export function HomeScreen({ navigation }: any) {
       announcementsListRef.current = announcements;
       const activeAnn = announcements.find(a => !combinedDismissed.includes(a.id)) || null;
       setLatestAnnouncement(activeAnn);
+
+      const healthList: HealthRecord[] = Array.isArray(healthRes?.data) ? healthRes.data : [];
+      healthRecordsListRef.current = healthList;
+      const activeHealth = healthList.find((h) => !dismissedHealthNoticesRef.current.includes(h.id)) || null;
+      setLatestHealthNotice(activeHealth);
     } catch {
       if (revision === requestRevision.current) setLoadError("Could not load updates.");
     } finally {
@@ -146,9 +161,17 @@ export function HomeScreen({ navigation }: any) {
     apiClient.patch('/notifications/preferences', { read_announcement_id: id }).catch(() => {});
   }, []);
 
+  const dismissHealthNotice = useCallback((id: number) => {
+    const nextDismissed = Array.from(new Set([...dismissedHealthNoticesRef.current, id]));
+    dismissedHealthNoticesRef.current = nextDismissed;
+    setDismissedHealthNotices(nextDismissed);
+    const nextHealth = healthRecordsListRef.current.find((h) => !nextDismissed.includes(h.id)) || null;
+    setLatestHealthNotice(nextHealth);
+  }, []);
+
   useEffect(() => {
     setLoading(true);
-    setLatestAttendance(null); setTodayReport(null); setUpcomingEvent(null); setLatestMessage(null); setLatestAnnouncement(null);
+    setLatestAttendance(null); setTodayReport(null); setUpcomingEvent(null); setLatestMessage(null); setLatestAnnouncement(null); setLatestHealthNotice(null);
     loadDashboardData();
     const unsubscribe = navigation.addListener?.("focus", () => {
       loadDashboardData();
@@ -311,6 +334,147 @@ export function HomeScreen({ navigation }: any) {
       <Text size={28} weight="bold" style={{ marginBottom: 16 }}>
         Hello, {user?.name?.split(" ")[0] || "Parent"}
       </Text>
+
+      {/* Health & Incident Alert Card */}
+      {latestHealthNotice && !dismissedHealthNotices.includes(latestHealthNotice.id) && (
+        <Card
+          tint={
+            latestHealthNotice.severity === "high" ||
+            latestHealthNotice.record_type === "incident"
+              ? "#FFF1F2"
+              : "#F0FDF4"
+          }
+          style={{
+            borderWidth: 1,
+            borderColor:
+              latestHealthNotice.severity === "high" ||
+              latestHealthNotice.record_type === "incident"
+                ? "#FCA5A5"
+                : "#86EFAC",
+            marginBottom: 16,
+            padding: 6,
+            borderRadius: radii.card,
+            shadowOpacity: 0.03,
+            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 3 },
+            elevation: 1,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <MotionPressable
+              accessibilityRole="button"
+              accessibilityLabel={`Open health notice: ${latestHealthNotice.record_type}`}
+              accessibilityHint="Opens the health and incident notices screen"
+              onPress={() => navigation.navigate("HealthNotices", { childId })}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                minHeight: 56,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                padding: 8,
+                borderRadius: radii.subcard,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor:
+                    latestHealthNotice.severity === "high" ||
+                    latestHealthNotice.record_type === "incident"
+                      ? "#FEE2E2"
+                      : "#DCFCE7",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {latestHealthNotice.severity === "high" ||
+                latestHealthNotice.record_type === "incident" ? (
+                  <Warning size={20} color="#DC2626" weight="fill" />
+                ) : (
+                  <FirstAid size={20} color="#16A34A" weight="fill" />
+                )}
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 3,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Text
+                    size={11}
+                    weight="bold"
+                    color={
+                      latestHealthNotice.severity === "high" ||
+                      latestHealthNotice.record_type === "incident"
+                        ? "#B91C1C"
+                        : "#15803D"
+                    }
+                  >
+                    {latestHealthNotice.record_type === "incident"
+                      ? "INCIDENT NOTICE"
+                      : "HEALTH OBSERVATION"}
+                  </Text>
+                  {latestHealthNotice.severity && (
+                    <View
+                      style={{
+                        paddingHorizontal: 6,
+                        paddingVertical: 1,
+                        borderRadius: 4,
+                        backgroundColor:
+                          latestHealthNotice.severity === "high"
+                            ? "#EF4444"
+                            : latestHealthNotice.severity === "moderate"
+                              ? "#F59E0B"
+                              : "#10B981",
+                      }}
+                    >
+                      <Text size={10} weight="bold" color="#FFFFFF">
+                        {latestHealthNotice.severity.toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  {latestHealthNotice.recorded_at && (
+                    <Text size={11} color={colors.textSecondary}>
+                      ·{" "}
+                      {new Date(
+                        latestHealthNotice.recorded_at,
+                      ).toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Text>
+                  )}
+                </View>
+                <Text
+                  size={13}
+                  weight="semibold"
+                  color={colors.textPrimary}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                  style={{ lineHeight: 18 }}
+                >
+                  {latestHealthNotice.description}
+                </Text>
+              </View>
+            </MotionPressable>
+            <IconButton
+              icon={X}
+              size={16}
+              color={colors.textSecondary}
+              label="Dismiss health notice"
+              onPress={() => dismissHealthNotice(latestHealthNotice.id)}
+            />
+          </View>
+        </Card>
+      )}
 
       {/* Latest Center Announcement Notification Card */}
       {latestAnnouncement && !dismissedAnnouncements.includes(latestAnnouncement.id) && (

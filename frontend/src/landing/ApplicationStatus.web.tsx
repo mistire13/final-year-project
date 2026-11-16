@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { portalApi, apiError } from "../portal/api";
 import { dateLabel } from "../portal/subscriptions";
-import { Button, Icon, Badge } from "../portal/ui.web";
+import { Button, Icon, Badge, PasswordInput } from "../portal/ui.web";
 import "./landing.css";
 
 const logo = require("../../design/figma-exports/ankelba-symbol.png");
@@ -101,7 +101,7 @@ export default function ApplicationStatus() {
                 <label htmlFor="application-password" style={{ display: "block", fontSize: "15px", fontWeight: 700, marginBottom: "6px", color: "var(--ankelba-navy)" }}>
                   Password
                 </label>
-                <input
+                <PasswordInput
                   id="application-password"
                   type="password"
                   required

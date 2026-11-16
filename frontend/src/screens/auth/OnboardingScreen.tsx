@@ -88,13 +88,13 @@ export function OnboardingScreen({ navigation }: any) {
       {index === 2 ? (
         <View style={{ gap: 12 }}>
           <Button
-            title="Get Daycare Access"
+            title="Sign In to Existing Account"
             icon={ArrowRight}
-            onPress={() => navigation.navigate("Register")}
+            onPress={() => navigation.navigate("Login")}
           />
           <Pressable
             accessibilityRole="button"
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate("Register")}
             style={{
               paddingVertical: 12,
               alignItems: "center",
@@ -103,7 +103,7 @@ export function OnboardingScreen({ navigation }: any) {
             }}
           >
             <Text size={14} weight="semibold" color="#061224">
-              Sign In to Existing Account
+              Get Daycare Access
             </Text>
           </Pressable>
         </View>
@@ -116,11 +116,14 @@ export function OnboardingScreen({ navigation }: any) {
       )}
       <Pressable
         accessibilityRole="button"
-        onPress={() => navigation.navigate("Register")}
+        onPress={() => navigation.navigate("Login")}
         style={{ padding: 18, alignItems: "center" }}
       >
         <Text size={14} color="#727782">
-          New parent? Ask your daycare for access
+          Already have an account?{" "}
+          <Text size={14} weight="bold" color="#061224">
+            Sign In
+          </Text>
         </Text>
       </Pressable>
     </Page>

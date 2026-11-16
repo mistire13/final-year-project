@@ -141,7 +141,7 @@ async function snapshot(date,days,user,staffOnly=false) {
   const ids=children.map(c=>c.id);
   const userCols = await queryRows(client, "SELECT column_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'users' AND column_name IN ('phone', 'title', 'qualifications', 'emergency_contact', 'shift')");
   const hasExtraCols = userCols.length > 0;
-  const extraColsSql = hasExtraCols ? ', u.phone, u.title, u.qualifications, u.emergency_contact, u.shift' : '';
+  const extraColsSql = (hasExtraCols ? ', u.phone, u.title, u.qualifications, u.emergency_contact, u.shift' : '') + ", to_jsonb(u)->>'photo_url' AS photo_url";
   const parentPhoneSql = userCols.some(c => c.column_name === 'phone') ? ', u.phone AS parent_phone' : '';
   if(ids.length > 0) {
    const contacts=await queryRows(client,'SELECT * FROM emergency_contacts WHERE child_id=ANY($1::int[]) ORDER BY id',[ids]);

@@ -560,7 +560,6 @@ function StepChildInfo({
           {[
             { val: "female", label: "Female" },
             { val: "male", label: "Male" },
-            { val: "other", label: "Other" },
           ].map((g) => {
             const active = gender?.toLowerCase() === g.val;
             return (

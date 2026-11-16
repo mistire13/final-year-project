@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./saas.css";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
-import { Modal } from "./ui.web";
+import { Modal, PasswordInput } from "./ui.web";
 import { portalApi, apiError } from "./api";
 import { Icon } from "./ui.web";
 
@@ -629,7 +629,7 @@ export default function LandingPage() {
                       >
                         Admin Password *
                       </label>
-                      <input
+                      <PasswordInput
                         id="register-adminPassword"
                         type="password"
                         className="saas-form-input"

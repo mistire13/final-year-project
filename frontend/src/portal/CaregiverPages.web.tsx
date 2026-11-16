@@ -15,7 +15,12 @@ export function CaregiverPage({
   const assigned = ctx.data.children.filter(
     (c) => c.caregiver_id === ctx.actor.id,
   );
+  const availableChildren =
+    assigned.length > 0
+      ? assigned
+      : ctx.data.children.filter((c) => c.enrollment_status === "active");
   const [child, setChild] = useState("");
+  const [childSearch, setChildSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [detail, setDetail] = useState<any>(null);
@@ -109,25 +114,192 @@ export function CaregiverPage({
         </p>
         <form onSubmit={send} className="care-form">
           <>
-              <label>
-                Child
-                <select
-                  name="child_id"
-                  required
-                  value={child}
-                  onChange={(e) => {
-                    setChild(e.target.value);
-                    setDetail(null);
+              <div className="care-wide" style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                  <label htmlFor="caregiver-child-search" style={{ fontWeight: 600, color: "var(--navy)", margin: 0 }}>
+                    Select Student <span style={{ color: "#e11d48" }}>*</span>
+                  </label>
+                  {child && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChild("");
+                        setDetail(null);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#4f46e5",
+                        fontSize: 12,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                        padding: 0,
+                      }}
+                    >
+                      Clear selection
+                    </button>
+                  )}
+                </div>
+
+                {/* Hidden input preserves form submission semantics */}
+                <input type="hidden" name="child_id" value={child} required />
+
+                {/* Search input field */}
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input
+                    id="caregiver-child-search"
+                    type="search"
+                    placeholder="Search students by name or classroom..."
+                    value={childSearch}
+                    onChange={(e) => setChildSearch(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 14,
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                {/* Scrollable list of students */}
+                <div
+                  role="listbox"
+                  aria-label="Select student"
+                  style={{
+                    maxHeight: 200,
+                    overflowY: "auto",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 8,
+                    background: "#f8fafc",
+                    padding: 6,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
                   }}
                 >
-                  <option value="">Choose an assigned child</option>
-                  {assigned.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.full_name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {availableChildren
+                    .filter((c) => {
+                      if (!childSearch.trim()) return true;
+                      const q = childSearch.trim().toLowerCase();
+                      const group = ctx.data.groups.find((g) => g.id === c.group_id);
+                      return (
+                        c.full_name.toLowerCase().includes(q) ||
+                        (group?.name && group.name.toLowerCase().includes(q))
+                      );
+                    })
+                    .map((c) => {
+                      const isSelected = child === String(c.id);
+                      const group = ctx.data.groups.find((g) => g.id === c.group_id);
+                      const initials = (c.full_name || "?")
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase();
+                      return (
+                        <div
+                          key={c.id}
+                          role="option"
+                          aria-selected={isSelected}
+                          tabIndex={0}
+                          onClick={() => {
+                            setChild(isSelected ? "" : String(c.id));
+                            setDetail(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setChild(isSelected ? "" : String(c.id));
+                              setDetail(null);
+                            }
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "8px 12px",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                            background: isSelected ? "#eef2ff" : "#ffffff",
+                            border: isSelected ? "1.5px solid #4f46e5" : "1px solid #e2e8f0",
+                            transition: "all 0.15s ease",
+                            userSelect: "none",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                background: isSelected ? "#4f46e5" : "#e2e8f0",
+                                color: isSelected ? "#ffffff" : "#334155",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {initials}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontWeight: isSelected ? 700 : 600,
+                                  fontSize: 14,
+                                  color: isSelected ? "#1e1b4b" : "#0f172a",
+                                }}
+                              >
+                                {c.full_name}
+                              </div>
+                              <div style={{ fontSize: 12, color: "#64748b" }}>
+                                {group?.name || "Classroom"} {c.date_of_birth ? `· ${c.date_of_birth}` : ""}
+                              </div>
+                            </div>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "3px 8px",
+                              borderRadius: 12,
+                              background: isSelected ? "#4f46e5" : "#f1f5f9",
+                              color: isSelected ? "#ffffff" : "#475569",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {isSelected ? "✓ Selected" : "Select"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  {availableChildren.filter((c) => {
+                    if (!childSearch.trim()) return true;
+                    const q = childSearch.trim().toLowerCase();
+                    const group = ctx.data.groups.find((g) => g.id === c.group_id);
+                    return (
+                      c.full_name.toLowerCase().includes(q) ||
+                      (group?.name && group.name.toLowerCase().includes(q))
+                    );
+                  }).length === 0 && (
+                    <div style={{ padding: "16px 12px", textAlign: "center", color: "#64748b", fontSize: 13 }}>
+                      {childSearch.trim()
+                        ? `No students matching "${childSearch.trim()}"`
+                        : "No students available."}
+                    </div>
+                  )}
+                </div>
+                {!child && (
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#64748b" }}>
+                    Select a student from the list above to record care.
+                  </p>
+                )}
+              </div>
               {page === "reports" ? (
                 <>
                   <label>
@@ -220,7 +392,7 @@ export function CaregiverPage({
           )}
           <Button
             type="submit"
-            disabled={busy || !assigned.length}
+            disabled={busy || !child}
           >
             {busy
               ? "Saving…"
@@ -252,7 +424,9 @@ export function CaregiverPage({
             .map((r) => (
               <article key={r.id} className="care-history">
                 <strong>
-                  {assigned.find((c) => c.id === r.child_id)?.full_name} ·{" "}
+                  {availableChildren.find((c) => c.id === r.child_id)?.full_name ||
+                    ctx.data.children.find((c) => c.id === r.child_id)?.full_name ||
+                    `Child #${r.child_id}`} ·{" "}
                   {r.report_date ||
                     new Date(r.recorded_at).toLocaleDateString()}
                 </strong>

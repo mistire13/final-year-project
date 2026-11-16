@@ -421,6 +421,7 @@ export function BiometricEnrollModal({
     user_id: number;
     guardian_name: string;
     child_name?: string;
+    registration?: boolean;
   };
   onSuccess: () => void;
   onClose: () => void;
@@ -568,8 +569,9 @@ export function BiometricEnrollModal({
   };
 
   return (
-    <Modal title={`Enroll Fingerprint · ${row.guardian_name}`} onClose={onClose}>
+    <Modal title={`Enroll Fingerprint · ${row.guardian_name}`} onClose={onClose} closeDisabled={busy || enrolling}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {row.registration && <p role="status" style={{ margin: 0, color: 'var(--green)' }}>Step 2 of 2 · Family saved. Enroll the parent’s fingerprint.</p>}
         <div style={{ background: "#F0FDF4", padding: "12px 14px", borderRadius: 8, border: "1px solid #BBF7D0", fontSize: 13, color: "#166534" }}>
           <strong>Adult Guardian Biometric Enrollment (SRS FR-BIO-01 &amp; FR-BIO-02)</strong>
           <p style={{ margin: "4px 0 0", fontSize: 13 }}>
@@ -629,7 +631,7 @@ export function BiometricEnrollModal({
           {!completed ? (
             <>
               <Button variant="quiet" onClick={onClose} disabled={busy || enrolling}>
-                Cancel
+                {row.registration ? 'Finish later' : 'Cancel'}
               </Button>
               <Button
                 onClick={handleStartEnroll}

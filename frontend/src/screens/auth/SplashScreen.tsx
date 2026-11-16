@@ -79,17 +79,17 @@ export function SplashScreen({ navigation, route }: any) {
       ) : (
         <>
           <Button
-            title="Get Started"
+            title="Sign In"
             icon={ArrowRight}
-            onPress={() => navigation.navigate("Onboarding")}
+            onPress={() => navigation.navigate("Login")}
           />
           <Pressable
             accessibilityRole="button"
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate("Onboarding")}
             style={{ marginTop: 14, alignItems: "center", paddingVertical: 8 }}
           >
             <Text size={14} color="#061224" weight="semibold">
-              Sign in
+              New to Ankelba? Explore intro &amp; get access
             </Text>
           </Pressable>
         </>

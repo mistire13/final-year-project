@@ -98,6 +98,18 @@ export function Button({
     </motion.button>
   );
 }
+export function PasswordInput({ style, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  const [visible, setVisible] = useState(false);
+  return <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', minWidth: 0, marginBottom: style?.marginBottom }}>
+    <input {...props} type={visible ? 'text' : 'password'} style={{ ...style, flex: 1, minWidth: 0, width: '100%', marginBottom: 0 }} />
+    <button type="button" disabled={props.disabled} aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible}
+      onClick={() => setVisible(value => !value)}
+      style={{ minWidth: 52, minHeight: 44, padding: '8px', flexShrink: 0, font: 'inherit', fontSize: 13, color: 'inherit', background: 'transparent', border: '1px solid currentColor', borderRadius: 8, cursor: 'pointer' }}>
+      {visible ? 'Hide' : 'Show'}
+    </button>
+  </span>;
+}
+
 const BADGE_TONE_ALIASES: Record<string, string> = {
   success: "green",
   warning: "gold",
@@ -799,6 +811,11 @@ export function RecordForm({
                 checked={!!values[field.key]}
                 onChange={(e) => change(field.key, e.target.checked)}
               />
+            ) : field.type === "password" ? (
+              <PasswordInput name={field.key} required={field.required} disabled={busy}
+                autoComplete="new-password" value={values[field.key] ?? ""}
+                onInput={e => change(field.key, e.currentTarget.value)}
+                onChange={e => change(field.key, e.target.value)} />
             ) : (
               <input
                 type={field.type || "text"}

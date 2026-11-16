@@ -1366,9 +1366,11 @@
 
 .p-form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
 }
+
+.p-form-grid > * { min-width: 0; }
 
 .p-form-grid label {
   display: flex;
@@ -1524,7 +1526,7 @@
 .p-login {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   background: var(--cream);
 }
 
@@ -1553,14 +1555,16 @@
 
 .p-login-card {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: center;
   padding: 40px;
 }
 
 .p-login-card > div {
-  width: 390px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 390px;
+  min-width: 0;
 }
 
 .p-login-card form {
@@ -2219,7 +2223,7 @@
     font-size: 26px;
   }
   .p-login {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .p-login-story {
     display: none;

@@ -510,6 +510,11 @@ const enrollFamily = async (body, actor) => {
       }
     }
 
+    if (Object.hasOwn(body.parent, 'photo_url')) {
+      const {rows:[portrait]} = await client.query('UPDATE users SET photo_url=$1 WHERE id=$2 RETURNING photo_url', [body.parent.photo_url || null, parentUser.id]);
+      parentUser.photo_url = portrait.photo_url;
+    }
+
     // Classroom creation belongs to the family transaction, including quota failures.
     if (body.child.new_group_name) {
       const {rows:[group]} = await client.query('INSERT INTO groups(name,description,daycare_id) VALUES($1,$2,$3) RETURNING *', [body.child.new_group_name.trim(), 'Classroom group', daycareId]);
