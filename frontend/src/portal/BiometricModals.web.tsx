@@ -427,23 +427,63 @@ export function BiometricEnrollModal({
 }) {
   const [scannerStatus, setScannerStatus] = useState<SerialScannerStatus>(biometricSerial.getStatus());
   const [slotId, setSlotId] = useState<number | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+  const [slotError, setSlotError] = useState<string | null>(null);
+  const [slotLoadAttempt, setSlotLoadAttempt] = useState(0);
+  const [occupiedSlotId, setOccupiedSlotId] = useState<number | null>(null);
   const [enrolling, setEnrolling] = useState(false);
-  const [promptText, setPromptText] = useState<string>("Ready: Click 'Start Enrollment' to begin 2-phase scanning");
+  const [promptText, setPromptText] = useState<string>("Checking scanner and available sensor slot...");
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     biometricSerial.autoConnect().catch(() => {});
+    return biometricSerial.subscribeStatus((st) => setScannerStatus(st));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setSlotsLoading(true);
+    setSlotError(null);
+    setSlotId(null);
+
     portalApi
       .getBiometricSlots()
       .then((res) => {
-        if (res.next_slot) setSlotId(res.next_slot);
+        if (!active) return;
+        setSlotId(res.next_slot ?? null);
       })
-      .catch((e) => setError(apiError(e)));
+      .catch(() => {
+        if (!active) return;
+        setSlotError("Could not load available fingerprint slots. Retry the slot check.");
+      })
+      .finally(() => {
+        if (active) setSlotsLoading(false);
+      });
 
-    return biometricSerial.subscribeStatus((st) => setScannerStatus(st));
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [slotLoadAttempt]);
+
+  const visibleError = slotError || error;
+  const slotLabel = slotsLoading
+    ? "Searching..."
+    : slotError
+      ? "Unavailable"
+      : slotId
+        ? `#${slotId}`
+        : "Sensor full";
+  const idlePrompt = slotsLoading
+    ? "Checking scanner and available sensor slot..."
+    : slotError
+      ? "Fingerprint slots are unavailable. Retry the slot check."
+      : !slotId
+        ? "No fingerprint slots are available on this sensor."
+        : scannerStatus === "ready"
+          ? "Ready: click Start Enrollment to begin 2-phase scanning."
+          : "Connect the USB scanner to begin enrollment.";
 
   const handleStartEnroll = async () => {
     if (!slotId) {
@@ -452,6 +492,7 @@ export function BiometricEnrollModal({
     }
     setEnrolling(true);
     setError(null);
+    setOccupiedSlotId(null);
     setPromptText("👉 Step 1: Place parent's finger firmly on the optical sensor...");
 
     try {
@@ -466,6 +507,14 @@ export function BiometricEnrollModal({
       });
 
       if (!result.success) {
+        if (result.error?.includes("SLOT_OCCUPIED")) {
+          setOccupiedSlotId(slotId);
+          setError(
+            `Sensor slot #${slotId} still contains a fingerprint from before the database reset. Clear that stale sensor slot before enrolling again.`,
+          );
+          setPromptText(`Slot #${slotId} is occupied on the R307S sensor.`);
+          return;
+        }
         setError(result.error || "Enrollment could not be completed. Please try again.");
         setPromptText("❌ Enrollment stopped. Please try again.");
         return;
@@ -496,6 +545,28 @@ export function BiometricEnrollModal({
     }
   };
 
+  const handleClearOccupiedSlot = async () => {
+    if (!occupiedSlotId || occupiedSlotId !== slotId) return;
+    const confirmed = window.confirm(
+      `Clear fingerprint sensor slot #${occupiedSlotId}? This permanently removes the old fingerprint stored in that hardware slot.`,
+    );
+    if (!confirmed) return;
+
+    setBusy(true);
+    setError(null);
+    setPromptText(`Clearing stale sensor slot #${occupiedSlotId}...`);
+    try {
+      await biometricSerial.deleteSlot(occupiedSlotId);
+      setOccupiedSlotId(null);
+      setPromptText(`Slot #${occupiedSlotId} is clear. Start enrollment again.`);
+    } catch (e: any) {
+      setError(apiError(e));
+      setPromptText(`Could not clear sensor slot #${occupiedSlotId}.`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Modal title={`Enroll Fingerprint · ${row.guardian_name}`} onClose={onClose}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -507,27 +578,49 @@ export function BiometricEnrollModal({
           </p>
         </div>
 
-        {error && (
+        {visibleError && (
           <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", color: "#B91C1C", padding: "10px 12px", borderRadius: 6, fontSize: 13 }}>
-            <strong>Error: </strong>{error}
+            <strong>Error: </strong>{visibleError}
+            {occupiedSlotId && (
+              <div style={{ marginTop: 10 }}>
+                <Button
+                  variant="danger small"
+                  onClick={handleClearOccupiedSlot}
+                  disabled={busy || enrolling || scannerStatus !== "ready"}
+                >
+                  {busy ? "Clearing Slot..." : `Clear Sensor Slot #${occupiedSlotId}`}
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, color: "#64748B" }}>
-            Sensor Slot: <strong>{slotId ? `#${slotId}` : "Searching..."}</strong> · Hardware: <strong>R307S (USB)</strong>
+            Sensor Slot: <strong>{slotLabel}</strong> · Hardware: <strong>R307S (USB)</strong>
           </span>
-          {scannerStatus !== "ready" && scannerStatus !== "busy" && (
-            <Button variant="secondary small" onClick={handleConnect}>
-              Connect USB Scanner
-            </Button>
-          )}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {slotError && (
+              <Button
+                variant="secondary small"
+                onClick={() => setSlotLoadAttempt((attempt) => attempt + 1)}
+                disabled={slotsLoading}
+              >
+                Retry Slot Check
+              </Button>
+            )}
+            {scannerStatus !== "ready" && scannerStatus !== "busy" && (
+              <Button variant="secondary small" onClick={handleConnect}>
+                Connect USB Scanner
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Guided Step Box with Animations */}
         <BiometricScanVisualizer
-          state={completed ? "verified" : enrolling ? "scanning" : error ? "error" : "idle"}
-          prompt={promptText}
+          state={completed ? "verified" : enrolling ? "scanning" : visibleError ? "error" : "idle"}
+          prompt={completed || enrolling || error ? promptText : idlePrompt}
           guardian={completed ? { name: row.guardian_name, slotId: slotId ?? undefined } : null}
           childName={row.child_name}
         />
@@ -540,7 +633,7 @@ export function BiometricEnrollModal({
               </Button>
               <Button
                 onClick={handleStartEnroll}
-                disabled={busy || enrolling || !slotId || (scannerStatus !== "ready" && scannerStatus !== "busy")}
+                disabled={busy || enrolling || slotsLoading || !!slotError || !slotId || scannerStatus !== "ready"}
               >
                 {enrolling ? "Enrolling in progress..." : "Start 2-Phase Enrollment"}
               </Button>

@@ -167,6 +167,10 @@ async function snapshot(date,days,user,staffOnly=false) {
   const [daycare] = daycareId ? await queryRows(client, 'SELECT id, name, slug, contact_email, contact_phone, address, license_number, status, subscription_plan, subscription_status, subscription_started_at, subscription_ends_at, trial_ends_at, max_children, version, created_at FROM daycares WHERE id=$1', [daycareId]) : [null];
   const featureAccess=await getDaycareFeatures(client,daycareId);
   if(daycare){daycare.features=featureAccess.features;daycare.package_code=featureAccess.package_code;daycare.package_name=featureAccess.package_name;daycare.subscription_active=featureAccess.active;}
+  if(daycare && isAdmin){
+    const [history]=await queryRows(client,'SELECT EXISTS(SELECT 1 FROM orders WHERE daycare_id=$1) AS has_shop_orders',[daycareId]);
+    daycare.has_shop_orders=history.has_shop_orders;
+  }
   async function attachReportDetails(rList) {
     if (!rList || !rList.length) return rList;
     const rIds = rList.map(r => r.id);

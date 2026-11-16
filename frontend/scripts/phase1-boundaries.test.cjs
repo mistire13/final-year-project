@@ -163,13 +163,17 @@ function portalFixture(pathname) {
   const calls = [];
   const portalApi = Object.fromEntries(["session", "login", "logout", "snapshot", "save", "ensureDevSession", "getBroadcast"].map((method) => [method, async () => { calls.push(method); return null; }]));
   const stubs = Object.fromEntries(["Analytics", "Attendance", "Children", "Duties", "Groups", "Monitoring", "Overview", "Registry", "Reports", "Badge", "Button", "Card", "Icon", "Modal", "Person", "RecordForm"].map((name) => [name, function Stub() {}]));
+  function PlusStaffScheduling() {}
+  function FrontDeskWorkspace() {}
   const window = browser(pathname, "real-session-must-not-be-read");
   const Portal = load("../src/portal/Portal.web.tsx", {
     react: state.react, "./portal.css": {}, "./api": { portalApi, apiError: () => "Test error" },
     "./model": load("../src/portal/model.ts"), "./pages.web": stubs, "./ui.web": stubs,
+    "./PlusStaffScheduling.web": PlusStaffScheduling,
+    "./FrontDeskWorkspace.web": FrontDeskWorkspace,
     "../../design/figma-exports/ankelba-symbol.png": "local-test-logo.png",
   }, { window, document: { title: "" }, setTimeout: () => 0, clearTimeout: () => {} }).default;
-  return { calls, state, window, render() { state.begin(); return Portal(); } };
+  return { calls, state, stubs, PlusStaffScheduling, FrontDeskWorkspace, window, render() { state.begin(); return Portal(); } };
 }
 
 test("preview mount, date changes, refresh and mutations stay entirely in sample data", async () => {
@@ -186,7 +190,8 @@ test("preview mount, date changes, refresh and mutations stay entirely in sample
   tree = fixture.render();
   await fixture.state.effects();
   const modal = elements(tree).find((element) => element.props?.modal);
-  await modal.props.save({ name: "Synthetic preview room", description: "Preview only" });
+  const leadCaregiver = initial.data.users.find((user) => user.role === "caregiver" && user.status === "active");
+  await modal.props.save({ name: "Synthetic preview room", description: "Preview only", lead_caregiver_id: leadCaregiver.id });
   tree = fixture.render();
   const updated = elements(tree).find((element) => typeof element.props?.open === "function" && element.props?.data)?.props;
   assert.ok(updated.data.groups.some((group) => group.name === "Synthetic preview room"));
@@ -201,7 +206,20 @@ test("normal portal mount checks the current session and then requires explicit 
   await fixture.state.effects();
   const tree = fixture.render();
   assert.ok(elements(tree).some((element) => element.type === "form"));
-  assert.deepEqual(fixture.calls, ["session", "getBroadcast"]);
+  assert.deepEqual(fixture.calls, ["session"]);
+});
+
+test("admin front-desk navigation consolidates duties without calling Plus APIs in preview", async () => {
+  const fixture = portalFixture("/admin/preview/front-desk");
+  let tree = fixture.render();
+  await fixture.state.effects();
+  tree = fixture.render();
+  const nodes = elements(tree);
+  assert.equal(nodes.some((element) => element.type === "a" && /\/staff-scheduling$/.test(element.props?.href || "")), false);
+  const workspace = nodes.find((element) => element.type === fixture.FrontDeskWorkspace);
+  assert.ok(workspace, "the shared front-desk workspace is mounted");
+  assert.equal(workspace.props.plus, false, "preview must not unlock live Plus tools");
+  assert.equal(nodes.some((element) => element.type === fixture.PlusStaffScheduling), false, "preview must not mount live Plus scheduling APIs");
 });
 
 test("production preview routes cannot mount a live portal, and development route modes use separate state", () => {

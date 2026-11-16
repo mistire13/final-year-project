@@ -113,6 +113,20 @@
     font-size: 14px
 }
 
+/* Checkbox labels are a single row; ordinary form labels remain stacked. */
+.journey .j-form label:has(> input[type="checkbox"]) {
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 10px;
+}
+
+.journey .j-form label > input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: var(--green, #2d7a58);
+}
+
 .journey input:not([type=radio]):not([type=checkbox]),
 .journey select,
 .journey textarea {
@@ -198,15 +212,43 @@
     padding: 0
 }
 
-.j-checklist a {
+.j-checklist a,
+.j-checklist-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 16px;
     padding: 15px;
     border: 1px solid #ddd;
     border-radius: 12px;
     color: #10263b;
     text-decoration: none
+}
+
+.j-checklist a:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--green) 35%, transparent);
+    outline-offset: 2px
+}
+
+.j-checklist-row.is-locked {
+    color: var(--muted);
+    background: var(--cream-soft);
+    border-color: var(--line)
+}
+
+.j-checklist-action {
+    color: var(--navy);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap
+}
+
+.j-checklist a.is-complete .j-checklist-action {
+    color: var(--green)
+}
+
+.j-checklist-row.is-locked .j-checklist-action {
+    color: var(--muted)
 }
 
 .j-checklist small {

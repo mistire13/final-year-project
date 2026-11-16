@@ -3,6 +3,18 @@ import { Dataset, Row } from "./model";
 import { Badge, Button, Icon, Person } from "./ui.web";
 import { apiError, portalApi } from "./api";
 import { biometricSerial } from "../services/biometricSerial";
+import {
+  fingerprintFailureMessage,
+  isFingerprintNotRecognized,
+} from "./fingerprintPresentation";
+
+type FingerprintState =
+  | "idle"
+  | "scanning"
+  | "matched"
+  | "not-matched"
+  | "denied"
+  | "error";
 
 export function PickupVerification({
   row,
@@ -27,6 +39,8 @@ export function PickupVerification({
   );
   const [error, setError] = useState("");
   const [verified, setVerified] = useState<any>(null);
+  const [fingerprintState, setFingerprintState] =
+    useState<FingerprintState>("idle");
   const [guardianKey, setGuardianKey] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [reason, setReason] = useState("");
@@ -65,7 +79,10 @@ export function PickupVerification({
   const verifiedApproved =
     verified && adults.some((a) => a.key === `user:${verified.id}`);
   const manualApproved = adults.some((a) => a.key === guardianKey);
-  const run = async (work: () => Promise<void>) => {
+  const run = async (
+    work: () => Promise<void>,
+    onFailure?: (message: string) => void,
+  ) => {
     if (pending.current) return;
     pending.current = true;
     setBusy(true);
@@ -74,7 +91,11 @@ export function PickupVerification({
     try {
       await work();
     } catch (e) {
-      if (mounted.current) setError(apiError(e));
+      if (mounted.current) {
+        const message = apiError(e);
+        setError(message);
+        onFailure?.(message);
+      }
     } finally {
       pending.current = false;
       if (mounted.current) {
@@ -86,34 +107,51 @@ export function PickupVerification({
   const scan = () =>
     run(async () => {
       setVerified(null);
+      setFingerprintState("scanning");
       setPrompt("Place a finger on the scanner.");
-      const result = await biometricSerial.scan((prompt) => {
-        if (mounted.current)
-          setPrompt(
-            prompt === "REMOVE_FINGER"
-              ? "Lift the finger from the scanner."
-              : prompt === "PLACE_SAME_FINGER"
-                ? "Place the same finger on the scanner again."
-                : "Keep the finger still on the scanner.",
-          );
-      });
+      let result;
+      try {
+        result = await biometricSerial.scan((prompt) => {
+          if (mounted.current)
+            setPrompt(
+              prompt === "REMOVE_FINGER"
+                ? "Lift the finger from the scanner."
+                : prompt === "PLACE_SAME_FINGER"
+                  ? "Place the same finger on the scanner again."
+                  : "Keep the finger still on the scanner.",
+            );
+        });
+      } catch (e) {
+        throw Error(fingerprintFailureMessage(apiError(e)));
+      }
       if (!mounted.current) return;
-      if (!result.match || result.slotId == null)
-        throw Error(
-          result.error ||
-            "Fingerprint not recognized. Try again or use a manual identity check.",
-        );
+      if (!result.match || result.slotId == null) {
+        if (isFingerprintNotRecognized(result.error)) {
+          setFingerprintState("not-matched");
+          setPrompt(fingerprintFailureMessage(result.error));
+          return;
+        }
+        throw Error(fingerprintFailureMessage(result.error));
+      }
       setPrompt("Checking pickup authorization…");
       const check = await portalApi.identifyBiometricBySlot(
         row.id,
         result.slotId,
       );
       if (!mounted.current) return;
-      if (!check.authorized || !check.guardian)
-        throw Error(
-          check.reason || "This adult is not authorized to collect this child.",
+      if (!check.authorized || !check.guardian) {
+        setFingerprintState("denied");
+        setPrompt(
+          check.reason || "This adult is not approved to collect this child.",
         );
+        return;
+      }
       setVerified({ ...check.guardian, slotId: result.slotId });
+      setFingerprintState("matched");
+      setPrompt("Fingerprint matched and pickup authorization confirmed.");
+    }, (message) => {
+      setFingerprintState("error");
+      setPrompt(message);
     });
   const complete = () =>
     run(async () => {
@@ -178,6 +216,7 @@ export function PickupVerification({
           onClick={() => {
             setMode("fingerprint");
             setError("");
+            setFingerprintState(verifiedApproved ? "matched" : "idle");
             setConfirmed(false);
           }}
         >
@@ -191,12 +230,13 @@ export function PickupVerification({
             setMode("manual");
             setError("");
             setVerified(null);
+            setFingerprintState("idle");
           }}
         >
           Manual check
         </button>
       </div>
-      {error && (
+      {error && (mode === "manual" || fingerprintState === "idle") && (
         <div className="p-error" role="alert">
           {error}
         </div>
@@ -238,27 +278,49 @@ export function PickupVerification({
             )}
           </div>
           <div
-            className={`p-verification-state ${verifiedApproved ? "verified" : ""}`}
+            className={`p-verification-state ${fingerprintState}`}
             aria-live="polite"
+            role="status"
           >
             <span className="p-verification-icon">
-              <Icon name={verifiedApproved ? "check" : "shield"} size={28} />
+              <Icon
+                name={
+                  fingerprintState === "matched"
+                    ? "check"
+                    : fingerprintState === "not-matched" ||
+                        fingerprintState === "denied" ||
+                        fingerprintState === "error"
+                      ? "close"
+                      : "fingerprint"
+                }
+                size={32}
+              />
             </span>
-            <div>
+            <div className="p-verification-copy">
               <h3>
-                {verifiedApproved
-                  ? "Identity verified"
-                  : busy
-                    ? "Verification in progress"
-                    : "Verify the collecting adult"}
+                {fingerprintState === "matched"
+                  ? "Pickup authorized"
+                  : fingerprintState === "not-matched"
+                    ? "Fingerprint not recognized"
+                    : fingerprintState === "denied"
+                      ? "Pickup not authorized"
+                      : fingerprintState === "error"
+                        ? "Scanner needs attention"
+                        : fingerprintState === "scanning"
+                          ? "Scanning fingerprint"
+                          : "Ready to verify"}
               </h3>
-              {verifiedApproved ? (
+              {fingerprintState === "matched" && verifiedApproved ? (
                 <>
-                  <strong>{verified.name}</strong>
-                  <p>
-                    {verified.relationship || "Guardian"} · Authorized to
-                    collect {row.full_name}.
-                  </p>
+                  <div className="p-verification-person">
+                    <strong>{verified.name}</strong>
+                    <span>{verified.relationship || "Guardian"}</span>
+                  </div>
+                  <p>Fingerprint matched an approved pickup adult for {row.full_name}.</p>
+                  <div className="p-verification-confirmed">
+                    <Icon name="checkCircle" size={18} />
+                    Identity and pickup permission verified
+                  </div>
                 </>
               ) : (
                 <p>
@@ -266,10 +328,13 @@ export function PickupVerification({
                     ? "Use Manual check to explore the pickup flow with sample records."
                     : status === "unsupported"
                       ? "Open this workspace in Chrome or Edge to use a USB scanner, or choose Manual check."
-                      : error
-                        ? "Review the message above, then try again or choose Manual check."
-                        : ready || busy
-                          ? prompt
+                      : fingerprintState === "not-matched" ||
+                          fingerprintState === "denied" ||
+                          fingerprintState === "error" ||
+                          fingerprintState === "scanning"
+                        ? prompt
+                        : ready
+                          ? "Place the approved adult’s finger on the scanner to confirm identity and pickup permission."
                           : "Connect the scanner to begin, or choose Manual check."}
                 </p>
               )}
@@ -344,6 +409,7 @@ export function PickupVerification({
               onClick={() => {
                 setVerified(null);
                 setError("");
+                setFingerprintState("idle");
               }}
             >
               Scan again
@@ -354,7 +420,13 @@ export function PickupVerification({
               disabled={busy || !ready || preview || !adults.length}
               onClick={scan}
             >
-              {busy ? "Verifying…" : "Scan fingerprint"}
+              {busy
+                ? "Verifying…"
+                : fingerprintState === "not-matched" ||
+                    fingerprintState === "denied" ||
+                    fingerprintState === "error"
+                  ? "Try scan again"
+                  : "Scan fingerprint"}
             </Button>
           ) : (
             <Button

@@ -1,4 +1,4 @@
-// Ankelba fingerprint reader prototype: Uno / classic Nano (ATmega328P).
+// Ankelba fingerprint reader
 // Sensor TX -> D2; sensor RX <- D3 (check logic voltage); common GND.
 // Requires the Adafruit Fingerprint Sensor Library and a compatible UART sensor.
 // Serial Monitor: 115200 baud, newline. No fingerprint images/templates are sent.

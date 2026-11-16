@@ -31,14 +31,12 @@ function expandRules(rules,weekStart,weeks){
   }
   return shifts.sort((a,b)=>a.starts_at.localeCompare(b.starts_at)||a.staff_id-b.staff_id);
 }
-function shiftProblems(shifts,assignments,leaves,availability){
+function shiftProblems(shifts,assignments,leaves){
   const problems=[];
   shifts.forEach((shift,index)=>{
     if(shifts.slice(0,index).some(other=>other.staff_id===shift.staff_id&&overlaps(other,shift)))problems.push({staff_id:shift.staff_id,date:shift.local_date,reason:'Template shifts overlap.'});
     if(assignments.some(other=>other.staff_id===shift.staff_id&&other.status==='active'&&overlaps(other,shift)))problems.push({staff_id:shift.staff_id,date:shift.local_date,reason:'An existing duty overlaps.'});
     if(leaves.some(other=>other.staff_id===shift.staff_id&&other.status==='approved'&&overlaps(other,shift)))problems.push({staff_id:shift.staff_id,date:shift.local_date,reason:'Approved leave overlaps.'});
-    const own=availability.filter(row=>row.staff_id===shift.staff_id);
-    if(own.length&&!own.some(row=>row.available&&row.weekday===shift.weekday&&row.start_time<=shift.start_time&&row.end_time>=shift.end_time&&shift.end_time>shift.start_time))problems.push({staff_id:shift.staff_id,date:shift.local_date,reason:'The shift is outside recorded weekly availability.'});
   });
   return problems;
 }
@@ -101,10 +99,9 @@ function createStaffScheduling(pool,options={}){
     const from=shifts[0].starts_at,to=shifts.reduce((max,s)=>s.ends_at>max?s.ends_at:max,shifts[0].ends_at);
     const assignments=(await c.query("SELECT id,staff_id,starts_at,ends_at,status FROM front_desk_assignments WHERE daycare_id=$1 AND staff_id=ANY($2::int[]) AND status='active' AND starts_at<$4 AND ends_at>$3 ORDER BY id",[a.daycare_id,staffIds,from,to])).rows;
     const leaves=(await c.query("SELECT id,staff_id,starts_at,ends_at,status,version FROM staff_leave_requests WHERE daycare_id=$1 AND staff_id=ANY($2::int[]) AND status='approved' AND starts_at<$4 AND ends_at>$3 ORDER BY id",[a.daycare_id,staffIds,from,to])).rows;
-    const availability=(await c.query('SELECT * FROM staff_schedule_availability WHERE daycare_id=$1 AND staff_id=ANY($2::int[]) ORDER BY id',[a.daycare_id,staffIds])).rows;
-    const conflicts=shiftProblems(shifts,assignments,leaves,availability);
+    const conflicts=shiftProblems(shifts,assignments,leaves);
     if(shifts.some(s=>Date.parse(s.starts_at)<now().getTime()))conflicts.push({reason:'A proposed shift starts in the past.'});
-    return {template,staff,shifts,conflicts,preview_token:hash({version:template.version,rules,shifts,assignments,leaves,availability})};
+    return {template,staff,shifts,conflicts,preview_token:hash({version:template.version,rules,shifts,assignments,leaves})};
   }
   async function preview(body,user){const input=valid(rangeSchema,body);return transaction(async c=>plan(c,await actor(c,user,true),input));}
   async function publish(body,user){const input=valid(publishSchema,body);return transaction(async c=>{
@@ -158,8 +155,7 @@ function createStaffScheduling(pool,options={}){
     const shift={staff_id:input.staff_id,starts_at,ends_at,local_date:localDate,weekday:new Date(localDate+'T00:00:00Z').getUTCDay(),start_time,end_time};
     const assignments=(await c.query("SELECT * FROM front_desk_assignments WHERE daycare_id=$1 AND staff_id=$2 AND status='active' AND starts_at<$4 AND ends_at>$3",[a.daycare_id,input.staff_id,starts_at,ends_at])).rows;
     const leaves=(await c.query("SELECT * FROM staff_leave_requests WHERE daycare_id=$1 AND staff_id=$2 AND status='approved' AND starts_at<$4 AND ends_at>$3",[a.daycare_id,input.staff_id,starts_at,ends_at])).rows;
-    const availability=(await c.query('SELECT * FROM staff_schedule_availability WHERE daycare_id=$1 AND staff_id=$2',[a.daycare_id,input.staff_id])).rows;
-    if(shiftProblems([shift],assignments,leaves,availability).length)throw fail('The substitute is unavailable or has an overlapping duty or approved leave.',409);
+    if(shiftProblems([shift],assignments,leaves).length)throw fail('The substitute has an overlapping duty or approved leave.',409);
     const replacement=(await c.query('INSERT INTO front_desk_assignments(daycare_id,staff_id,group_id,starts_at,ends_at,can_attendance,can_pickup,assigned_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[a.daycare_id,input.staff_id,old.group_id,starts_at,ends_at,old.can_attendance,old.can_pickup,a.id])).rows[0];
     await c.query("UPDATE front_desk_assignments SET status='revoked',revoked_at=NOW() WHERE daycare_id=$1 AND id=$2",[a.daycare_id,old.id]);
     await audit(c,a,'STAFF_DUTY_SUBSTITUTED','front_desk_assignments',old.id,{replacement_id:replacement.id,previous_staff_id:old.staff_id,staff_id:input.staff_id,reason:input.reason});

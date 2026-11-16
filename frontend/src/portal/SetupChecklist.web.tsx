@@ -6,6 +6,7 @@ export interface SetupStep {
   title: string;
   hint: string;
   done: boolean;
+  available: boolean;
   path: string;
 }
 
@@ -16,42 +17,58 @@ export function getSetupSteps(data: Dataset): SetupStep[] {
   const hasAttendanceDuty = activeDuties.some((d) => d.can_attendance);
   const hasPickupDuty = activeDuties.some((d) => d.can_pickup);
   const dutiesConfigured = activeDuties.length > 0 && (hasAttendanceDuty || hasPickupDuty);
+  const centerConfigured = !!(data.daycare?.contact_phone && data.daycare?.address);
+  const activeCaregivers = (data.users || []).filter((u) => u.role === 'caregiver' && u.status === 'active');
+  const caregiversConfigured = activeCaregivers.length > 0;
+  const caregiverIds = new Set(activeCaregivers.map((caregiver) => Number(caregiver.id)));
+  const classroomsConfigured = (data.groups || []).length > 0
+    && (data.groups || []).every((group) => caregiverIds.has(Number(group.lead_caregiver_id)));
+  const familiesConfigured = active.length > 0
+    && active.every((child) => (data.guardians || []).some((guardian) => guardian.child_id === child.id));
+  const assignmentsConfigured = active.length > 0
+    && active.every((child) => child.group_id && child.caregiver_id);
 
   return [
     {
       title: 'Confirm your center details',
-      hint: 'Add the contact phone and address families will use.',
-      done: !!(data.daycare?.contact_phone && data.daycare?.address),
+      hint: 'Add your phone and address.',
+      done: centerConfigured,
+      available: true,
       path: 'settings',
     },
     {
-      title: 'Create your classrooms',
-      hint: 'Organize children into the groups your team manages.',
-      done: (data.groups || []).length > 0,
-      path: 'groups',
-    },
-    {
       title: 'Add your caregivers',
-      hint: 'Create named staff accounts for attributable care records.',
-      done: (data.users || []).some((u) => u.role === 'caregiver' && u.status === 'active'),
+      hint: 'Create active staff accounts.',
+      done: caregiversConfigured,
+      available: true,
       path: 'caregivers',
     },
     {
+      title: 'Create classrooms and assign leads',
+      hint: 'Choose an active caregiver for every classroom.',
+      done: classroomsConfigured,
+      available: caregiversConfigured,
+      path: 'groups',
+    },
+    {
       title: 'Enroll children and link their families',
-      hint: 'Each active child needs an enrolled profile and linked family.',
-      done: active.length > 0 && active.every((c) => (data.guardians || []).some((g) => g.child_id === c.id)),
+      hint: 'Add each child with a linked guardian.',
+      done: familiesConfigured,
+      available: classroomsConfigured,
       path: 'children',
     },
     {
       title: 'Assign children to classrooms and caregivers',
-      hint: 'Assignments determine which children staff can care for.',
-      done: active.length > 0 && active.every((c) => c.group_id && c.caregiver_id),
+      hint: 'Check every active child’s assignment.',
+      done: assignmentsConfigured,
+      available: familiesConfigured,
       path: 'children',
     },
     {
       title: 'Schedule attendance and pickup duty',
-      hint: 'Assign staff to front-desk check-in or pickup coverage.',
+      hint: 'Assign check-in and pickup coverage.',
       done: dutiesConfigured,
+      available: assignmentsConfigured,
       path: 'front-desk',
     },
   ];
@@ -76,26 +93,28 @@ export default function SetupChecklist({ data }: { data: Dataset }) {
         style={{ width: '100%', height: 8, accentColor: '#417b61', borderRadius: 4 }}
       />
       <ol className="j-checklist" style={{ marginTop: 14 }}>
-        {steps.map((s) => (
-          <li key={s.path + s.title}>
-            <a href={'/admin/' + s.path} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {steps.map((s) => {
+          const content = (
+            <>
               <span>
                 <strong>{s.title}</strong>
                 <small>{s.hint}</small>
               </span>
-              <span
-                style={{
-                  color: s.done ? '#166534' : 'var(--navy)',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s.done ? 'Complete' : 'Continue →'}
+              <span className="j-checklist-action">
+                {s.done ? 'Complete' : s.available ? 'Continue →' : 'Next'}
               </span>
-            </a>
-          </li>
-        ))}
+            </>
+          );
+          return (
+            <li key={s.path + s.title}>
+              {s.done || s.available ? (
+                <a href={'/admin/' + s.path} className={s.done ? 'is-complete' : undefined}>{content}</a>
+              ) : (
+                <div className="j-checklist-row is-locked" aria-disabled="true">{content}</div>
+              )}
+            </li>
+          );
+        })}
       </ol>
       <div style={{ marginTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <a href="/admin/attendance" style={{ fontWeight: 600, color: 'var(--navy)', fontSize: 13 }}>

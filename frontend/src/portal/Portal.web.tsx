@@ -2,11 +2,13 @@ import { DeskPage } from "./DeskPages.web";
 import PlusAnalytics from './PlusAnalytics.web';
 import PlusBillingAutomation from './PlusBillingAutomation.web';
 import PlusStaffScheduling from './PlusStaffScheduling.web';
+import FrontDeskWorkspace from './FrontDeskWorkspace.web';
 import SurfaceRecovery from './SurfaceRecovery.web';
 import {workspaceRouteFailure} from './workspaceRoutes';
 import SetupChecklist from './SetupChecklist.web';
 import { DaycareSubscription, SubscriptionNotice } from './SubscriptionViews.web';
-import { adminNavigationForFeatures, plusNavigationFeatures, subscriptionDisplayState } from './subscriptions';
+import { adminNavigationForFeatures, plusNavigationFeatures, shouldEmbedStaffScheduling, subscriptionDisplayState } from './subscriptions';
+import OrderHistory from './OrderHistory.web';
 
 import { CaregiverPage } from "./CaregiverPages.web";
 import { DaycareFinances } from "./DaycareFinances.web";
@@ -45,7 +47,6 @@ import {
   Attendance,
   Caregivers,
   Children,
-  Duties,
   Groups,
   Monitoring,
   Overview,
@@ -179,7 +180,6 @@ const nav = [
       ["attendance", "Attendance history", "clock"],
       ["biometric", "Guardian verification", "shield"],
       ["front-desk", "Front-desk duties", "desk"],
-      ["staff-scheduling", "Front-desk shifts · Plus", "clock"],
       ["reports", "Daily reports", "file"],
       ["health", "Health & incidents", "heart"],
     ],
@@ -282,7 +282,6 @@ export default function Portal() {
   const [modal, setModal] = useState<{ kind: string; row: Row } | null>(null);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [broadcast, setBroadcast] = useState<{ message: string; level: string; active: boolean } | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const loadingRequest = useRef(0);
   const staff = actor?.role === "caregiver";
@@ -294,7 +293,7 @@ export default function Portal() {
   }, [actor?.id, actor?.role, preview, page]);
   const base = `/${staff ? "staff" : "admin"}${preview ? "/preview" : ""}`;
   const portalFeatures = data.daycare?.features || {};
-  const adminNav = adminNavigationForFeatures(nav, portalFeatures, preview);
+  const adminNav = adminNavigationForFeatures(nav, portalFeatures, preview, data.daycare?.has_shop_orders===true);
   const navigation = staff
     ? [
         {
@@ -313,10 +312,16 @@ export default function Portal() {
         },
       ]
     : adminNav;
-  // An admin's bookmarked Plus page must still reach the locked explanation.
+  // Keep legacy Plus bookmarks valid while presenting one consolidated duties page.
   // Hiding navigation must not hide retained order and payment history.
   const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users", ...Object.keys(plusNavigationFeatures)])];
-  const normalizedPage = page === "users" ? "caregivers" : page === "workspace" ? "arrivals" : page;
+  const normalizedPage = page === "users"
+    ? "caregivers"
+    : page === "workspace"
+      ? "arrivals"
+      : !staff && page === "staff-scheduling"
+        ? "front-desk"
+        : page;
   const selected = available.includes(normalizedPage)
     ? normalizedPage
     : staff
@@ -328,7 +333,7 @@ export default function Portal() {
   const deskPage = ["arrivals", "pickups"].includes(selected);
   const effectiveDate = deskPage ? today() : date;
   const usesDate = ["dashboard", "analytics", "groups", "front-desk", "attendance", "reports", "workspace"].includes(selected);
-  const usesPageSearch = ["children", "caregivers", "groups", "front-desk", "attendance", "reports", "health", "biometric", "communication", "events", "store", "orders", "audit", "workspace"].includes(selected);
+  const usesPageSearch = ["children", "caregivers", "groups", "front-desk", "attendance", "reports", "health", "biometric", "events", "store", "orders", "audit", "workspace"].includes(selected);
   const activeGroup = navigation.find(group => group.items.some(([key]) => key === selected))?.group;
   const expandedGroup = openGroup === undefined ? activeGroup : openGroup;
   const go = (next: string, anchor = "") => {
@@ -352,6 +357,12 @@ export default function Portal() {
     window.addEventListener("popstate", change);
     return () => window.removeEventListener("popstate", change);
   }, []);
+  useEffect(() => {
+    if (!staff && page === "staff-scheduling") {
+      window.history.replaceState({}, "", base + "/front-desk");
+      setLocation(current => ({ ...current, page: "front-desk" }));
+    }
+  }, [base, page, staff]);
   useEffect(() => {
     document.title = actor ? title + " · Ankelba" : "Staff sign in · Ankelba";
   }, [actor, title]);
@@ -377,9 +388,6 @@ export default function Portal() {
         if (active) setChecking(false);
       }
     })();
-    portalApi.getBroadcast().then((b) => {
-      if (active && b && b.active) setBroadcast(b);
-    }).catch(() => {});
     return () => {
       active = false;
     };
@@ -847,6 +855,8 @@ export default function Portal() {
           upsert("guardians", { id: 0, child_id: row.id, ...body }),
         );
       } else if (kind === "group") {
+        if (!values.lead_caregiver_id)
+          throw Error("Choose an active lead caregiver before creating the classroom.");
         const body: any = {
           ...(row.id ? {version:row.version} : {}),
           child_versions: data.children.filter(c=>c.group_id===row.id && c.enrollment_status==='active').map(c=>({id:c.id,version:c.version})),
@@ -1159,6 +1169,7 @@ export default function Portal() {
         <div className="p-login-story">
           <Brand />
           <h1>Daycare workspace</h1>
+          <p>Your children, families and caregivers. One calm place to keep everything together.</p>
         </div>
         <div className="p-login-card">
           <div>
@@ -1248,6 +1259,8 @@ export default function Portal() {
       <Analytics {...ctx} />
     ) : selected === "finances" ? (
       <DaycareFinances ctx={ctx} />
+    ) : selected === "orders" && !preview && !portalFeatures.shop ? (
+      <OrderHistory daycareId={data.daycare?.id} refreshKey={data} query={query} />
     ) : selected === "bank-receipts" ? (
       preview ? <Card title="Bank receipts"><p>Sign in to review your daycare’s bank receipts.</p></Card> :
         <DaycarePaymentManagement key={fragment} initialStatus={fragment} />
@@ -1260,7 +1273,11 @@ export default function Portal() {
     ) : selected === "groups" ? (
       <Groups {...ctx} />
     ) : selected === "front-desk" ? (
-      <Duties {...ctx} />
+      <FrontDeskWorkspace
+        ctx={ctx}
+        plus={shouldEmbedStaffScheduling(visibleData.daycare, preview)}
+        onDataChanged={() => { void refresh(true); }}
+      />
     ) : ["arrivals", "pickups"].includes(selected) ? (
       <DeskPage key={selected} {...ctx} mode={selected as "arrivals" | "pickups"} onAction={(kind, row, values) => save(values, { kind, row })} />
     ) : ["attendance", "workspace"].includes(selected) ? (
@@ -1410,48 +1427,6 @@ export default function Portal() {
           </div>
         </header>
         <div className="p-content" key={selected}>
-          {broadcast?.active && broadcast?.message && (
-            <div
-              style={{
-                background:
-                  broadcast.level === "alert"
-                    ? "#FEF2F2"
-                    : broadcast.level === "warning"
-                    ? "#FFFBEB"
-                    : "#EFF6FF",
-                border: `1.5px solid ${
-                  broadcast.level === "alert"
-                    ? "#F87171"
-                    : broadcast.level === "warning"
-                    ? "#FCD34D"
-                    : "#93C5FD"
-                }`,
-                color:
-                  broadcast.level === "alert"
-                    ? "#991B1B"
-                    : broadcast.level === "warning"
-                    ? "#92400E"
-                    : "#1E40AF",
-                padding: "12px 18px",
-                borderRadius: 12,
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                marginBottom: 20,
-                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-              }}
-            >
-              <span style={{ fontSize: 22 }}>
-                {broadcast.level === "alert" ? "🚨" : broadcast.level === "warning" ? "⚠️" : "📢"}
-              </span>
-              <div style={{ flex: 1 }}>
-                <strong style={{ display: "block", fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                  Platform Notice ({broadcast.level})
-                </strong>
-                <span style={{ fontSize: 14, fontWeight: 500 }}>{broadcast.message}</span>
-              </div>
-            </div>
-          )}
           {preview && (
             <div className="p-preview">
               <span>
@@ -1783,7 +1758,7 @@ function PortalModal({
   } else if (kind === "group") {
     title = row.id ? "Edit classroom" : "Create classroom";
     fields = [field("name", "Classroom name"), field("description", "Description", "textarea", false),
-      field("lead_caregiver_id", "Lead caregiver", "select", false, {options: options(data.users.filter(u => u.role === "caregiver" && u.status === "active"))}),
+      field("lead_caregiver_id", "Lead caregiver", "select", true, {options: options(data.users.filter(u => u.role === "caregiver" && u.status === "active"))}),
       field("assign_children", "Assign this caregiver to children in the classroom", "checkbox", false)];
   } else if (kind === "duty") {
     title = "Assign front desk duty";
@@ -2208,13 +2183,13 @@ function FamilyEnrollmentModal({
   close: () => void;
 }) {
   const { data, preview } = ctx;
-  const [isNewGroup, setIsNewGroup] = useState(data.groups.length === 0);
-  const [newGroupName, setNewGroupName] = useState("");
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [validationError, setValidationError] = useState("");
 
-  const initialGroupId = data.groups[0]?.id ? String(data.groups[0].id) : "";
-  const initialGroup = data.groups.find((g) => String(g.id) === initialGroupId);
+  const activeCaregiverIds = new Set(data.users.filter((user) => user.role === "caregiver" && user.status === "active").map((user) => Number(user.id)));
+  const configuredGroups = data.groups.filter((group) => activeCaregiverIds.has(Number(group.lead_caregiver_id)));
+  const initialGroupId = configuredGroups[0]?.id ? String(configuredGroups[0].id) : "";
+  const initialGroup = configuredGroups.find((g) => String(g.id) === initialGroupId);
   const initialCaregiverId = initialGroup?.lead_caregiver_id ? String(initialGroup.lead_caregiver_id) : "";
 
   const [formData, setFormData] = useState({
@@ -2270,11 +2245,12 @@ function FamilyEnrollmentModal({
       setValidationError("Please review and confirm that the parent/guardian accepts the Daycare Terms & Policies before proceeding.");
       return;
     }
+    if (!values.child_group_id || !values.child_caregiver_id) {
+      setValidationError("Choose a configured classroom and caregiver before enrolling this child.");
+      return;
+    }
     setValidationError("");
-    save({
-      ...values,
-      new_group_name: isNewGroup ? newGroupName.trim() : "",
-    });
+    save(values);
   };
 
   return (
@@ -2468,49 +2444,23 @@ function FamilyEnrollmentModal({
             </div>
             <div className="p-fields" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--navy)" }}>Classroom group *</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsNewGroup(!isNewGroup)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#008794",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      padding: 0,
-                      textDecoration: "underline",
-                    }}
-                  >
-                    {isNewGroup ? "← Choose existing" : "+ Create new group here"}
-                  </button>
-                </div>
-                {isNewGroup ? (
-                  <input
-                    required
-                    aria-label="New classroom group name"
-                    placeholder="e.g., Little Sprouts (Toddler Room)"
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                    style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #D1D5DB" }}
-                  />
-                ) : (
+                <label>
+                  Classroom group *
                   <select
+                    required
                     aria-label="Classroom group"
                     value={formData.child_group_id}
                   name="child_group_id"
                     onChange={(e) => handleGroupSelect(e.target.value)}
                   >
                     <option value="">Select classroom group</option>
-                    {data.groups.map((g) => (
+                    {configuredGroups.map((g) => (
                       <option key={g.id} value={g.id}>
                         {g.name}
                       </option>
                     ))}
                   </select>
-                )}
+                </label>
                 {selectedGroupObj && groupLeadName && (
                   <small style={{ color: "#008794", marginTop: 4, display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 600 }}>
                     <Icon name="checkCircle" size={13} /> Group Lead Teacher: {groupLeadName}
@@ -2521,6 +2471,7 @@ function FamilyEnrollmentModal({
               <label>
                 Assigned primary caregiver (Lead Teacher)
                 <select
+                  required
                   value={formData.child_caregiver_id}
                   name="child_caregiver_id"
                   onInput={(e) => handleChange("child_caregiver_id", e.currentTarget.value)}

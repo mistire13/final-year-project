@@ -46,15 +46,6 @@ function effectiveFeatures(row, now = Date.now()) {
   const features = Object.fromEntries(
     FEATURE_KEYS.map((key) => [key, active && defaults[key] && (!accepted || accepted[key] === true)])
   );
-  if (
-    active &&
-    code === 'standard' &&
-    (!accepted || accepted.shop !== false) &&
-    row?.legacy_shop_access_until &&
-    Date.parse(row.legacy_shop_access_until) > now
-  ) {
-    features.shop = true;
-  }
   return {
     features,
     active,

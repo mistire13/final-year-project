@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MessageOversight } from './MessageOversight.web';
+import CommunicationWorkspace from './CommunicationWorkspace.web';
 import { paymentProvenanceLabel } from '../types/daycarePayments';
 import {
   Dataset,
@@ -782,11 +782,13 @@ export function Caregivers(ctx: PageContext) {
 export const Registry = Caregivers;
 
 export function Children(ctx: PageContext & { initialGroup?: string }) {
-  const { data, query, open } = ctx;
+  const { data, query, open, go } = ctx;
   const [requestedGroup, setGroup] = useState(ctx.initialGroup || "");
   const group = data.groups.some((entry) => String(entry.id) === requestedGroup) ? requestedGroup : "";
   const [status, setStatus] = useState("");
   const pendingRequests = (data.guardianRequests || []).filter((g) => g.status === "pending");
+  const activeCaregiverIds = new Set(data.users.filter((user) => user.role === "caregiver" && user.status === "active").map((user) => Number(user.id)));
+  const hasConfiguredClassroom = data.groups.some((classroom) => activeCaregiverIds.has(Number(classroom.lead_caregiver_id)));
   return (
     <>
       {pendingRequests.length > 0 && (
@@ -835,12 +837,16 @@ export function Children(ctx: PageContext & { initialGroup?: string }) {
           <h2>Children & Families</h2>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <Button icon="plus" onClick={() => open("family")}>
-            Enroll New Family
-          </Button>
-          <Button variant="secondary" onClick={() => open("child")}>
-            Add Sibling / Child
-          </Button>
+          {!activeCaregiverIds.size ? (
+            <Button icon="people" onClick={() => go("caregivers")}>Add caregiver first</Button>
+          ) : !hasConfiguredClassroom ? (
+            <Button icon="leaf" onClick={() => go("groups")}>Create classroom first</Button>
+          ) : (
+            <>
+              <Button icon="plus" onClick={() => open("family")}>Enroll New Family</Button>
+              <Button variant="secondary" onClick={() => open("child")}>Add Sibling / Child</Button>
+            </>
+          )}
         </div>
       </div>
       <div className="p-filters">
@@ -970,16 +976,23 @@ export function Children(ctx: PageContext & { initialGroup?: string }) {
   );
 }
 export function Groups(ctx: PageContext) {
-  const { data, query, open, date } = ctx;
+  const { data, query, open, date, go } = ctx;
+  const activeCaregivers = data.users.filter((user) => user.role === "caregiver" && user.status === "active");
   return (
     <>
       <div
         className="p-head-actions"
         style={{ justifyContent: "flex-end", marginBottom: 20 }}
       >
-        <Button icon="plus" onClick={() => open("group")}>
-          Create group
-        </Button>
+        {activeCaregivers.length ? (
+          <Button icon="plus" onClick={() => open("group")}>
+            Create classroom
+          </Button>
+        ) : (
+          <Button icon="people" onClick={() => go("caregivers")}>
+            Add caregiver first
+          </Button>
+        )}
       </div>
       <div className="p-grid p-classroom-grid">
         {search(data.groups, query).map((g) => {
@@ -991,7 +1004,7 @@ export function Groups(ctx: PageContext) {
                   <Icon name="leaf" />
                 </span>
                 <Button variant="quiet" onClick={() => open("group", g)}>
-                  Edit group
+                  Edit classroom
                 </Button>
               </div>
               <h2>{g.name}</h2>
@@ -1049,17 +1062,10 @@ export function Duties(ctx: PageContext) {
   return (
     <Card>
       <div className="p-card-head">
-        <div>
-          <h2>Duty assignments</h2>
-          <p>Assignments are separate from classroom responsibilities.</p>
-        </div>
+        <h2>Duties</h2>
         <Button icon="plus" onClick={() => open("duty")}>
-          Assign staff
+          Assign duty
         </Button>
-      </div>
-      <div className="p-notice">
-        Staff use their own credentials. Access is limited by shift, group and
-        the actions you assign.
       </div>
       <Table
         rows={search(
@@ -1581,84 +1587,7 @@ export function Monitoring(ctx: PageContext & { page: string }) {
       </Card>
     );
   if (page === "communication")
-    return (
-      <>
-        <Card>
-          <div className="p-card-head">
-            <div>
-              <h2>Keep your community connected</h2>
-              <p>Announcements for families and caregivers</p>
-            </div>
-            <Button icon="plus" onClick={() => open("announcement")}>
-              New announcement
-            </Button>
-          </div>
-          {search(data.announcements, query).map((a) => (
-            <div key={a.id} className="p-attention">
-              <span className="p-icon-tile">
-                <Icon name="message" />
-              </span>
-              <div>
-                <strong>{a.title}</strong>
-                <p>{a.body}</p>
-                <Badge
-                  value={
-                    a.audience === "group"
-                      ? groupName(data, a.target_group_id)
-                      : "All families & staff"
-                  }
-                />
-              </div>
-            </div>
-          ))}
-          {!data.announcements.length && <Empty />}
-        </Card>
-        <Card>
-          <div className="p-card-head">
-            <div>
-              <h2>Your messages</h2>
-              <p>Conversations sent to or from your account</p>
-            </div>
-            <Button icon="message" onClick={() => open("message")}>
-              Write message
-            </Button>
-          </div>
-          <Table
-            rows={search(
-              data.messages.map((m) => ({
-                ...m,
-                from: userName(data, m.sender_id),
-                to: userName(data, m.recipient_id),
-              })),
-              query,
-            )}
-            columns={[
-              { key: "from", title: "From" },
-              { key: "to", title: "To" },
-              { key: "subject", title: "Subject" },
-              {
-                key: "read_at",
-                title: "State",
-                render: (r) => <Badge value={r.read_at ? "read" : "unread"} />,
-              },
-              {
-                key: "actions",
-                title: "Message",
-                render: (r) => (
-                  <Button
-                    variant="quiet"
-                    onClick={() => open("message-detail", r)}
-                  >
-                    Read
-                  </Button>
-                ),
-              },
-            ]}
-          />
-        </Card>
-        {!ctx.preview && !ctx.staff && <MessageOversight />}
-      </>
-    );
+    return <CommunicationWorkspace ctx={ctx} />;
   if (page === "store")
     return (
       <Card>

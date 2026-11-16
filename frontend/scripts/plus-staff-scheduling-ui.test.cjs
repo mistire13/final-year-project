@@ -16,13 +16,14 @@ function harness(client){
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/portal/PlusStaffScheduling.web.tsx'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,
     {module:m,exports:m.exports,require(name){if(name==='react')return {...react,default:react};if(name==='./api')return {portalClient:client,apiError:error=>error.message};if(name==='./ui.web')return {Button,Card,Badge};if(name==='./StaffWeekCalendar.web')return calendar.exports;if(name.endsWith('.css'))return {};throw Error(name);},Date,Intl,Math});
   const nodes=()=>{const all=[];const visit=node=>{if(Array.isArray(node))return node.forEach(visit);if(!node||typeof node!=='object')return;all.push(node);visit(node.props?.children);};visit(tree);return all;};
-  return {render(){cursor=0;effects=[];tree=m.exports.default();effects.forEach(effect=>effect());},nodes,find:fn=>nodes().find(fn),Button,Card,Calendar:calendar.exports.default,calendar:calendar.exports};
+  return {render(props={}){cursor=0;effects=[];tree=m.exports.default(props);effects.forEach(effect=>effect());},nodes,find:fn=>nodes().find(fn),Button,Card,Calendar:calendar.exports.default,calendar:calendar.exports};
 }
 const fixture={role:'admin',staff:[{id:4,name:'Synthetic Caregiver'}],groups:[],templates:[{id:'3',name:'Weekly rota',enabled:true,version:1,rules:[{}]}],assignments:[],leave:[],availability:[]};
 test('administrator must preview and explicitly review before publishing dated duties',async()=>{
   const posts=[];
   const h=harness({get:async()=>({data:fixture}),post:async(url,body)=>{posts.push({url,body});return {data:url.endsWith('/preview')?{preview_token:'a'.repeat(64),shifts:[{staff_id:4,starts_at:'2027-01-04T06:00:00Z',ends_at:'2027-01-04T14:00:00Z',can_attendance:true,can_pickup:false}],conflicts:[]}:{}};}});
   h.render();await turn();h.render();
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Weekly availability'),undefined);
   const templateLabel=h.find(node=>node.type==='label'&&node.props.children[0]==='Template');
   templateLabel.props.children.flat().find(node=>node?.type==='select').props.onChange({target:{value:'3'}});h.render();
   const previewForm=h.find(node=>node.type==='form'&&textOf(node).includes('Preview schedule'));
@@ -39,8 +40,9 @@ test('caregiver can request own leave in Addis Ababa time without administrator 
   let sent;
   const h=harness({get:async()=>({data:{...fixture,role:'caregiver',templates:[]}}),post:async(url,body)=>{sent={url,body};return {data:{}};}});
   h.render();await turn();h.render();
-  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Weekly front-desk templates'),undefined);
-  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Arrange a front-desk substitute'),undefined);
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Schedule templates'),undefined);
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Assign substitute'),undefined);
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Weekly availability'),undefined);
   const times=()=>h.nodes().filter(node=>node.type==='input'&&node.props.type==='datetime-local');
   times()[0].props.onChange({target:{value:'2027-01-04T09:00'}});h.render();times()[1].props.onChange({target:{value:'2027-01-04T17:00'}});h.render();
   h.find(node=>node.type==='textarea').props.onChange({target:{value:'Planned personal leave'}});h.render();
@@ -48,13 +50,21 @@ test('caregiver can request own leave in Addis Ababa time without administrator 
   assert.equal(sent.url,'/staff-scheduling/leave');assert.equal(sent.body.staff_id,4);assert.equal(sent.body.starts_at,'2027-01-04T09:00:00+03:00');assert.equal(sent.body.ends_at,'2027-01-04T17:00:00+03:00');
 });
 
-test('front-desk templates describe duty coverage and leave permanent classroom assignments separate',async()=>{
+test('front-desk scheduling uses concise action labels and coverage controls',async()=>{
   const h=harness({get:async()=>({data:fixture})});h.render();await turn();h.render();
   const text=h.nodes().map(textOf).join(' ');
-  assert.match(text,/Caregivers keep their regular classroom assignments/);
-  assert.ok(h.find(node=>node.type===h.Card&&node.props.title==='Front-desk attendance and pickup shifts'));
-  assert.ok(h.find(node=>node.type==='label'&&textOf(node).startsWith('Children covered by this duty')));
-  assert.ok(h.find(node=>node.type==='label'&&textOf(node).includes('Attendance / check-in responsibility')));
+  assert.doesNotMatch(text,/Caregivers keep their regular classroom assignments/);
+  assert.ok(h.find(node=>node.type===h.Card&&node.props.title==='Shift calendar'));
+  assert.ok(h.find(node=>node.type==='label'&&textOf(node).startsWith('Coverage')));
+  assert.ok(h.find(node=>node.type==='label'&&textOf(node).includes('Check-in')));
+});
+
+test('section mode renders only the selected action group',async()=>{
+  const h=harness({get:async()=>({data:fixture})});h.render({section:'leave'});await turn();h.render({section:'leave'});
+  assert.ok(h.find(node=>node.type===h.Card&&node.props.title==='Leave requests'));
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Shift calendar'),undefined);
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Schedule templates'),undefined);
+  assert.equal(h.find(node=>node.type===h.Card&&node.props.title==='Assign substitute'),undefined);
 });
 
 test('weekly calendar loads Monday through Sunday and refetches server-filtered records on navigation',async()=>{

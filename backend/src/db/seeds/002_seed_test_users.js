@@ -34,13 +34,11 @@ exports.seed = async (knex) => {
       status: 'active',
       subscription_plan: 'standard',
       trial_ends_at: new Date(Date.now() + 30 * 86400000),
-      legacy_shop_access_until: new Date(Date.now() + 365 * 86400000),
       max_children: 50,
     });
-  } else if (dc.status !== 'active' || !dc.legacy_shop_access_until) {
+  } else if (dc.status !== 'active') {
     await knex('daycares').where('id', 1).update({
       status: 'active',
-      legacy_shop_access_until: new Date(Date.now() + 365 * 86400000),
     });
   }
 

@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-function fixture(onSave = async () => {}) {
+function fixture(onSave = async () => {}, options = {}) {
   const states = [],
     refs = [];
   let cursor = 0,
@@ -58,9 +58,35 @@ function fixture(onSave = async () => {}) {
           Icon: "icon",
         };
       if (name === "./api")
-        return { apiError: (e) => e.message, portalApi: {} };
+        return {
+          apiError: (e) => e.message,
+          portalApi: {
+            identifyBiometricBySlot:
+              options.identifyBiometricBySlot || (async () => ({})),
+          },
+        };
       if (name === "../services/biometricSerial")
-        return { biometricSerial: { getStatus: () => "unsupported" } };
+        return {
+          biometricSerial: {
+            getStatus: () => options.scannerStatus || "unsupported",
+            scan: options.scan || (async () => ({ match: false })),
+          },
+        };
+      if (name === "./fingerprintPresentation") {
+        const presentation = { exports: {} };
+        const presentationOutput = ts.transpileModule(
+          fs.readFileSync(
+            require.resolve("../src/portal/fingerprintPresentation.ts"),
+            "utf8",
+          ),
+          { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+        ).outputText;
+        vm.runInNewContext(presentationOutput, {
+          module: presentation,
+          exports: presentation.exports,
+        });
+        return presentation.exports;
+      }
       throw Error("Unexpected module " + name);
     },
   });
@@ -92,7 +118,7 @@ function fixture(onSave = async () => {}) {
     },
     onSave,
     onClose: () => closed++,
-    preview: true,
+    preview: options.preview ?? true,
   };
   const render = () => {
     cursor = 0;
@@ -179,4 +205,50 @@ test("a rejected checkout keeps the form and exposes the error without reporting
   assert.equal(f.closed(), 0);
   assert.ok(f.text(f.render()).includes("Your pickup shift has ended."));
   assert.equal(f.find("button", "Confirm pickup").props.disabled, false);
+});
+
+test("a matched approved guardian produces a clear pickup authorization state", async () => {
+  const f = fixture(async () => {}, {
+    preview: false,
+    scannerStatus: "ready",
+    scan: async () => ({ match: true, slotId: 4, confidence: 91 }),
+    identifyBiometricBySlot: async () => ({
+      authorized: true,
+      guardian: { id: 2, name: "Adult One", relationship: "Mother" },
+    }),
+  });
+  await f.find("button", "Scan fingerprint").props.onClick();
+  const rendered = f.text(f.render());
+  assert.match(rendered, /Pickup authorized/);
+  assert.match(rendered, /Adult One/);
+  assert.match(rendered, /Identity and pickup permission verified/);
+  assert.equal(f.find("button", "Confirm pickup").props.disabled, false);
+});
+
+test("an unknown fingerprint shows a retry state without technical scanner text", async () => {
+  const f = fixture(async () => {}, {
+    preview: false,
+    scannerStatus: "ready",
+    scan: async () => ({
+      match: false,
+      error: "Fingerprint does not match any enrolled guardian",
+    }),
+  });
+  await f.find("button", "Scan fingerprint").props.onClick();
+  const rendered = f.text(f.render());
+  assert.match(rendered, /Fingerprint not recognized/);
+  assert.match(rendered, /Try scan again/);
+  assert.doesNotMatch(rendered, /NO_MATCH|slot|image-?7/i);
+});
+
+test("raw image capture codes become friendly scanner guidance", async () => {
+  const f = fixture(async () => {}, {
+    preview: false,
+    scannerStatus: "ready",
+    scan: async () => ({ match: false, error: "Scanner error: IMAGE 7" }),
+  });
+  await f.find("button", "Scan fingerprint").props.onClick();
+  const rendered = f.text(f.render());
+  assert.match(rendered, /could not read the fingerprint clearly/i);
+  assert.doesNotMatch(rendered, /IMAGE 7/);
 });

@@ -13,7 +13,7 @@ test('Plus capabilities are explicit, paid-period aware and cannot be added to S
   assert.equal(effectiveFeatures({...base,subscription_terms:{code:'standard',features:catalogFeatures('premium')}}).features.shop,false);
   assert.equal(effectiveFeatures({...base,subscription_terms:{code:'premium',features:{shop:false}}}).features.shop,false);
   const legacy={...base,subscription_plan:'standard',subscription_terms:{code:'standard'},legacy_shop_access_until:future()};
-  assert.equal(effectiveFeatures(legacy).features.shop,true);
+  assert.equal(effectiveFeatures(legacy).features.shop,false,'legacy Standard access cannot enable the shop');
   assert.equal(effectiveFeatures({...legacy,legacy_shop_access_until:past()}).features.shop,false);
   const terms=termsFor({code:'premium',name:'Plus',version:1,max_children:150,monthly_price:'200.00'},'monthly');
   assert.equal(terms.features.shop,true);assert.equal(terms.feature_policy_version,1);

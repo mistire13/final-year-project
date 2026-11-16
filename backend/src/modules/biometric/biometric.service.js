@@ -87,6 +87,7 @@ const getAvailableSlots = async (user) => {
   const { rows } = await db.query(
     `SELECT br.reference_data
      FROM biometric_references br
+     JOIN users u ON u.id = br.user_id
      JOIN guardian_links gl ON gl.id = br.guardian_link_id
      JOIN children c ON c.id = gl.child_id
      WHERE c.daycare_id = $1 AND u.daycare_id = $1 AND br.active = TRUE`,

@@ -24,7 +24,7 @@ export interface EnrollResult {
 
 type StatusListener = (status: SerialScannerStatus, detail?: string) => void;
 
-class BiometricSerialManager {
+export class BiometricSerialManager {
   private port: any = null;
   private reader: any = null;
   private writer: any = null;
@@ -321,13 +321,30 @@ class BiometricSerialManager {
    * Delete an enrolled slot from the sensor.
    */
   public async deleteSlot(slotId: number): Promise<boolean> {
-    if (this.status !== "ready") return false;
+    if (!Number.isInteger(slotId) || slotId < 1) {
+      throw new Error("A valid fingerprint sensor slot is required.");
+    }
+    if (this.status !== "ready") {
+      throw new Error("Scanner is not connected or is currently busy.");
+    }
+    if (this.isProcessing) {
+      throw new Error("Another scanner operation is already in progress.");
+    }
+
+    this.isProcessing = true;
+    this.setStatus("busy");
     try {
       await this.writeLine(`DELETE ${slotId}`);
-      const line = await this.nextLine(5000);
-      return line.startsWith("DELETED ");
-    } catch {
-      return false;
+      while (true) {
+        const line = await this.nextLine(5000);
+        if (line === `DELETED ${slotId}`) return true;
+        if (line.startsWith("ERROR ")) {
+          throw new Error(`Sensor slot could not be cleared: ${line.replace("ERROR ", "")}`);
+        }
+      }
+    } finally {
+      this.isProcessing = false;
+      this.setStatus("ready");
     }
   }
 

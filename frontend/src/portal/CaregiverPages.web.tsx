@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PageContext } from "./pages.web";
-import { Card, Button, Empty, Badge } from "./ui.web";
-import { portalClient, portalTokenStorage, apiError } from "./api";
-import { sendTyping, subscribeRealtime } from "../services/realtime";
-import { PageTransition } from "./WebMotion.web";
+import { Card, Button, Empty } from "./ui.web";
+import { portalClient, apiError } from "./api";
+import CommunicationWorkspace from "./CommunicationWorkspace.web";
 export function CaregiverPage({
   ctx,
   page,
@@ -19,53 +18,9 @@ export function CaregiverPage({
   const [child, setChild] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>(ctx.data.messages);
-  const [recipient, setRecipient] = useState("");
-  const [typingFrom, setTypingFrom] = useState<number | null>(null);
-  const incomingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const outgoingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTyping = useRef(0);
   const [detail, setDetail] = useState<any>(null);
   useEffect(() => { setReports(ctx.data.reports); }, [ctx.data.reports]);
   useEffect(() => { setHealth(ctx.data.health); }, [ctx.data.health]);
-  useEffect(() => { setMessages(ctx.data.messages); }, [ctx.data.messages]);
-  useEffect(() => {
-    let active = true;
-    let revision = 0;
-    setMessage("");
-    setDetail(null);
-    const loadCommunication = () => {
-      const current = ++revision;
-      Promise.all([portalClient.get("/communication/contacts"), portalClient.get("/communication/messages")])
-        .then(([contacts, inbox]) => {
-          if (!active || revision !== current) return;
-          setContacts(contacts.data.contacts || []);
-          setMessages(inbox.data.data || []);
-        })
-        .catch(() =>
-          { if (active && revision === current) setMessage("Messages or contacts could not be loaded. Reopen this page to retry."); },
-        );
-    };
-    if (page !== "communication") return () => { active = false; };
-    loadCommunication();
-    const token = portalTokenStorage.getToken();
-    const unsubscribe = token ? subscribeRealtime(token, event => {
-      if (event.type === 'ready' || event.type === 'message.changed' || event.type === 'message.read') loadCommunication();
-      else if (event.type === 'disconnected') setTypingFrom(null);
-      else if (event.type === 'typing') {
-        if (incomingTimer.current) clearTimeout(incomingTimer.current);
-        setTypingFrom(event.active ? event.userId : null);
-        if (event.active) incomingTimer.current = setTimeout(() => setTypingFrom(null), 5000);
-      }
-    }) : undefined;
-    return () => {
-      active = false;
-      unsubscribe?.();
-      if (incomingTimer.current) clearTimeout(incomingTimer.current);
-      if (outgoingTimer.current) clearTimeout(outgoingTimer.current);
-    };
-  }, [page]);
   const send = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -73,21 +28,9 @@ export function CaregiverPage({
     setBusy(true);
     setMessage("");
     try {
-      if (page === "communication") {
-        const { data } = await portalClient.post("/communication/messages", {
-          recipient_id: Number(values.recipient),
-          subject: values.subject,
-          body: values.body,
-        });
-        setMessages((prev) => [data, ...prev.filter(item => item.id !== data.id)]);
-        if (recipient) sendTyping(portalTokenStorage.getToken(), Number(recipient), false);
-        setRecipient("");
-        form.reset();
-        setMessage("Message sent.");
-      } else {
-        const child_id = Number(values.child_id);
-        const body =
-          page === "reports"
+      const child_id = Number(values.child_id);
+      const body =
+        page === "reports"
             ? {
                 child_id,
                 report_date: values.date,
@@ -112,17 +55,17 @@ export function CaregiverPage({
                 severity: values.severity,
                 description: values.notes,
               };
-        const { data } = await portalClient.post(
-          page === "reports" ? "/reports/daily" : "/health",
-          body,
-        );
-        setDetail(data);
-        (page === "reports" ? setReports : setHealth)((rows) => [
-          data,
-          ...rows.filter((r) => r.id !== data.id),
-        ]);
-        setMessage("Record saved.");
-      }
+      const { data } = await portalClient.post(
+        page === "reports" ? "/reports/daily" : "/health",
+        body,
+      );
+      setDetail(data);
+      (page === "reports" ? setReports : setHealth)((rows) => [
+        data,
+        ...rows.filter((r) => r.id !== data.id),
+      ]);
+      form.reset();
+      setMessage("Record saved.");
     } catch (error) {
       setMessage(apiError(error));
     } finally {
@@ -149,6 +92,7 @@ export function CaregiverPage({
         )}
       </>
     );
+  if (page === "communication") return <CommunicationWorkspace ctx={ctx} />;
   return (
     <>
       <Card
@@ -157,56 +101,14 @@ export function CaregiverPage({
             ? "Write a daily report"
             : page === "health"
               ? "Health & incident reporting"
-              : "Family communication"
+              : "Health & incident reporting"
         }
       >
         <p className="p-kpi-note">
-          {page === "communication"
-            ? "Choose a daycare contact to start a conversation. Parent–caregiver messages can be reviewed by your daycare administrator."
-            : "Only children assigned to your care can receive new reports and health records."}
+          Only children assigned to your care can receive new reports and health records.
         </p>
         <form onSubmit={send} className="care-form">
-          {page === "communication" ? (
-            <>
-              <label>
-                Recipient
-                <select name="recipient" required value={recipient} onChange={event => {
-                  if (recipient) sendTyping(portalTokenStorage.getToken(), Number(recipient), false);
-                  setRecipient(event.target.value);
-                }}>
-                  <option value="" disabled>
-                    Choose a contact
-                  </option>
-                  {contacts.map((c) => (
-                    <option value={c.id} key={c.id}>
-                      {c.name} · {c.role}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Subject
-                <input name="subject" maxLength={200} />
-              </label>
-              <label>
-                Message
-                <textarea name="body" required maxLength={10000} onChange={event => {
-                  const id = Number(recipient);
-                  if (!id) return;
-                  const token = portalTokenStorage.getToken();
-                  const active = event.target.value.trim().length > 0;
-                  if (!active || Date.now() - lastTyping.current > 1500) {
-                    sendTyping(token, id, active);
-                    lastTyping.current = Date.now();
-                  }
-                  if (outgoingTimer.current) clearTimeout(outgoingTimer.current);
-                  if (active) outgoingTimer.current = setTimeout(() => sendTyping(token, id, false), 3000);
-                }} />
-              </label>
-              {typingFrom && typingFrom === Number(recipient) ? <p role="status">{contacts.find(c => c.id === typingFrom)?.name || 'Contact'} is typing…</p> : null}
-            </>
-          ) : (
-            <>
+          <>
               <label>
                 Child
                 <select
@@ -310,8 +212,7 @@ export function CaregiverPage({
                   maxLength={10000}
                 />
               </label>
-            </>
-          )}
+          </>
           {!!message && (
             <p role="status" className="care-wide p-notice">
               {message}
@@ -319,13 +220,11 @@ export function CaregiverPage({
           )}
           <Button
             type="submit"
-            disabled={busy || (page !== "communication" && !assigned.length)}
+            disabled={busy || !assigned.length}
           >
             {busy
               ? "Saving…"
-              : page === "communication"
-                ? "Send message"
-                : "Save record"}
+              : "Save record"}
           </Button>
         </form>
         {page === "health" && detail?.id && (
@@ -343,66 +242,7 @@ export function CaregiverPage({
           </Button>
         )}
       </Card>
-      {page === "communication" ? (
-        <>
-          <Card title="Your messages">
-            {messages.length ? (
-              messages.map((m) => (
-                <article className="care-history" key={m.id}>
-                  <p>{m.sender_name || (m.sender_id === ctx.actor.id ? ctx.actor.name : ctx.data.users.find(u=>u.id===m.sender_id)?.name) || "Daycare contact"} → {m.recipient_name || (m.recipient_id === ctx.actor.id ? ctx.actor.name : ctx.data.users.find(u=>u.id===m.recipient_id)?.name) || "Daycare contact"}</p>
-                  <strong>{m.subject || "Message"}</strong>
-                  <p>{m.body}</p>
-                  <small>{new Date(m.created_at).toLocaleString()}</small>
-                  {m.recipient_id === ctx.actor.id && !m.read_at && (
-                    <Button
-                      variant="quiet"
-                      onClick={async () => {
-                        try {
-                          await portalClient.patch(
-                            `/communication/messages/${m.id}/read`,
-                          );
-                          setMessages((rows) =>
-                            rows.map((r) =>
-                              r.id === m.id
-                                ? { ...r, read_at: new Date().toISOString() }
-                                : r,
-                            ),
-                          );
-                        } catch (e) {
-                          setMessage(apiError(e));
-                        }
-                      }}
-                    >
-                      Mark read
-                    </Button>
-                  )}
-                </article>
-              ))
-            ) : (
-              <p>No conversations yet.</p>
-            )}
-          </Card>
-          <Card title="Daycare Announcements & Directives">
-            {ctx.data.announcements.length ? (
-              ctx.data.announcements.map((a) => (
-                <article className="care-history" key={a.id} style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                    <h3 style={{ margin: 0, fontSize: 16, color: "#10263D" }}>{a.title}</h3>
-                    <Badge value={a.announcement_type === "meal_plan" ? "Meal Plan" : a.announcement_type === "alert" ? "Important" : "General"} tone={a.announcement_type === "alert" ? "red" : "gold"} />
-                  </div>
-                  <p style={{ margin: "6px 0 8px", color: "#475569", lineHeight: 1.5 }}>{a.body}</p>
-                  <small style={{ color: "#828995" }}>
-                    Posted by {a.author_name || "Administration"} · {new Date(a.created_at).toLocaleDateString()}
-                  </small>
-                </article>
-              ))
-            ) : (
-              <p>No center announcements posted yet.</p>
-            )}
-          </Card>
-        </>
-      ) : (
-        <Card
+      <Card
           title={
             page === "reports" ? "Report history" : "Health record history"
           }
@@ -471,8 +311,7 @@ export function CaregiverPage({
               ))}
             </div>
           )}
-        </Card>
-      )}
+      </Card>
     </>
   );
 }

@@ -14,7 +14,7 @@ test('weekly shifts use Addis Ababa time, bound overnight duration and detect co
   assert.equal(overnight.ends_at,'2027-01-05T01:00:00.000Z');
   assert.equal(shiftProblems(shifts,[{...shifts[0],status:'active'}],[],[]).length,1);
   assert.equal(shiftProblems(shifts,[],[{...shifts[0],status:'approved'}],[]).length,1);
-  assert.equal(shiftProblems([shifts[0]],[],[],[{staff_id:4,weekday:1,available:true,start_time:'10:00',end_time:'18:00'}]).length,1);
+  assert.equal(shiftProblems([shifts[0]],[],[],[{staff_id:4,weekday:1,available:false,start_time:'10:00',end_time:'18:00'}]).length,0,'old availability records no longer block a shift');
 });
 
 test('reviewed schedules, leave and substitutions preserve scoped duties and reject duplicate or cross-tenant changes',async()=>{
@@ -43,7 +43,8 @@ test('reviewed schedules, leave and substitutions preserve scoped duties and rej
     const template=await service.createTemplate(templateBody,admin);assert.equal((await db('front_desk_assignments')).length,0,'drafts grant no duties');
     const range={template_id:Number(template.id),week_start:week,weeks:1};
     const stale=await service.preview(range,admin);
-    await service.saveAvailability({staff_id:first.id,weekday:1,available:true,start_time:'08:00',end_time:'18:00'},first);
+    await service.saveAvailability({staff_id:first.id,weekday:1,available:false,start_time:'08:00',end_time:'18:00'},first);
+    await service.setTemplateEnabled(template.id,{version:template.version,enabled:true},admin);
     await assert.rejects(service.publish({...range,preview_token:stale.preview_token,request_key:'publish-stale-request-01',confirmed:true},admin),error=>error.statusCode===409);
     const preview=await service.preview(range,admin);assert.equal(preview.conflicts.length,0);
     const input={...range,preview_token:preview.preview_token,request_key:'publish-reviewed-request-01',confirmed:true};
@@ -59,6 +60,7 @@ test('reviewed schedules, leave and substitutions preserve scoped duties and rej
     assert.equal((await db('front_desk_assignments').where({id:duty.id}).first()).status,'active','failed review must preserve care permissions');
     await assert.rejects(service.substitute(duty.id,{staff_id:outsider.id,reason:'Replace with another caregiver',confirmed:true},admin),error=>error.statusCode===422);
     await db('users').where({id:first.id}).update({status:'inactive'});
+    await service.saveAvailability({staff_id:second.id,weekday:1,available:false,start_time:'08:00',end_time:'18:00'},admin);
     const replacement=await service.substitute(duty.id,{staff_id:second.id,reason:'Replace with available caregiver',confirmed:true},admin);
     assert.equal(replacement.replacement.can_pickup,true);assert.equal(replacement.replacement.group_id,group.id);
     assert.equal((await db('front_desk_assignments').where({id:duty.id}).first()).status,'revoked');

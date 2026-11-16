@@ -111,7 +111,7 @@ test('Overview, Children, and Attendance render Allergies & Dietary as wrapped c
 
   const pages = loadTs('../src/portal/pages.web.tsx', {
     react: { ...react, default: react },
-    './MessageOversight.web': { MessageOversight: 'MessageOversight' },
+    './CommunicationWorkspace.web': 'CommunicationWorkspace',
     '../types/daycarePayments': { paymentProvenanceLabel: (v) => String(v || '') },
     './ui.web': { Badge: 'Badge', Button: 'Button', Card: 'Card', Empty: 'Empty', Icon: 'Icon', Person: 'Person', Table },
     './PortalCharts.web': { AttendanceChart: 'AttendanceChart', CenterOverviewChart: 'CenterOverviewChart' },

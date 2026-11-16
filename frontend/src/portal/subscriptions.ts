@@ -13,12 +13,20 @@ export const plusNavigationFeatures:Record<string,string>={
   business:'business_analytics',
 };
 
-/** Keep locked tools out of the main navigation while retaining existing order history. */
-export function adminNavigationForFeatures<T extends {group:string;items:string[][]}>(groups:T[],features:Record<string,unknown>,preview:boolean):T[]{
+/** Advanced scheduling shares the duties page, but never mounts against live APIs in local preview. */
+export function shouldEmbedStaffScheduling(daycare:any,preview:boolean):boolean{
+  return !preview&&daycare?.features?.staff_scheduling===true;
+}
+
+/** Show a shop only with access; retained orders belong under Finance. */
+export function adminNavigationForFeatures<T extends {group:string;items:string[][]}>(groups:T[],features:Record<string,unknown>,preview:boolean,hasShopOrders=false):T[]{
+  const showShop=preview || features.shop===true;
+  const historyItem=groups.flatMap(group=>group.items).find(([key])=>key==='orders');
   return groups.map(group=>({
     ...group,
-    items:group.items.filter(([key])=>!plusNavigationFeatures[key] || preview || features[plusNavigationFeatures[key]]===true)
+    items:[...group.items.filter(([key])=>key==='orders' ? showShop : !plusNavigationFeatures[key] || preview || features[plusNavigationFeatures[key]]===true)
       .map(([key,title,icon])=>[key,plusNavigationFeatures[key] && !preview ? title.replace(/ · Plus$/, '') : title,icon]),
+      ...(!showShop && hasShopOrders && group.group==='Finance' && historyItem ? [[historyItem[0],'Order history',historyItem[2]]] : [])],
   })).filter(group=>group.items.length>0);
 }
 
