@@ -104,11 +104,10 @@ export default function LandingPage() {
         <div className="ankelba-home-nav-actions">
           <a
             className="btn-pill btn-pill-secondary"
-            href="/Ankelba-LAN-Test.apk"
-            download
+            href="/download"
             title="Download Ankelba Android App for Parents"
           >
-            Download Parent App
+            Download App
           </a>
           <motion.button
             whileHover={reduce ? undefined : { y: -1 }}

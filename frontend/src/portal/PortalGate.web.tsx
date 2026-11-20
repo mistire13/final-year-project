@@ -11,6 +11,7 @@ import { SurfaceBoundary } from "./SurfaceBoundary.web";
 import SurfaceRecovery, {RecoveryKind} from './SurfaceRecovery.web';
 import "./surface.css";
 import EmailAccess from './EmailAccess.web';
+import DownloadPage from "../landing/DownloadPage.web";
 
 function GateContent({ children }: { children: ReactNode }) {
   const [path, setPath] = useState(window.location.pathname);
@@ -68,18 +69,8 @@ function GateContent({ children }: { children: ReactNode }) {
     );
   }
 
-  if (/^\/(app|parent)(\/|$)/.test(path)) {
-    return (
-      <SurfaceRecovery
-        kind="not-found"
-        code="Mobile App"
-        title="Ankelba for Parents is a Mobile App"
-        message="The parent portal is designed exclusively as a native mobile application. Please install the Ankelba Android app on your smartphone to access your child's daily reports, caregiver messages, and pickup authorization."
-        actionText="Download Android APK"
-        actionHref="/Ankelba-LAN-Test.apk"
-        workspaceHref="/"
-      />
-    );
+  if (/^\/(download|app|parent)(\/|$)/.test(path)) {
+    return <DownloadPage />;
   }
 
   if(path==='/')return <LandingPage />;
