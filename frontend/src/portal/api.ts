@@ -68,6 +68,8 @@ export const portalApi = {
   async applyRenewalIntent(id: number | string, token: string) { return (await portalClient.post(`/saas/subscription/payment-intents/${id}/apply`,{token})).data; },
   async applicationStatus(email: string, password: string) { return (await portalClient.post('/saas/application-status',{email,password})).data; },
   async subscription() { return (await portalClient.get('/saas/subscription')).data; },
+  async cancelSubscription(body?: { reason?: string }) { return (await portalClient.post('/saas/subscription/cancel', body || {})).data; },
+  async exportDaycareData() { return (await portalClient.get('/saas/subscription/export-data')).data; },
   async session() {
     const token = portalTokenStorage.getToken();
     if (!token) return null;

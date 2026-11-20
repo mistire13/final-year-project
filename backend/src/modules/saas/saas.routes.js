@@ -27,6 +27,8 @@ router.patch('/super-admin/packages/:code',...owner,run(req=>subscriptions.updat
 router.get('/super-admin/daycares/:id/subscription',...owner,run(req=>subscriptions.summary(req.params.id)));
 router.post('/super-admin/daycares/:id/subscription',...owner,run(req=>subscriptions.action(req.params.id,req.body,req.user.id)));
 router.get('/subscription',...admin,run(req=>subscriptions.summary(req.user.daycare_id)));
+router.post('/subscription/cancel',...admin,saasController.cancelSubscription);
+router.get('/subscription/export-data',...admin,saasController.exportDaycareData);
 
 // ─── 1. Public Self-Registration ──────────────────────────────────────────
 router.post(['/register-daycare', '/applications'], limited, saasController.registerDaycare);

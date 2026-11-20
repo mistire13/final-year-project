@@ -753,6 +753,8 @@ const setBroadcast = ({ message, level = 'info', active = true }, actorId) => {
 
 /**
  * Super Admin: List accounts across all daycares (read-only directory).
+ * Privacy Rule: Shows only administrative accounts (Daycare Admin & Super Admin) with assigned daycares.
+ * Individual parent and caregiver records are strictly tenant-isolated and omitted.
  */
 const listUsers = async ({ search, role, daycareId, limit = 50, offset = 0 } = {}) => {
   let sql = `
@@ -772,7 +774,10 @@ const listUsers = async ({ search, role, daycareId, limit = 50, offset = 0 } = {
   const params = [];
   const whereClauses = [];
 
-  if (role && role !== 'all') {
+  // Strictly enforce administrator scope for platform governance
+  whereClauses.push("r.name IN ('admin', 'super_admin')");
+
+  if (role && role !== 'all' && ['admin', 'super_admin'].includes(role)) {
     params.push(role);
     whereClauses.push(`r.name = $${params.length}`);
   }
@@ -803,6 +808,9 @@ const listUsers = async ({ search, role, daycareId, limit = 50, offset = 0 } = {
 
 /**
  * Super Admin: List platform-wide audit logs.
+ * Privacy Rule: Filters exclusively for platform & daycare governance events (daycare registration,
+ * status changes, subscription payments, renewals, cancellations, offboarding).
+ * Classroom-level events, child observations, and parent communications are omitted.
  */
 const listAuditLogs = async ({ limit = 50, offset = 0 } = {}) => {
   const sql = `
@@ -821,6 +829,16 @@ const listAuditLogs = async ({ limit = 50, offset = 0 } = {}) => {
     FROM audit_logs a
     LEFT JOIN users u ON u.id = a.actor_id
     LEFT JOIN daycares d ON d.id = a.daycare_id
+    WHERE (
+      a.target_table IN ('daycares', 'subscriptions', 'subscription_payments', 'subscription_payment_intents', 'subscription_package_changes', 'daycare_applications')
+      OR a.action ILIKE '%daycare%'
+      OR a.action ILIKE '%subscription%'
+      OR a.action ILIKE '%payment%'
+      OR a.action ILIKE '%package%'
+      OR a.action ILIKE '%offboard%'
+      OR a.action ILIKE '%export%'
+    )
+    AND a.target_table NOT IN ('attendance', 'reports', 'daily_reports', 'messages', 'diaper_logs', 'meal_logs', 'nap_logs', 'children')
     ORDER BY a.created_at DESC, a.id DESC
     LIMIT $1 OFFSET $2
   `;
@@ -867,6 +885,83 @@ const getSystemHealth = async () => {
   };
 };
 
+/**
+ * Export complete daycare archive (GDPR / Data Portability / Offboarding).
+ * Daycare admins can download their full dataset (daycare profile, staff, children, guardians, invoices, payments).
+ */
+const exportDaycareData = async (daycareId) => {
+  const [daycareRes, staffRes, childrenRes, guardiansRes, invoicesRes, paymentsRes] = await Promise.all([
+    db.query(`SELECT id, name, slug, address, phone, contact_email, license_number, subscription_plan, subscription_status, subscription_ends_at, created_at FROM daycares WHERE id = $1`, [daycareId]),
+    db.query(`SELECT u.id, u.name, u.email, u.phone, r.name AS role, u.status, u.created_at FROM users u JOIN roles r ON r.id = u.role_id WHERE u.daycare_id = $1 AND r.name IN ('admin', 'caregiver', 'staff') ORDER BY r.name, u.name`, [daycareId]),
+    db.query(`SELECT c.id, c.first_name, c.last_name, c.date_of_birth, c.gender, c.enrollment_status, c.allergies, c.medical_conditions, c.emergency_contact_name, c.emergency_contact_phone, c.created_at FROM children c WHERE c.daycare_id = $1 ORDER BY c.enrollment_status, c.last_name, c.first_name`, [daycareId]),
+    db.query(`SELECT DISTINCT u.id, u.name, u.email, u.phone, gl.relationship, gl.pickup_authorized, c.first_name || ' ' || c.last_name AS child_name, c.id AS child_id FROM guardian_links gl JOIN users u ON u.id = gl.user_id JOIN children c ON c.id = gl.child_id WHERE c.daycare_id = $1 ORDER BY u.name`, [daycareId]),
+    db.query(`SELECT ci.id, ci.child_id, c.first_name || ' ' || c.last_name AS child_name, ci.amount, ci.status, ci.due_date, ci.created_at FROM child_invoices ci LEFT JOIN children c ON c.id = ci.child_id WHERE ci.daycare_id = $1 ORDER BY ci.created_at DESC`, [daycareId]).catch(() => ({ rows: [] })),
+    db.query(`SELECT cp.id, cp.child_id, c.first_name || ' ' || c.last_name AS child_name, cp.amount, cp.payment_method, cp.status, cp.created_at FROM child_payments cp LEFT JOIN children c ON c.id = cp.child_id WHERE cp.daycare_id = $1 ORDER BY cp.created_at DESC`, [daycareId]).catch(() => ({ rows: [] }))
+  ]);
+
+  const daycare = daycareRes.rows[0];
+  if (!daycare) {
+    const err = new Error('Daycare not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return {
+    exported_at: new Date().toISOString(),
+    daycare,
+    staff: staffRes.rows,
+    children: childrenRes.rows,
+    guardians: guardiansRes.rows,
+    financials: {
+      invoices: invoicesRes.rows,
+      payments: paymentsRes.rows,
+      total_invoiced: invoicesRes.rows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0),
+      total_received: paymentsRes.rows.filter(p => p.status === 'completed' || p.status === 'verified').reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0),
+    }
+  };
+};
+
+/**
+ * Cancel daycare subscription with offboarding audit event.
+ */
+const cancelDaycareSubscription = async (daycareId, actorId, reason = 'Cancelled by daycare administrator') => {
+  const row = (await db.query('SELECT * FROM daycares WHERE id = $1', [daycareId])).rows[0];
+  if (!row) {
+    const err = new Error('Daycare not found');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (row.subscription_status === 'cancelled') {
+    const err = new Error('Subscription is already cancelled');
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const updated = (await db.query(
+    `UPDATE daycares SET subscription_status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [daycareId]
+  )).rows[0];
+
+  const requestKey = `cancel_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  await db.query(
+    `INSERT INTO subscription_events (daycare_id, actor_id, action, reason, details, request_key)
+     VALUES ($1, $2, 'cancel', $3, $4, $5)`,
+    [daycareId, actorId, reason, JSON.stringify({ cancelled_by: 'daycare_admin', at: new Date() }), requestKey]
+  );
+
+  await db.query(
+    `INSERT INTO audit_logs (actor_id, action, target_table, target_id, daycare_id, metadata)
+     VALUES ($1, 'SUBSCRIPTION_CANCEL', 'daycares', $2, $2, $3)`,
+    [actorId, daycareId, JSON.stringify({ reason, cancelled_at: new Date() })]
+  );
+
+  return {
+    success: true,
+    daycare: updated,
+    message: 'Subscription successfully cancelled. Your access remains active until the end of your current paid period.'
+  };
+};
+
 module.exports = {
   registerDaycare,
   getPlatformStats,
@@ -890,4 +985,6 @@ module.exports = {
   listUsers,
   listAuditLogs,
   getSystemHealth,
+  exportDaycareData,
+  cancelDaycareSubscription,
 };

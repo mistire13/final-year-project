@@ -214,6 +214,30 @@ const purgeApplication = async (req, res, next) => {
   }
 };
 
+// Daycare Admin: Export full daycare dataset
+const exportDaycareData = async (req, res, next) => {
+  try {
+    const daycareId = req.user.daycare_id;
+    const data = await saasService.exportDaycareData(daycareId);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Daycare Admin: Cancel subscription
+const cancelSubscription = async (req, res, next) => {
+  try {
+    const daycareId = req.user.daycare_id;
+    const actorId = req.user.id;
+    const { reason } = req.body || {};
+    const result = await saasService.cancelDaycareSubscription(daycareId, actorId, reason);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   deleteDaycare: req => saasService.deleteDaycare(req.params.id, req.body, req.user.id),
   registerDaycare,
@@ -237,4 +261,6 @@ module.exports = {
   listUsers,
   listAuditLogs,
   getSystemHealth,
+  exportDaycareData,
+  cancelSubscription,
 };

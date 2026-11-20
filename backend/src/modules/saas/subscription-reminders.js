@@ -7,7 +7,7 @@ function createReminderWorker({pool, transporter, from, portalUrl, logger = cons
       SELECT d.id,u.id,d.subscription_ends_at FROM daycares d
       JOIN users u ON u.daycare_id=d.id AND u.role_id=1 AND u.status='active'
       WHERE d.status='active' AND d.deleted_at IS NULL AND d.subscription_ends_at > NOW()
-        AND d.subscription_ends_at <= NOW() + interval '5 days'
+        AND d.subscription_ends_at <= NOW() + interval '3 days'
         AND d.subscription_status='active' AND u.email IS NOT NULL
       ON CONFLICT (daycare_id,user_id,period_end) DO UPDATE
         SET status='pending',next_attempt_at=NOW(),lease_until=NULL
@@ -45,8 +45,8 @@ function createReminderWorker({pool, transporter, from, portalUrl, logger = cons
           continue;
         }
         const date = new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Addis_Ababa',dateStyle:'long'}).format(new Date(reminder.period_end));
-        await transporter.sendMail({from,to:recipients[0].email,subject:'Your Ankelba subscription is due soon',
-          text:`Your Ankelba subscription for ${recipients[0].name} ends on ${date}. Sign in to review your subscription and renew: ${portalUrl}`});
+        await transporter.sendMail({from,to:recipients[0].email,subject:'Urgent: Your Ankelba subscription expires in 3 days',
+          text:`Urgent notice: Your Ankelba subscription for ${recipients[0].name} ends on ${date}. Sign in to review your subscription and complete your renewal to avoid service disruption: ${portalUrl}`});
         await pool.query("UPDATE subscription_reminders SET status='sent',sent_at=NOW(),lease_until=NULL,last_error=NULL WHERE id=$1 AND status='sending' AND attempts=$2",[reminder.id,reminder.attempts]);
       } catch (error) {
         logger.error('Subscription reminder delivery failed', {reminder_id:reminder.id, error: String(error.message).slice(0,300)});

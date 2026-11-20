@@ -83,11 +83,169 @@ export function Summary({ value, showPlanBreakdown = false }: { value: any; show
   {value.expiry_policy && <p>{value.expiry_policy}</p>}<ScheduledPackageSummary change={value.scheduled_change}/></>;
 }
 
+function printDaycareRecords(data: any) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Please allow popups to open the printable daycare archive.');
+    return;
+  }
+  const dc = data.daycare || {};
+  const staff = data.staff || [];
+  const children = data.children || [];
+  const guardians = data.guardians || [];
+  const financials = data.financials || { invoices: [], payments: [] };
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${dc.name || 'Daycare'} - Official Archive Export</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; margin: 0; padding: 24px; font-size: 12px; line-height: 1.5; }
+    .header { border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .header-left h1 { font-size: 22px; margin: 0 0 4px; color: #0f172a; }
+    .header-left p { margin: 2px 0; color: #475569; font-size: 13px; }
+    .header-right { text-align: right; font-size: 12px; color: #64748b; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
+    .stat-card strong { display: block; font-size: 20px; color: #0f172a; }
+    .stat-card span { font-size: 11px; color: #64748b; text-transform: uppercase; }
+    h2 { font-size: 15px; margin: 24px 0 8px; color: #1e3a8a; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11.5px; page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    th, td { border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left; }
+    th { background: #f1f5f9; font-weight: 600; color: #334155; }
+    .footer { margin-top: 36px; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; }
+    @media print {
+      body { padding: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="background:#fef3c7;border:1px solid #fde68a;padding:12px 16px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
+    <strong>Official Daycare Archive - Complete Operational Records</strong>
+    <button onclick="window.print()" style="background:#0f172a;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:600;">Print / Save as PDF</button>
+  </div>
+
+  <div class="header">
+    <div class="header-left">
+      <h1>${dc.name || 'Daycare Center'}</h1>
+      <p>License: ${dc.license_number || 'N/A'} · Contact: ${dc.phone || 'N/A'} · ${dc.contact_email || ''}</p>
+      <p>Address: ${dc.address || 'Addis Ababa, Ethiopia'}</p>
+    </div>
+    <div class="header-right">
+      <p><strong>Export Date:</strong> ${new Date(data.exported_at).toLocaleString()}</p>
+      <p><strong>Subscription Plan:</strong> ${dc.subscription_plan || 'Standard'} (${dc.subscription_status || 'active'})</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="stat-card"><strong>${staff.length}</strong><span>Staff & Caregivers</span></div>
+    <div class="stat-card"><strong>${children.length}</strong><span>Enrolled Students</span></div>
+    <div class="stat-card"><strong>${guardians.length}</strong><span>Linked Guardians</span></div>
+    <div class="stat-card"><strong>${financials.invoices?.length || 0}</strong><span>Invoices Billed</span></div>
+  </div>
+
+  <h2>1. Staff & Caregiver Directory</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
+    <tbody>
+      ${staff.map((s: any) => `<tr><td><strong>${s.name}</strong></td><td>${s.role}</td><td>${s.email}</td><td>${s.phone || 'N/A'}</td><td>${s.status}</td></tr>`).join('') || '<tr><td colspan="5">No staff records.</td></tr>'}
+    </tbody>
+  </table>
+
+  <h2>2. Enrolled Children / Students</h2>
+  <table>
+    <thead><tr><th>Full Name</th><th>DOB</th><th>Gender</th><th>Status</th><th>Emergency Contact</th><th>Medical Notes / Allergies</th></tr></thead>
+    <tbody>
+      ${children.map((c: any) => `<tr><td><strong>${c.first_name} ${c.last_name}</strong></td><td>${c.date_of_birth ? new Date(c.date_of_birth).toLocaleDateString() : 'N/A'}</td><td>${c.gender || 'N/A'}</td><td>${c.enrollment_status}</td><td>${c.emergency_contact_name || ''} ${c.emergency_contact_phone ? '(' + c.emergency_contact_phone + ')' : ''}</td><td>${[c.medical_conditions, c.allergies].filter(Boolean).join('; ') || 'None reported'}</td></tr>`).join('') || '<tr><td colspan="6">No children records.</td></tr>'}
+    </tbody>
+  </table>
+
+  <h2>3. Parents & Authorized Guardians</h2>
+  <table>
+    <thead><tr><th>Guardian Name</th><th>Child</th><th>Relationship</th><th>Phone</th><th>Email</th><th>Pickup Authorized</th></tr></thead>
+    <tbody>
+      ${guardians.map((g: any) => `<tr><td><strong>${g.name}</strong></td><td>${g.child_name || 'N/A'}</td><td>${g.relationship || 'Guardian'}</td><td>${g.phone || 'N/A'}</td><td>${g.email || 'N/A'}</td><td>${g.pickup_authorized ? 'YES' : 'NO'}</td></tr>`).join('') || '<tr><td colspan="6">No guardian records.</td></tr>'}
+    </tbody>
+  </table>
+
+  <h2>4. Financial Ledger (Invoices & Billing)</h2>
+  <table>
+    <thead><tr><th>Invoice ID</th><th>Child</th><th>Amount</th><th>Status</th><th>Due Date</th></tr></thead>
+    <tbody>
+      ${(financials.invoices || []).map((inv: any) => `<tr><td>#${inv.id}</td><td>${inv.child_name || 'Child #' + inv.child_id}</td><td><strong>${Number(inv.amount).toLocaleString()} ETB</strong></td><td>${inv.status}</td><td>${inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'N/A'}</td></tr>`).join('') || '<tr><td colspan="5">No invoices recorded.</td></tr>'}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <span>Ankelba Multi-Tenant Childcare Platform - Tenant Export Archive</span>
+    <span>Generated by Daycare Administration</span>
+  </div>
+</body>
+</html>`;
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
 export function SubscriptionNotice({ value, onOpen }: { value: any; onOpen: () => void }) {
   const end = value?.subscription_ends_at && new Date(value.subscription_ends_at).getTime();
-  if (!end || !Number.isFinite(end) || end > Date.now() + 5 * 86400000) return null;
+  if (!end || !Number.isFinite(end) || end > Date.now() + 3 * 86400000) return null;
   const expired = end <= Date.now();
-  return <Card><div role="status"><strong>{expired ? 'Your subscription period has ended.' : 'Your subscription is due for renewal soon.'}</strong><p>{expired ? 'Renew to restore full access. Essential care and pickup remain available.' : `Your current period ends ${dateLabel(value.subscription_ends_at)}.`}</p><Button variant="secondary" onClick={onOpen}>View subscription and payment</Button></div></Card>;
+  const msRemaining = end - Date.now();
+  const daysRemaining = Math.max(0, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+
+  return (
+    <div
+      role="status"
+      style={{
+        background: expired ? "#fef2f2" : "#fffbeb",
+        border: `1.5px solid ${expired ? "#f87171" : "#f59e0b"}`,
+        borderRadius: 12,
+        padding: "16px 20px",
+        marginBottom: 20,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        flexWrap: "wrap",
+      }}
+    >
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <span
+            style={{
+              background: expired ? "#ef4444" : "#f59e0b",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: 11,
+              padding: "2px 8px",
+              borderRadius: 6,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+            }}
+          >
+            {expired ? "Subscription Expired" : `Urgent: ${daysRemaining} Day${daysRemaining === 1 ? '' : 's'} Remaining`}
+          </span>
+          <strong style={{ color: expired ? "#991b1b" : "#92400e", fontSize: 15 }}>
+            {expired ? "Your subscription period has ended." : "Platform renewal required soon"}
+          </strong>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: expired ? "#7f1d1d" : "#78350f" }}>
+          {expired
+            ? "Renew immediately to restore full daycare administrative features. Essential child check-in and pickup remain operational."
+            : `Your current billing period expires on ${dateLabel(value.subscription_ends_at)}. Please complete your renewal payment to prevent service disruption.`}
+        </p>
+      </div>
+      <Button variant="primary" onClick={onOpen}>
+        {expired ? "Renew Subscription Now" : "Review & Pay Renewal"}
+      </Button>
+    </div>
+  );
 }
 
 export function DaycareSubscription() {
@@ -95,6 +253,9 @@ export function DaycareSubscription() {
   const [intent, setIntent] = useState<any>(null), [provider, setProvider] = useState('cbe'), [reference, setReference] = useState(''), [suffix, setSuffix] = useState('');
   const [restartAcknowledged, setRestartAcknowledged] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<{ provider: 'telebirr' | 'cbe' | 'abyssinia'; institution: string }[]>([]);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [exporting, setExporting] = useState(false);
   useEffect(() => { let active = true; portalApi.publicPaymentSettings().then(result => { if (active) { const accounts = result.accounts.filter((account: any) => ['telebirr', 'cbe', 'abyssinia'].includes(account.provider)); setBankAccounts(accounts); setProvider(accounts[0]?.provider || ''); } }).catch(reason => { if (active) setError(apiError(reason)); }); return () => { active = false; }; }, []);
   const load = async () => {
     try {
@@ -150,6 +311,50 @@ export function DaycareSubscription() {
     } catch (e) { setError(apiError(e)); }
     finally { setBusy(false); }
   };
+
+  const handleExportData = async (format: 'pdf' | 'json') => {
+    setExporting(true);
+    setError('');
+    try {
+      const data = await portalApi.exportDaycareData();
+      if (format === 'pdf') {
+        printDaycareRecords(data);
+      } else {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${data.daycare?.slug || 'daycare'}_full_archive_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      setError(apiError(err));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!cancelReason.trim()) {
+      setError('Please provide a reason for cancelling your subscription.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const res = await portalApi.cancelSubscription({ reason: cancelReason });
+      setNotice(res.message || 'Subscription successfully cancelled.');
+      setCancelModalOpen(false);
+      setCancelReason('');
+      await load();
+    } catch (err) {
+      setError(apiError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const expiredIntent = !!intent?.expires_at && new Date(intent.expires_at).getTime() <= Date.now();
   const mayRestart = !!intent && !['verified','consumed'].includes(intent.status) && (expiredIntent || ['rejected','resolved'].includes(intent.status));
   return <div className="journey"><Card title="Your subscription"><p>Review your package features, enrollment limit and pay for your next period.</p>{error && <p role="alert" className="j-error">{error}</p>}{notice && <p role="status">{notice}</p>}{value && <><Summary value={value} showPlanBreakdown/><label>Payment method<select value={provider} disabled={busy||!!intent} onChange={event=>setProvider(event.target.value)}><option value="">Choose a payment method</option>{bankAccounts.map(bank=><option key={bank.provider} value={bank.provider}>{bank.institution}</option>)}</select></label>{!bankAccounts.length&&<p>Configure a receiving account before starting a renewal.</p>}<Button onClick={create} disabled={busy || !!intent || ['paid','blocked'].includes(value.scheduled_change?.status) || !bankAccounts.some(bank=>bank.provider===provider)}>{value.scheduled_change ? 'Pay for scheduled package' : 'Start renewal payment'}</Button></>}</Card>
@@ -166,6 +371,65 @@ export function DaycareSubscription() {
         <p>Use the reference shown on your receipt. Payments that cannot be verified remain pending for operator review.</p>{busy && <p role="status">Checking the reference and matching the payment details…</p>}{intent.message && <p role="status">{intent.message}</p>}
         <div className="j-actions"><Button type="submit" disabled={busy}>Verify payment</Button><Button type="button" variant="secondary" disabled={busy} onClick={() => void check(false)}>Refresh status</Button></div>
       </form>}</Card>}
+    {value && (
+      <Card title="Data Sovereignty & Subscription Management">
+        <p>
+          You have full ownership of your daycare records. You can download and archive your entire dataset (students, guardians, staff directory, and financial records) at any time.
+        </p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+          <Button variant="secondary" disabled={exporting} onClick={() => void handleExportData('pdf')}>
+            {exporting ? 'Generating Report…' : 'Print / Save Complete PDF Records'}
+          </Button>
+          <Button variant="secondary" disabled={exporting} onClick={() => void handleExportData('json')}>
+            {exporting ? 'Exporting Archive…' : 'Download JSON Data Archive'}
+          </Button>
+        </div>
+
+        <div style={{ borderTop: '1px solid #eeece6', paddingTop: 16 }}>
+          <h4 style={{ margin: '0 0 6px 0', fontSize: 15 }}>Subscription Cancellation &amp; Offboarding</h4>
+          {value.subscription_status === 'cancelled' || value.effective_status === 'cancelled' ? (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 16px', color: '#92400e', fontSize: 13 }}>
+              <strong>Cancellation Scheduled:</strong> Your subscription will not renew. Your center remains fully functional through <strong>{dateLabel(value.subscription_ends_at)}</strong>.
+            </div>
+          ) : (
+            <>
+              <p className="j-muted" style={{ marginBottom: 12 }}>
+                Cancelling will end your renewal cycles. Your access continues uninterrupted until <strong>{dateLabel(value.subscription_ends_at)}</strong>. After this date, your data remains preserved and viewable in read-only mode.
+              </p>
+              {!cancelModalOpen ? (
+                <Button variant="danger" disabled={busy} onClick={() => setCancelModalOpen(true)}>
+                  Cancel Subscription &amp; Leave
+                </Button>
+              ) : (
+                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: 18, marginTop: 12 }}>
+                  <h4 style={{ color: '#991b1b', margin: '0 0 6px 0' }}>Confirm Subscription Cancellation</h4>
+                  <p style={{ fontSize: 13, color: '#7f1d1d', margin: '0 0 12px 0' }}>
+                    We recommend downloading your complete records archive above before completing offboarding. Please state your reason for leaving:
+                  </p>
+                  <label style={{ display: 'block', marginBottom: 12 }}>
+                    <textarea
+                      placeholder="Please tell us why you are cancelling..."
+                      required
+                      value={cancelReason}
+                      onChange={e => setCancelReason(e.target.value)}
+                      style={{ width: '100%', minHeight: 70, padding: 8, borderRadius: 6, border: '1.5px solid #fca5a5', outline: 'none' }}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <Button variant="danger" disabled={busy || !cancelReason.trim()} onClick={() => void handleCancelSubscription()}>
+                      Confirm Cancellation
+                    </Button>
+                    <Button variant="ghost" disabled={busy} onClick={() => { setCancelModalOpen(false); setCancelReason(''); }}>
+                      Keep Subscription
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Card>
+    )}
     {value && <Card><History rows={value.history} /></Card>}
   </div>;
 }

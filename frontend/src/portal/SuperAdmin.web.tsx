@@ -973,7 +973,7 @@ export default function SuperAdmin() {
         </header>
 
         {/* Content Container */}
-        <div style={{ padding: "30px 36px", maxWidth: 1400, margin: "0 auto" }}>
+        <div style={{ padding: "24px 28px", maxWidth: 1400, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
         <PageTransition page={activePage} className="">
           {activePage === "subscriptions" && <OperatorSubscriptions daycares={daycares} initialId={subscriptionId} onChanged={loadAllPlatformData} />}
           
@@ -1241,8 +1241,8 @@ export default function SuperAdmin() {
                   </Button>
                 }
               >
-                <div style={{ overflowX: "auto" }}>
-                  <table className="p-table" style={{ width: "100%" }}>
+                <div className="p-table-wrap" style={{ overflowX: "auto", border: "1px solid #eeece6", borderRadius: 12 }}>
+                  <table className="p-table" style={{ width: "100%", minWidth: 720, tableLayout: "auto" }}>
                     <thead>
                       <tr>
                         <th>Time</th>
@@ -1357,17 +1357,17 @@ export default function SuperAdmin() {
 
               {/* Data Table */}
               <Card title={`Daycare Centers Directory (${filteredDaycares.length})`}>
-                <div style={{ overflowX: "auto" }}>
-                  <table className="p-table" style={{ width: "100%" }}>
+                <div className="p-table-wrap" style={{ overflowX: "auto", border: "1px solid #eeece6", borderRadius: 12 }}>
+                  <table className="p-table" style={{ width: "100%", minWidth: 1060, tableLayout: "auto" }}>
                     <thead>
                       <tr>
-                        <th>Center Name & Slug</th>
-                        <th>Administrator</th>
-                        <th>License & Contact</th>
-                        <th>Status</th>
-                        <th>Plan &amp; License</th>
-                        <th>Enrolled Children</th>
-                        <th>Actions</th>
+                        <th style={{ width: "23%", padding: "14px 16px" }}>Center Name & Slug</th>
+                        <th style={{ width: "16%", padding: "14px 16px" }}>Administrator</th>
+                        <th style={{ width: "16%", padding: "14px 16px" }}>License & Contact</th>
+                        <th style={{ width: "10%", padding: "14px 16px" }}>Status</th>
+                        <th style={{ width: "15%", padding: "14px 16px" }}>Plan &amp; License</th>
+                        <th style={{ width: "18%", padding: "14px 16px" }}>Enrolled Children</th>
+                        <th style={{ minWidth: 150, padding: "14px 16px" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1377,42 +1377,42 @@ export default function SuperAdmin() {
 
                         return (
                           <tr key={d.id}>
-                            <td>
-                              <strong>{d.name}</strong>
-                              <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
-                                slug: <code style={{ background: "#f2f0e9", padding: "1px 5px", borderRadius: 4 }}>{d.slug}</code>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px" }}>
+                              <strong style={{ display: "block", color: "#10263b", fontSize: 14 }}>{d.name}</strong>
+                              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 3 }}>
+                                slug: <code style={{ background: "#f2f0e9", padding: "2px 6px", borderRadius: 4 }}>{d.slug}</code>
                               </div>
-                              <div style={{ fontSize: 14, color: "#8a94a0" }}>{d.address || "No address provided"}</div>
+                              <div style={{ fontSize: 13, color: "#8a94a0", marginTop: 2, whiteSpace: "normal" }}>{d.address || "No address provided"}</div>
                             </td>
-                            <td>
-                              <div style={{ fontWeight: 600 }}>{d.admin_name || "Unassigned"}</div>
-                              <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.admin_email}</div>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px" }}>
+                              <div style={{ fontWeight: 600, color: "#10263b", fontSize: 14 }}>{d.admin_name || "Unassigned"}</div>
+                              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{d.admin_email}</div>
                             </td>
-                            <td>
-                              <div style={{ fontWeight: 600 }}>{d.license_number || "Pending verification"}</div>
-                              <div style={{ fontSize: 14, color: "var(--muted)" }}>{d.contact_phone || d.contact_email}</div>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px" }}>
+                              <div style={{ fontWeight: 600, color: "#10263b", fontSize: 13.5 }}>{d.license_number || "Pending verification"}</div>
+                              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>{d.contact_phone || d.contact_email}</div>
                             </td>
-                            <td>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px", whiteSpace: "nowrap" }}>
                               <Badge value={d.status} />
                             </td>
-                            <td>
-                              <div style={{ fontWeight: 700, color: (d.subscription_terms?.code || d.subscription_plan || d.requested_plan) === "premium" ? "#1e3a5f" : "#374151" }}>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px" }}>
+                              <div style={{ fontWeight: 700, fontSize: 13.5, color: (d.subscription_terms?.code || d.subscription_plan || d.requested_plan) === "premium" ? "#1e3a5f" : "#374151" }}>
                                 {(d.subscription_terms?.name || ((d.subscription_terms?.code || d.subscription_plan || d.requested_plan) === "premium" ? "Plus" : "Standard"))}
                                 {d.subscription_status ? ` · ${d.subscription_status}` : ""}
                               </div>
-                              <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
+                              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>
                                 {d.license_number ? `License: ${d.license_number}` : "Permit pending"}
                               </div>
                             </td>
-                            <td>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: "#10263B" }}>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px" }}>
+                              <div style={{ fontWeight: 700, fontSize: 13.5, color: "#10263B" }}>
                                 {d.active_children_count || 0}{d.max_children ? ` / ${d.max_children}` : ""} active students
                               </div>
-                              <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 2 }}>
+                              <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2, whiteSpace: "normal" }}>
                                 {d.children_count || 0} enrolled profiles · {d.staff_count || 0} staff accounts
                               </div>
                             </td>
-                            <td>
+                            <td style={{ verticalAlign: "top", padding: "14px 16px" }}>
                               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                                 <Button
                                   variant="secondary small"
@@ -1612,7 +1612,7 @@ export default function SuperAdmin() {
                     className={userRoleFilter === "all" ? "active" : ""}
                     onClick={() => setUserRoleFilter("all")}
                   >
-                    All Accounts ({stats?.total_users ?? userTotal})
+                    All Admin Accounts ({stats?.total_users ?? userTotal})
                   </button>
                   <button
                     className={userRoleFilter === "admin" ? "active" : ""}
@@ -1621,16 +1621,10 @@ export default function SuperAdmin() {
                     Daycare Admins
                   </button>
                   <button
-                    className={userRoleFilter === "caregiver" ? "active" : ""}
-                    onClick={() => setUserRoleFilter("caregiver")}
+                    className={userRoleFilter === "super_admin" ? "active" : ""}
+                    onClick={() => setUserRoleFilter("super_admin")}
                   >
-                    Caregivers
-                  </button>
-                  <button
-                    className={userRoleFilter === "parent" ? "active" : ""}
-                    onClick={() => setUserRoleFilter("parent")}
-                  >
-                    Parents
+                    Platform Operators
                   </button>
                 </div>
 
@@ -1661,11 +1655,34 @@ export default function SuperAdmin() {
                 </div>
               </div>
 
-              <Card title={`User accounts · ${userTotal} matching accounts`}>
+              <div
+                style={{
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: 10,
+                  padding: "12px 16px",
+                  marginBottom: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 13,
+                  color: "#166534",
+                }}
+              >
+                <span style={{ fontWeight: 700, padding: "2px 8px", background: "#dcfce7", borderRadius: 6, fontSize: 11 }}>
+                  PRIVACY BOUNDARY ENFORCED
+                </span>
+                <span>
+                  Super Administrators oversee daycare tenant administrative accounts and platform operators only (SRS FR-UAM-03).
+                  Family and classroom records (children, parents, and caregivers) remain strictly isolated within their individual daycare domains.
+                </span>
+              </div>
+
+              <Card title={`Administrative Accounts · ${userTotal} active accounts`}>
                 {!!usersError && <p role="alert">{usersError} <button onClick={()=>void loadUserDirectory()}>Retry users</button></p>}
                 {usersLoading && <p role="status">Loading accounts…</p>}
-                <div style={{ overflowX: "auto" }}>
-                  <table className="p-table" style={{ width: "100%" }}>
+                <div className="p-table-wrap" style={{ overflowX: "auto", border: "1px solid #eeece6", borderRadius: 12 }}>
+                  <table className="p-table" style={{ width: "100%", minWidth: 720, tableLayout: "auto" }}>
                     <thead>
                       <tr>
                         <th>Account Name</th>
@@ -1782,9 +1799,31 @@ export default function SuperAdmin() {
                 </div>
               </div>
 
-              <Card title={`System Audit Logs (${filteredAuditLogs.length})`}>
-                <div style={{ overflowX: "auto" }}>
-                  <table className="p-table" style={{ width: "100%" }}>
+              <div
+                style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: 10,
+                  padding: "12px 16px",
+                  marginBottom: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  fontSize: 13,
+                  color: "#1e40af",
+                }}
+              >
+                <span style={{ fontWeight: 700, padding: "2px 8px", background: "#dbeafe", borderRadius: 6, fontSize: 11 }}>
+                  GOVERNANCE STREAM ONLY
+                </span>
+                <span>
+                  Filtering active: Only platform tenancy actions (daycare registration, approvals, suspensions, subscription renewals, payments, and offboarding) are surfaced here. Classroom activities, child logs, and parent messages remain private.
+                </span>
+              </div>
+
+              <Card title={`Platform Governance Audit Trail (${filteredAuditLogs.length})`}>
+                <div className="p-table-wrap" style={{ overflowX: "auto", border: "1px solid #eeece6", borderRadius: 12 }}>
+                  <table className="p-table" style={{ width: "100%", minWidth: 720, tableLayout: "auto" }}>
                     <thead>
                       <tr>
                         <th>Timestamp</th>

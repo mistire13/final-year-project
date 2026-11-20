@@ -43,6 +43,7 @@ const paths: Record<string, string> = {
   fingerprint: "M12 2A10 10 0 0 0 2 12c0 3.5 1.8 6.6 4.6 8.4M12 6a6 6 0 0 0-6 6c0 2.1 1.1 3.9 2.7 5M12 10a2 2 0 0 0-2 2c0 .7.4 1.3.9 1.7M12 14v7M16 10a4 4 0 0 1 4 4c0 2.4-1.2 4.6-3.1 6M19.5 7.5A8 8 0 0 1 20 12",
   zap: "M13 2 3 14h9l-1 8 10-12h-9l1-8z",
   eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zm11-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+  eyeOff: "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22",
   bag: "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18m-5 4a4 4 0 0 1-8 0",
   edit: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",
   clipboard: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2m2-2h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z",
@@ -98,16 +99,61 @@ export function Button({
     </motion.button>
   );
 }
-export function PasswordInput({ style, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+export function PasswordInput({ style, className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   const [visible, setVisible] = useState(false);
-  return <span style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', minWidth: 0, marginBottom: style?.marginBottom }}>
-    <input {...props} type={visible ? 'text' : 'password'} style={{ ...style, flex: 1, minWidth: 0, width: '100%', marginBottom: 0 }} />
-    <button type="button" disabled={props.disabled} aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible}
-      onClick={() => setVisible(value => !value)}
-      style={{ minWidth: 52, minHeight: 44, padding: '8px', flexShrink: 0, font: 'inherit', fontSize: 13, color: 'inherit', background: 'transparent', border: '1px solid currentColor', borderRadius: 8, cursor: 'pointer' }}>
-      {visible ? 'Hide' : 'Show'}
-    </button>
-  </span>;
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        width: "100%",
+        minWidth: 0,
+        marginBottom: style?.marginBottom,
+      }}
+    >
+      <input
+        {...props}
+        type={visible ? "text" : "password"}
+        className={className}
+        style={{
+          ...style,
+          width: "100%",
+          minWidth: 0,
+          flex: 1,
+          paddingRight: 42,
+          marginBottom: 0,
+          boxSizing: "border-box",
+        }}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        disabled={props.disabled}
+        aria-label={visible ? "Hide password" : "Show password"}
+        aria-pressed={visible}
+        onClick={() => setVisible((v) => !v)}
+        style={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          background: "transparent",
+          border: "none",
+          padding: 6,
+          cursor: "pointer",
+          color: visible ? "#1e293b" : "#8a94a0",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 6,
+          zIndex: 2,
+        }}
+      >
+        <Icon name={visible ? "eyeOff" : "eye"} size={19} />
+      </button>
+    </div>
+  );
 }
 
 const BADGE_TONE_ALIASES: Record<string, string> = {

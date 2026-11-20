@@ -12,6 +12,7 @@ import SurfaceRecovery, {RecoveryKind} from './SurfaceRecovery.web';
 import "./surface.css";
 import EmailAccess from './EmailAccess.web';
 import DownloadPage from "../landing/DownloadPage.web";
+import { initFrontendBackendWakeup } from "../utils/backendWakeup";
 
 function GateContent({ children }: { children: ReactNode }) {
   const [path, setPath] = useState(window.location.pathname);
@@ -78,6 +79,8 @@ function GateContent({ children }: { children: ReactNode }) {
 }
 export default function PortalGate({ children }: { children: ReactNode }) {
   useEffect(() => {
+    const teardownWakeup = initFrontendBackendWakeup();
+
     const synchronizeAccount = (event: StorageEvent) => {
       const pathname = window.location.pathname;
       const isOperator = /^\/(platform|super-admin)(\/|$)/.test(pathname);
@@ -99,7 +102,10 @@ export default function PortalGate({ children }: { children: ReactNode }) {
       }
     };
     window.addEventListener("storage", synchronizeAccount);
-    return () => window.removeEventListener("storage", synchronizeAccount);
+    return () => {
+      teardownWakeup();
+      window.removeEventListener("storage", synchronizeAccount);
+    };
   }, []);
   return (
     <WebMotionProvider key={isPortalPreviewPath(typeof window !== "undefined" ? window.location.pathname : "") ? "preview" : "live"}>
