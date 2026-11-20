@@ -1,4 +1,5 @@
 'use strict';
+require('dns').setDefaultResultOrder?.('ipv4first');
 require('dotenv').config();
 const app = require('./src/app');
 const logger = require('./src/config/logger');
@@ -13,6 +14,7 @@ let remindersTimer;
 let billingAutomationTimer;
 let subscriptionChangesTimer;
 let pushTimer;
+let emailTimer;
 db.verifyRuntime().then(() => {
   server = app.listen(PORT, () => {
     logger.info(`Ankelba backend running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
@@ -20,6 +22,12 @@ db.verifyRuntime().then(() => {
       logger.warn('Subscription name-and-amount test matching is enabled locally; full matching is required before launch.');
     }
     const subscriptionChanges=require('./src/modules/saas/subscription-change-worker').createSubscriptionChangeWorker(db,logger);
+    const emailTransport = require('./src/modules/email/transport').mailer;
+    if (emailTransport) {
+      const emailWorker = require('./src/modules/email/worker').createEmailWorker({ pool: db, transport: emailTransport, logger });
+      const runEmail = () => emailWorker.run().catch(() => logger.error('Email worker failed'));
+      runEmail(); emailTimer = setInterval(runEmail, 5000); emailTimer.unref();
+    }
     const pushWorker=require('./src/modules/notifications/push-worker').createPushWorker({pool:db,logger});
     const runPush=()=>pushWorker.run().catch(()=>logger.error('Push worker failed'));
     runPush();pushTimer=setInterval(runPush,10000);pushTimer.unref();
@@ -50,6 +58,7 @@ db.verifyRuntime().then(() => {
 
 // Graceful shutdown — close pool connections on SIGTERM/SIGINT
 process.on('SIGTERM', () => {
+  clearInterval(emailTimer);
   clearInterval(remindersTimer);
   clearInterval(billingAutomationTimer);
   clearInterval(subscriptionChangesTimer);
@@ -65,6 +74,7 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
+  clearInterval(emailTimer);
   clearInterval(remindersTimer);
   clearInterval(billingAutomationTimer);
   clearInterval(subscriptionChangesTimer);

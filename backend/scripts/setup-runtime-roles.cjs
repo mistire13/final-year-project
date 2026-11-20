@@ -1,11 +1,13 @@
 'use strict';
+require('dns').setDefaultResultOrder?.('ipv4first');
 
 // DB_* credentials are migration/provisioning credentials only. Never print
 // passwords or grant both runtime groups to the same application login.
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const { Client, Pool } = require('pg');
 const { verifyRuntime } = require('../src/db/runtime-policy');
-const base = { host: process.env.DB_HOST || 'localhost', port: Number(process.env.DB_PORT || 5432), database: process.env.DB_NAME || 'ankelba_dev' };
+const sslConfig = process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
+const base = { host: process.env.DB_HOST || 'localhost', port: Number(process.env.DB_PORT || 5432), database: process.env.DB_NAME || 'ankelba_dev', ssl: sslConfig };
 const definitions = [
   { user: process.env.APP_DB_USER || 'ankelba_tenant_app', password: process.env.APP_DB_PASSWORD, group: 'ankelba_tenant', other: 'ankelba_control' },
   { user: process.env.CONTROL_DB_USER || 'ankelba_control_app', password: process.env.CONTROL_DB_PASSWORD, group: 'ankelba_control', other: 'ankelba_tenant' },

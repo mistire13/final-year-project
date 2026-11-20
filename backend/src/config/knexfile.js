@@ -1,4 +1,5 @@
 'use strict';
+require('dns').setDefaultResultOrder?.('ipv4first');
 /**
  * src/config/knexfile.js
  * Knex configuration — used EXCLUSIVELY for migrations and seeds.
@@ -16,6 +17,8 @@ module.exports = {
     database: process.env.DB_NAME     || 'ankelba_dev',
     user:     process.env.DB_USER     || 'postgres',
     password: process.env.DB_PASSWORD,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 30000,
   },
   migrations: {
     directory: require('path').resolve(__dirname, '../db/migrations'),
@@ -25,7 +28,8 @@ module.exports = {
     directory: require('path').resolve(__dirname, '../db/seeds'),
   },
   pool: {
-    min: 2,
-    max: 10,
+    min: 0,
+    max: 5,
+    acquireTimeoutMillis: 60000,
   },
 };

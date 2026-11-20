@@ -1,4 +1,5 @@
 'use strict';
+require('dns').setDefaultResultOrder?.('ipv4first');
 /**
  * src/config/db.js
  * PostgreSQL connection pool — shared across all service modules.
@@ -10,12 +11,15 @@ const { Pool, types } = require('pg');
 types.setTypeParser(1082, value => value);
 const logger = require('./logger');
 
+const sslConfig = process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
+
 const pool = new Pool({
   host:     process.env.DB_HOST     || 'localhost',
   port:     parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME     || 'ankelba_dev',
   user:     process.env.APP_DB_USER || 'ankelba_tenant_app',
   password: process.env.APP_DB_PASSWORD,
+  ssl:      sslConfig,
 
   // Pool settings — tuned for a small pilot daycare workload (§6.6)
   max:                    10,    // max 10 concurrent DB connections
@@ -41,6 +45,7 @@ const control = new Pool({
   database: process.env.DB_NAME || 'ankelba_dev',
   user: process.env.CONTROL_DB_USER || 'ankelba_control_app',
   password: process.env.CONTROL_DB_PASSWORD,
+  ssl: sslConfig,
   max: 4, connectionTimeoutMillis: 3000,
 });
 control.on('error', err => logger.error('Control database pool error', { message: err.message }));
