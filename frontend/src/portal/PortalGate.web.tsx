@@ -10,6 +10,7 @@ import { WebMotionProvider } from "./WebMotion.web";
 import { SurfaceBoundary } from "./SurfaceBoundary.web";
 import SurfaceRecovery, {RecoveryKind} from './SurfaceRecovery.web';
 import "./surface.css";
+import EmailAccess from './EmailAccess.web';
 
 function GateContent({ children }: { children: ReactNode }) {
   const [path, setPath] = useState(window.location.pathname);
@@ -33,6 +34,7 @@ function GateContent({ children }: { children: ReactNode }) {
   }, []);
 
   const normalizedPath=path.length>1?path.replace(/\/+$/,''):path;
+  if (normalizedPath === '/reset-password' || normalizedPath === '/verify-email') return <EmailAccess key={normalizedPath} purpose={normalizedPath === '/reset-password' ? 'reset' : 'verify'} />;
   if (normalizedPath === '/application-status') return <ApplicationStatus />;
   if (/^\/pricing\/?$/.test(path) || new URLSearchParams(window.location.search).has('subscription_resume')) return <PricingJourney />;
   const recoveryRoutes:Record<string,RecoveryKind>={'/404':'not-found','/not-found':'not-found','/403':'forbidden','/forbidden':'forbidden','/session-expired':'session-expired','/subscription-ended':'subscription-ended','/payment-unavailable':'payment-unavailable'};
@@ -67,8 +69,17 @@ function GateContent({ children }: { children: ReactNode }) {
   }
 
   if (/^\/(app|parent)(\/|$)/.test(path)) {
-    if(!/^\/(app|parent)$/.test(normalizedPath))return <SurfaceRecovery kind="not-found"/>;
-    return <>{children}</>;
+    return (
+      <SurfaceRecovery
+        kind="not-found"
+        code="Mobile App"
+        title="Ankelba for Parents is a Mobile App"
+        message="The parent portal is designed exclusively as a native mobile application. Please install the Ankelba Android app on your smartphone to access your child's daily reports, caregiver messages, and pickup authorization."
+        actionText="Download Android APK"
+        actionHref="/Ankelba-LAN-Test.apk"
+        workspaceHref="/"
+      />
+    );
   }
 
   if(path==='/')return <LandingPage />;

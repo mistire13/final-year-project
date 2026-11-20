@@ -102,15 +102,14 @@ export default function LandingPage() {
         <PublicNavMenu activePage="home" />
 
         <div className="ankelba-home-nav-actions">
-          <motion.button
-            whileHover={reduce ? undefined : { y: -1 }}
-            whileTap={reduce ? undefined : { scale: 0.98 }}
-            type="button"
+          <a
             className="btn-pill btn-pill-secondary"
-            onClick={() => navigateTo("/app")}
+            href="/Ankelba-LAN-Test.apk"
+            download
+            title="Download Ankelba Android App for Parents"
           >
-            Parent App
-          </motion.button>
+            Download Parent App
+          </a>
           <motion.button
             whileHover={reduce ? undefined : { y: -1 }}
             whileTap={reduce ? undefined : { scale: 0.98 }}

@@ -17,24 +17,24 @@ export function recoveryWorkspace(path:string){
   if(/^\/(staff)(\/|$)/.test(path))return '/staff/workspace';
   if(/^\/(caregiver|front-desk)(\/|$)/.test(path))return '/caregiver';
   if(/^\/(admin|login|signin)(\/|$)/.test(path))return '/admin/dashboard';
-  if(/^\/(app|parent)(\/|$)/.test(path))return '/app';
   return '/';
 }
-export default function SurfaceRecovery({kind,message,onRetry,workspaceHref,embedded=false}:{kind:RecoveryKind;message?:string;onRetry?:()=>void;workspaceHref?:string;embedded?:boolean}){
+export default function SurfaceRecovery({kind,title,code,message,onRetry,workspaceHref,actionText,actionHref,embedded=false}:{kind:RecoveryKind;title?:string;code?:string;message?:string;onRetry?:()=>void;workspaceHref?:string;actionText?:string;actionHref?:string;embedded?:boolean}){
   const copy=content[kind],currentPath=typeof window!=='undefined'?window.location.pathname:'/',workspace=workspaceHref||recoveryWorkspace(currentPath);
   const retryable=['payment-unavailable','unavailable'].includes(kind);
   const chooseSignIn=kind==='session-expired'&&workspace==='/';
-  const signIn=kind==='session-expired'&&!chooseSignIn?(workspace==='/super-admin'?'/super-admin':workspace==='/app'?'/app':'/admin/login'):null;
+  const signIn=kind==='session-expired'&&!chooseSignIn?(workspace==='/super-admin'?'/super-admin':'/admin/login'):null;
   const Region=embedded?'section':'main';
   return <div className={embedded?'surface-recovery-embedded':'ankelba-portal surface-recovery-root'}>
     <Region className="surface-recovery" aria-labelledby={`recovery-${kind}`}>
       {!embedded&&<a className="surface-recovery-brand" href="/">Ankelba<span>Daycare management</span></a>}
       <Card className="surface-recovery-card"><div className="surface-recovery-symbol" aria-hidden="true"><Icon name={kind==='forbidden'?'shield':retryable?'refresh':'leaf'} size={30}/></div>
-        <p className="surface-recovery-code">{copy.code}</p><h1 id={`recovery-${kind}`}>{copy.title}</h1><p role={retryable?'status':undefined}>{message||copy.message}</p>
+        <p className="surface-recovery-code">{code||copy.code}</p><h1 id={`recovery-${kind}`}>{title||copy.title}</h1><p role={retryable?'status':undefined}>{message||copy.message}</p>
         <div className="surface-recovery-actions">
+          {actionText&&actionHref&&<a className="p-button" href={actionHref} download>{actionText}</a>}
           {retryable&&<Button onClick={onRetry||(()=>window.location.reload())}>Try again</Button>}
           {signIn&&<a className="p-button" href={signIn}>Sign in again</a>}
-          {chooseSignIn&&<><a className="p-button" href="/app">Parent sign in</a><a className="p-button secondary" href="/admin/login">Staff sign in</a><a className="p-button secondary" href="/super-admin">Platform sign in</a></>}
+          {chooseSignIn&&<><a className="p-button" href="/admin/login">Staff sign in</a><a className="p-button secondary" href="/super-admin">Platform sign in</a></>}
           {kind==='subscription-ended'&&<a className="p-button" href="/admin/subscription">Review subscription</a>}
           <a className="p-button secondary" href={workspace}>{workspace==='/'?'Return to Ankelba':'Open your workspace'}</a>
         </div>

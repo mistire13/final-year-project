@@ -15,9 +15,9 @@ export default function AppShowcase() {
       <div className="app-screen-track" role="region" aria-label="Screenshots captured from the Ankelba app" tabIndex={0}>
         {screens.map(screen => (
           <figure key={screen.id} className={`app-screen screen-${screen.id}`}>
-            <a className="app-screen-frame" href="/app" aria-label={`Open the parent app: ${screen.title}`}>
+            <div className="app-screen-frame" role="img" aria-label={screen.title}>
               <img src={screen.source} alt={screen.alt} width={860} height={2120} fetchPriority={screen.id === "home" ? "high" : "auto"} draggable={false} />
-            </a>
+            </div>
             <figcaption>{screen.title}</figcaption>
           </figure>
         ))}

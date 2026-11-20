@@ -37,7 +37,7 @@ function FeatureExplorer() {
         <div id="feature-panel" role="tabpanel" aria-labelledby={`feature-tab-${feature.id}`} tabIndex={0} className="explorer-panel">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div className="explorer-content" key={feature.id} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : .18 }}>
-              <div className="explorer-copy"><span className="experience-symbol"><Icon name={feature.icon} size={30} /></span><h3>{feature.title}</h3><p>{feature.description}</p><ul>{feature.points.map(point => <li key={point}><Icon name="check" size={17} />{point}</li>)}</ul><a href="/app" className="experience-text-link">Open the parent app <Icon name="arrow" size={18} /></a></div>
+              <div className="explorer-copy"><span className="experience-symbol"><Icon name={feature.icon} size={30} /></span><h3>{feature.title}</h3><p>{feature.description}</p><ul>{feature.points.map(point => <li key={point}><Icon name="check" size={17} />{point}</li>)}</ul><a href="/Ankelba-LAN-Test.apk" download className="experience-text-link">Download parent app <Icon name="arrow" size={18} /></a></div>
               <div className="explorer-visual"><span className="explorer-orbit" aria-hidden="true" /><img src={feature.screen} width={860} height={2120} alt={feature.alt} loading="lazy" /></div>
             </motion.div>
           </AnimatePresence>
@@ -73,7 +73,7 @@ function DayRoadmap() {
 }
 
 const audiences = [
-  { label: "Families", title: "Be part of their day, even from work.", text: "Check the latest report, talk to your caregiver and keep pickup details ready. All with the people who know your child.", items: ["Follow meals, naps and activities", "Ask a question without a phone call", "Manage authorized pickup contacts"], photo: require("../../assets/design/13-export-0.jpg"), alt: "A child playing in a welcoming daycare classroom", color: "pink", link: "/app", action: "Open the parent app" },
+  { label: "Families", title: "Be part of their day, even from work.", text: "Check the latest report, talk to your caregiver and keep pickup details ready. All with the people who know your child.", items: ["Follow meals, naps and activities", "Ask a question without a phone call", "Manage authorized pickup contacts"], photo: require("../../assets/design/13-export-0.jpg"), alt: "A child playing in a welcoming daycare classroom", color: "pink", link: "/Ankelba-LAN-Test.apk", action: "Download parent app" },
   { label: "Caregivers", title: "Share the care behind every day.", text: "Record routines and observations as the day unfolds. Give families details they can come back to, alongside your conversations.", items: ["Record meals, sleep and play", "Share health and classroom observations", "Keep conversations with families together"], photo: require("../../assets/design/03-home-dashboard-1.jpg"), alt: "A child exploring finger painting at daycare", color: "yellow", link: "/admin/login", action: "Staff sign in" },
   { label: "Daycare teams", title: "Keep the classroom and office connected.", text: "Bring attendance, family details and care records into one workspace, so staff can find what they need during a busy day.", items: ["Review attendance and pickup records", "Organize child and staff details", "Follow care fees and payment records"], photo: require("../../assets/design/13-export-0.jpg"), alt: "A furnished daycare classroom with books, toys and play areas", color: "cyan", link: "/admin/login", action: "Open the daycare portal" },
 ];
@@ -99,7 +99,7 @@ function PhotoStory() {
   return (
     <section className="experience-photo-story" aria-labelledby="photo-story-title">
       <div className="photo-story-image"><img src={require("../../assets/design/03-home-dashboard-1.jpg")} alt="A child learning about colors through finger painting" loading="lazy" /></div>
-      <div className="photo-story-copy"><span className="photo-story-stroke" aria-hidden="true" /><h2 id="photo-story-title">A painting.<br />A new word.<br />Something to talk about.</h2><p>Daily reports help you pick up the conversation at home. See what they explored, how they rested and what made them smile.</p><a href="/app" className="experience-text-link">See the parent app <Icon name="arrow" size={18} /></a></div>
+      <div className="photo-story-copy"><span className="photo-story-stroke" aria-hidden="true" /><h2 id="photo-story-title">A painting.<br />A new word.<br />Something to talk about.</h2><p>Daily reports help you pick up the conversation at home. See what they explored, how they rested and what made them smile.</p><a href="/Ankelba-LAN-Test.apk" download className="experience-text-link">Download the parent app <Icon name="arrow" size={18} /></a></div>
     </section>
   );
 }
