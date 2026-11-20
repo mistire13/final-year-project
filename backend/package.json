@@ -1,6 +1,9 @@
 {
-    "name":  "ankelba-backend",
-    "version":  "1.0.0",
+  "name": "ankelba-backend",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
     "description":  "Ankelba - Parent Communication and Child Activity Reporting Platform for Daycare Centers",
     "main":  "server.js",
     "scripts":  {

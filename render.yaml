@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: ankelba-api
+    runtime: node
+    region: ohio
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        value: ep-lingering-truth-bduff5y4.c-8.us-east-2.aws.neon.tech
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: neondb
+      - key: DB_USER
+        value: neondb_owner
+      - key: DB_PASSWORD
+        value: npg_4HLh9JsGmrdK
+      - key: DB_SSL
+        value: "true"
+      - key: APP_DB_USER
+        value: ankelba_tenant_app
+      - key: APP_DB_PASSWORD
+        value: Ww_zh35pYk9u8mNzfoNWwMDb
+      - key: CONTROL_DB_USER
+        value: ankelba_control_app
+      - key: CONTROL_DB_PASSWORD
+        value: SkoEkcIGnPaD8PaKLene9pW_
+      - key: JWT_SECRET
+        value: 653ab159440cd2f49c1c8bfe1dd8e8d1a2fed0da239bdc4dac307aa01dc63d6d
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: DAYCARE_AUTH_ENABLED
+        value: "false"
+      - key: FRONTEND_URL
+        value: "*"

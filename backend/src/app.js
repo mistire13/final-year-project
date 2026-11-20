@@ -65,7 +65,9 @@ app.use(cors({
       // In development allow localhost, 127.0.0.1, LAN IPs (192.168.*), tunnels, etc.
       return callback(null, true);
     }
-    const allowed = [process.env.FRONTEND_URL, 'http://localhost:3000', 'http://localhost:8081'].filter(Boolean);
+    if (process.env.FRONTEND_URL === '*') return callback(null, true);
+    const configured = (process.env.FRONTEND_URL || '').split(',').map(s => s.trim()).filter(Boolean);
+    const allowed = [...configured, 'http://localhost:3000', 'http://localhost:8081'];
     if (allowed.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
@@ -167,6 +169,7 @@ app.use([
 }, subscriptionAccess);
 app.use('/api/portal', require('./modules/portal/portal.routes'));
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/email', require('./modules/email/routes'));
 if (daycareAuthConfig.enabled) {
   app.use('/api/platform/auth', authLimiter, require('./modules/daycare-auth/runtime').platformRouter);
 }
