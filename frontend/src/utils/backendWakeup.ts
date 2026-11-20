@@ -60,3 +60,4 @@ export function initFrontendBackendWakeup(): () => void {
     document.removeEventListener('visibilitychange', handleVisibility);
   };
 }
+

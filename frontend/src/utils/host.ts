@@ -1,8 +1,8 @@
 import { NativeModules, Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Used only when no explicit LAN host or Expo development host is available.
-const FALLBACK_HOST = '192.168.8.104';
+// Default production backend host
+const FALLBACK_HOST = 'ankelba-api.onrender.com';
 
 /**
  * Resolves the host IP or domain of the dev server / host machine.
@@ -65,17 +65,7 @@ export const getApiBaseUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
-  if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && window.location?.hostname) {
-      const host = window.location.hostname;
-      if (host && host !== 'localhost' && host !== '127.0.0.1') {
-        return `http://${host}:5000/api`;
-      }
-    }
-    return 'http://localhost:5000/api';
-  }
-  const host = getDevServerHost();
-  return `http://${host}:5000/api`;
+  return 'https://ankelba-api.onrender.com/api';
 };
 
 /**
