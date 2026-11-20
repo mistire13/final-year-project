@@ -2790,3 +2790,12 @@
 @media (max-width: 360px) {
   .ankelba-portal .p-grid.stats { grid-template-columns: minmax(0, 1fr); }
 }
+
+.ankelba-portal.email-access { min-height: 100dvh; padding: clamp(16px, 5vw, 64px); display: grid; place-items: center; }
+.ankelba-portal.email-access > .p-card { width: min(100%, 520px); min-width: 0; box-sizing: border-box; }
+.ankelba-portal.email-access form, .ankelba-portal .email-verification-form { display: grid; gap: 16px; }
+.ankelba-portal.email-access label, .ankelba-portal .email-verification-form label { display: grid; gap: 8px; min-width: 0; }
+.ankelba-portal.email-access input, .ankelba-portal .email-verification-form input { width: 100%; min-width: 0; box-sizing: border-box; }
+.ankelba-portal .email-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.ankelba-portal.email-access p, .ankelba-portal .email-verification-form { overflow-wrap: anywhere; }
+.ankelba-portal .email-verification-form { margin-top: 16px; max-width: 520px; }

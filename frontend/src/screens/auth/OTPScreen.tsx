@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, TextInput, Pressable } from "react-native";
 import { LockKey } from "phosphor-react-native/src/icons/LockKey";
 import { ArrowRight } from "phosphor-react-native/src/icons/ArrowRight";
@@ -11,6 +11,11 @@ import { apiClient } from "../../api/client";
 
 export function OTPScreen({ navigation, route }: any) {
   const initialEmail = route?.params?.email || "";
+  const [requestId, setRequestId] = useState(route?.params?.requestId || '');
+  const [resendAt, setResendAt] = useState(route?.params?.resendAt || 0);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const cooldown = Math.max(0, Math.ceil((resendAt - now) / 1000));
   const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,7 +27,7 @@ export function OTPScreen({ navigation, route }: any) {
   const handleResetPassword = async () => {
     const trimmedToken = token.trim();
     if (!trimmedToken) {
-      setError("Please enter your verification code or reset token.");
+      setError("Enter the code from your email.");
       return;
     }
     if (!newPassword || newPassword.length < 12) {
@@ -38,8 +43,8 @@ export function OTPScreen({ navigation, route }: any) {
     setError("");
 
     try {
-      await apiClient.post("/auth/reset-password", {
-        token: trimmedToken,
+      await apiClient.post(requestId ? '/email/confirm-code' : '/auth/reset-password', {
+        ...(requestId ? { request_id: requestId, code: trimmedToken } : { token: trimmedToken }),
         new_password: newPassword,
       });
 
@@ -48,7 +53,7 @@ export function OTPScreen({ navigation, route }: any) {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        "Invalid or expired verification code. Please check with your daycare director.";
+        "Invalid or expired verification code. Request a new code.";
       setError(msg);
     } finally {
       setBusy(false);
@@ -73,8 +78,8 @@ export function OTPScreen({ navigation, route }: any) {
         </Text>
         <Text color="#747984" style={{ textAlign: "center", marginTop: 8, maxWidth: 320, fontSize: 13, lineHeight: 18 }}>
           {initialEmail
-            ? `Enter the recovery token or verification code issued for ${initialEmail}`
-            : "Enter the security code or recovery token provided by your daycare office."}
+            ? `Enter the code emailed to ${initialEmail}. It expires in 10 minutes.`
+            : "Enter your recovery token."}
         </Text>
       </View>
 
@@ -110,13 +115,16 @@ export function OTPScreen({ navigation, route }: any) {
         <Card style={{ padding: 20 }}>
           {/* Recovery Token Field */}
           <Text weight="semibold" size={13} style={{ marginBottom: 6, color: "#10263D" }}>
-            Recovery Token or Verification Code *
+            {requestId ? '6-digit email code' : 'Recovery token'} *
           </Text>
           <View style={[s.inputWrap, { marginBottom: 16 }]}>
             <ShieldCheck size={20} color="#737984" />
             <TextInput
               accessibilityLabel="Reset Token or Verification Code"
-              placeholder="e.g. lr1... or code from admin"
+              placeholder={requestId ? '123456' : 'Recovery token'}
+              keyboardType={requestId ? 'number-pad' : 'default'}
+              maxLength={requestId ? 6 : undefined}
+              autoComplete="one-time-code"
               placeholderTextColor="#9295A1"
               style={s.input}
               value={token}
@@ -131,7 +139,7 @@ export function OTPScreen({ navigation, route }: any) {
 
           {/* New Password */}
           <Text weight="semibold" size={13} style={{ marginBottom: 6, color: "#10263D" }}>
-            New Password (minimum 8 characters) *
+            New Password (minimum 12 characters) *
           </Text>
           <View style={[s.inputWrap, { marginBottom: 16 }]}>
             <TextInput
@@ -194,6 +202,15 @@ export function OTPScreen({ navigation, route }: any) {
             onPress={() => navigation.navigate("Login")}
             style={{ marginTop: 12 }}
           />
+          {!!initialEmail && <Button title={cooldown ? `Resend in ${cooldown}s` : 'Resend code'} variant="secondary"
+            disabled={busy || cooldown > 0} style={{ marginTop: 12 }} onPress={async () => {
+              setBusy(true); setError('');
+              try {
+                const { data } = await apiClient.post('/email/request-code', { email: initialEmail, purpose: 'reset' });
+                setRequestId(data.request_id); setToken(''); setResendAt(Date.now() + data.resend_after * 1000);
+              } catch (e: any) { setError(e?.response?.data?.message || 'Unable to resend code. Try again.'); }
+              finally { setBusy(false); }
+            }} />}
 
           <Text
             size={12}

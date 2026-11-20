@@ -73,7 +73,8 @@ const getCurrentUser = async userId => {
 // account identifier, expiry, or inbox ID, whether or not the account exists.
 const forgotPassword = async email => {
   const normalizedEmail = emailValue(email);
-  inbox.assertAvailable();
+  const mailer = require('../email/transport').mailer;
+  if (!mailer) inbox.assertAvailable();
   await security.transaction(control, async client => {
     const user = await security.lockAccount(client, { email: normalizedEmail });
     if (!security.activeAccount(user)) return;
@@ -88,7 +89,12 @@ const forgotPassword = async email => {
       [user.id, hash(rawToken), expiresAt]);
     // Write encrypted mail before commit; delivery failure rolls back the token.
     // If commit fails, a leftover encrypted message cannot reset any account.
-    await inbox.enqueue({ to: user.email, subject: 'Reset your Ankelba password', token: rawToken, expires_at: expiresAt });
+    if (mailer) await require('../email/outbox').enqueue(client, {
+      recipient: user.email, userId: user.id, daycareId: user.daycare_id, kind: 'legacy_password_reset', expiresAt,
+      subject: 'Reset your Ankelba password',
+      text: `Paste this recovery token into the password reset screen in your installed Ankelba app:\n\n${rawToken}\n\nIt expires in one hour and can be used once. If you did not request it, ignore this email.`,
+    });
+    else await inbox.enqueue({ to: user.email, subject: 'Reset your Ankelba password', token: rawToken, expires_at: expiresAt });
   });
   return { message: RECOVERY_MESSAGE };
 };

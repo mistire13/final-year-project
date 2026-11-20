@@ -627,6 +627,7 @@ export default function SuperAdmin() {
           </form>
 
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #eeece6" }}>
+            <a href="/reset-password">Forgot password?</a>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "var(--muted)" }}>
               <a
                 href="/"

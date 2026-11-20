@@ -1,5 +1,4 @@
 'use strict';
-const nodemailer = require('nodemailer');
 
 function createReminderWorker({pool, transporter, from, portalUrl, logger = console}) {
   async function run() {
@@ -63,9 +62,8 @@ function createReminderWorker({pool, transporter, from, portalUrl, logger = cons
 function fromEnvironment(pool, logger) {
   const {SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, FRONTEND_URL} = process.env;
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM || !FRONTEND_URL) return null;
-  const secure = process.env.SMTP_SECURE === 'true';
-  const transporter = nodemailer.createTransport({host:SMTP_HOST,port:Number(SMTP_PORT),secure,requireTLS:!secure,
-    auth:{user:SMTP_USER,pass:SMTP_PASSWORD},connectionTimeout:15000,socketTimeout:30000});
+  const transporter = require('../email/transport').mailer;
+  if (!transporter) return null;
   return createReminderWorker({pool,transporter,from:SMTP_FROM,portalUrl:FRONTEND_URL,logger});
 }
 module.exports = {createReminderWorker, fromEnvironment};

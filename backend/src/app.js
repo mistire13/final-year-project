@@ -54,7 +54,17 @@ app.use(helmet({
 // ──────────────────────────────────────────────
 // 2. CORS policy
 // ──────────────────────────────────────────────
-app.use(cors({
+const defaultAllowedOrigins = [
+  'https://ankelba.pro.et',
+  'http://ankelba.pro.et',
+  'https://www.ankelba.pro.et',
+  'http://www.ankelba.pro.et',
+  'http://localhost:3000',
+  'http://localhost:8081',
+  'http://localhost:5000',
+];
+
+const corsOptions = {
   origin: (origin, callback) => {
     // allow requests with no origin (like mobile apps, curl, postman)
     if (!origin) return callback(null, true);
@@ -66,15 +76,38 @@ app.use(cors({
       return callback(null, true);
     }
     if (process.env.FRONTEND_URL === '*') return callback(null, true);
-    const configured = (process.env.FRONTEND_URL || '').split(',').map(s => s.trim()).filter(Boolean);
-    const allowed = [...configured, 'http://localhost:3000', 'http://localhost:8081'];
-    if (allowed.includes(origin)) return callback(null, true);
+    const configured = (process.env.FRONTEND_URL || '')
+      .split(',')
+      .map(s => s.trim().replace(/\/$/, ''))
+      .filter(Boolean);
+    const allowed = new Set([...configured, ...defaultAllowedOrigins]);
+    if (allowed.has(origin)) return callback(null, true);
+
+    // Also match ankelba.pro.et and any subdomains (*.ankelba.pro.et)
+    try {
+      const parsed = new URL(origin);
+      if (parsed.hostname === 'ankelba.pro.et' || parsed.hostname.endsWith('.ankelba.pro.et')) {
+        return callback(null, true);
+      }
+    } catch {}
+
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,             // allow HttpOnly cookies to be passed
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Payment-Token', ...(daycareAuthConfig.enabled ? ['X-CSRF-Token'] : [])],
-}));
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Payment-Token',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    ...(daycareAuthConfig.enabled ? ['X-CSRF-Token'] : []),
+  ],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ──────────────────────────────────────────────
 // 3. Rate limiting (global — prevents brute force)
@@ -197,9 +230,9 @@ app.use('/api/payments', (req, res, next) => {
 }, paymentsRoutes);
 app.use('/api/finances', financesRoutes);
 app.use('/api/daycare-payments', require('./modules/daycare-payments/routes'));
-app.use('/api/plus/analytics',require('./modules/analytics/plus-analytics.routes'));
-app.use('/api/billing-automation',require('./modules/billing-automation/routes'));
-app.use('/api/staff-scheduling',require('./modules/staff-scheduling/staff-scheduling.routes'));
+app.use('/api/plus/analytics', require('./modules/analytics/plus-analytics.routes'));
+app.use('/api/billing-automation', require('./modules/billing-automation/routes'));
+app.use('/api/staff-scheduling', require('./modules/staff-scheduling/staff-scheduling.routes'));
 app.use('/api/events', eventsRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/groups', groupsRoutes);

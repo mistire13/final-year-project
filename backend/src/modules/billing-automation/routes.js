@@ -12,7 +12,7 @@ router.use(auth);
 router.get('/settings',allowRoles('admin'),hasBillingAutomation,wrap(async req=>({...await service.settings(req.user),runtime:{
   scheduler_enabled:process.env.BILLING_AUTOMATION_ENABLED==='true',
   email_delivery_enabled:process.env.BILLING_AUTOMATION_ENABLED==='true'&&process.env.BILLING_AUTOMATION_EMAIL_ENABLED==='true'&&
-    !!(process.env.SMTP_HOST&&process.env.SMTP_PORT&&process.env.SMTP_USER&&process.env.SMTP_PASSWORD&&process.env.SMTP_FROM),
+    !!require('../email/transport').mailer,
 }})));
 router.post('/preview',allowRoles('admin'),hasBillingAutomation,wrap(req=>service.preview(req.body,req.user)));
 router.put('/settings',allowRoles('admin'),hasBillingAutomation,wrap(req=>service.save(req.body,req.user)));

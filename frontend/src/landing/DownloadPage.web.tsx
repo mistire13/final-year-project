@@ -34,7 +34,7 @@ export default function DownloadPage() {
             </p>
             <div className="download-action-group">
               <a
-                href="/Ankelba-LAN-Test.apk"
+                href="/Ankelba-Parent-v1.0.0.apk"
                 download="Ankelba-Parent-v1.0.0.apk"
                 className="btn-download-primary"
               >
@@ -163,3 +163,4 @@ export default function DownloadPage() {
     </div>
   );
 }
+

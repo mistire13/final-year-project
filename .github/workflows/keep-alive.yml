@@ -14,3 +14,4 @@ jobs:
         run: |
           echo "Pinging Ankelba Render API..."
           curl -s -i https://ankelba-api.onrender.com/api || true
+

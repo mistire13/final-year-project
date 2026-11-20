@@ -17,6 +17,8 @@ export function ForgotPasswordScreen({ navigation }: any) {
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [requestId, setRequestId] = useState('');
+  const [resendAt, setResendAt] = useState(0);
 
   async function submit() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -26,11 +28,13 @@ export function ForgotPasswordScreen({ navigation }: any) {
     }
     setBusy(true);
     try {
-      await apiClient.post("/auth/forgot-password", { email });
+      const { data } = await apiClient.post('/email/request-code', { email: email.trim(), purpose: 'reset' });
+      setRequestId(data.request_id);
+      setResendAt(Date.now() + data.resend_after * 1000);
       setFailed(false);
       setSubmitted(true);
       setMessage(
-        "If your account is registered, recovery instructions and security token have been generated.",
+        data.message,
       );
     } catch {
       setFailed(true);
@@ -64,6 +68,7 @@ export function ForgotPasswordScreen({ navigation }: any) {
         label="Email address"
         icon={EnvelopeSimple}
         value={email}
+        editable={!submitted}
         onChangeText={(v) => {
           setEmail(v);
           setMessage("");
@@ -85,9 +90,9 @@ export function ForgotPasswordScreen({ navigation }: any) {
             loading={busy}
           />
           <Button
-            title="I have a reset code / token"
+            title="Back to Sign In"
             variant="secondary"
-            onPress={() => navigation.navigate("OTP", { email })}
+            onPress={() => navigation.navigate("Login")}
             style={{ marginTop: 12 }}
           />
         </>
@@ -96,7 +101,7 @@ export function ForgotPasswordScreen({ navigation }: any) {
           <Button
             title="Enter Reset Code & Set Password"
             icon={ArrowRight}
-            onPress={() => navigation.navigate("OTP", { email })}
+            onPress={() => navigation.navigate("OTP", { email, requestId, resendAt })}
             style={{ marginTop: 12 }}
           />
           <Button

@@ -16,7 +16,7 @@ function createBillingWorker({pool,transporter=null,from=null,emailEnabled=false
       AND s.enabled AND u.role_id=3 AND u.status='active' AND EXISTS(SELECT 1 FROM guardian_links g WHERE g.daycare_id=i.daycare_id AND g.child_id=i.child_id AND g.user_id=u.id) FOR SHARE OF i`,[job.invoice_id,job.daycare_id,job.user_id])).rows[0];
     if(!row)return null;
     if(job.channel==='in_app'&&(!row.in_app_reminders||row.ui_preferences?.notifications?.messages===false))return null;
-    if(job.channel==='email'&&(!row.email_reminders||row.ui_preferences?.notifications?.billing_email!==true||!row.email))return null;
+    if(job.channel==='email'&&(!row.email_reminders||row.ui_preferences?.notifications?.billing_email!==true||row.ui_preferences?.notifications?.email===false||!row.email))return null;
     const delta=Math.round((Date.parse(localDay(now())+'T00:00:00Z')-Date.parse(row.due_date+'T00:00:00Z'))/86400000);
     if(job.kind==='before'&&!(delta<0&&delta>=-row.reminder_before_days))return null;
     if(job.kind==='after'&&delta<row.reminder_after_days)return null;
@@ -77,8 +77,7 @@ function fromEnvironment(pool,logger){
   let transporter=null,from=null,emailEnabled=false;
   const {SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASSWORD,SMTP_FROM}=process.env;
   if(process.env.BILLING_AUTOMATION_EMAIL_ENABLED==='true'&&SMTP_HOST&&SMTP_PORT&&SMTP_USER&&SMTP_PASSWORD&&SMTP_FROM){
-    const secure=process.env.SMTP_SECURE==='true';from=SMTP_FROM;emailEnabled=true;
-    transporter=require('nodemailer').createTransport({host:SMTP_HOST,port:Number(SMTP_PORT),secure,requireTLS:!secure,auth:{user:SMTP_USER,pass:SMTP_PASSWORD},connectionTimeout:15000,socketTimeout:30000});
+    transporter=require('../email/transport').mailer;from=SMTP_FROM;emailEnabled=!!transporter;
   }
   return createBillingWorker({pool,logger,transporter,from,emailEnabled});
 }

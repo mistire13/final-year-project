@@ -1,4 +1,5 @@
 import { DeskPage } from "./DeskPages.web";
+import { EmailSettings } from './EmailAccess.web';
 import PlusAnalytics from './PlusAnalytics.web';
 import PlusBillingAutomation from './PlusBillingAutomation.web';
 import PlusStaffScheduling from './PlusStaffScheduling.web';
@@ -315,7 +316,7 @@ export default function Portal() {
     : adminNav;
   // Keep legacy Plus bookmarks valid while presenting one consolidated duties page.
   // Hiding navigation must not hide retained order and payment history.
-  const available = [...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users", ...Object.keys(plusNavigationFeatures)])];
+  const available = ['email-settings', ...navigation.flatMap((g) => g.items).map((i) => i[0]), ...(staff ? [] : ["dashboard", "users", ...Object.keys(plusNavigationFeatures)])];
   const normalizedPage = page === "users"
     ? "caregivers"
     : page === "workspace"
@@ -328,7 +329,7 @@ export default function Portal() {
     : staff
       ? "arrivals"
       : "dashboard";
-  const title =
+  const title = selected === 'email-settings' ? 'Email settings' :
     navigation.flatMap((g) => g.items).find((i) => i[0] === selected)?.[1] ||
     "Overview";
   const deskPage = ["arrivals", "pickups"].includes(selected);
@@ -1226,6 +1227,7 @@ export default function Portal() {
               </Button>
             </form>
             <footer>
+              <a href="/reset-password">Forgot password?</a>
               <a href="/">Back to Ankelba</a>
               <a href="/app">Parent sign in</a>
               <a href="/application-status">Check application status</a>
@@ -1242,7 +1244,7 @@ export default function Portal() {
     staff_scheduling: { name: 'Front-desk shift scheduling', detail: 'Manage recurring attendance and pickup shift templates, staff availability, leave reviews and substitute assignments.' },
     shop: { name: 'Daycare shop & stock control', detail: 'Publish essential supplies, track stock movements, receive family orders and record cash returns.' },
   };
-  const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...nav.flatMap(group=>group.items.map(item=>item[0])),'dashboard','workspace','users'],available);
+  const routeFailure=workspaceRouteFailure(window.location.pathname,String(actor.role),[...nav.flatMap(group=>group.items.map(item=>item[0])),'dashboard','workspace','users','email-settings'],available);
   const plusFeature=plusPageFeature[selected];
   const displayState = subscriptionDisplayState(visibleData.daycare);
   const isTrial = displayState === 'trial' || displayState === 'expired_trial';
@@ -1268,7 +1270,7 @@ export default function Portal() {
       )}
       {!staff&&!preview&&<Button onClick={()=>go('subscription')}>{isExpiredPlus ? 'Renew subscription' : 'Review subscription & plans'}</Button>}
     </Card>
-  ) : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
+  ) : selected === 'email-settings' ? (preview ? <Card title="Email settings"><p>Sign in to manage your email.</p></Card> : <EmailSettings />) : selected==='business' ? <PlusAnalytics/> : selected==='billing-automation' ? <PlusBillingAutomation/> : selected==='staff-scheduling' ? <PlusStaffScheduling/> :
     staff && ["reports","health","communication","events"].includes(selected) ? <CaregiverPage ctx={ctx} page={selected}/> : selected === "dashboard" ? (
       <>
         <DashboardAttention data={visibleData} date={date} preview={preview} go={go} />
@@ -1366,6 +1368,7 @@ export default function Portal() {
           );
         })}
         <div className="p-sidebar-foot">
+          {!preview && <a className="p-nav-link" href={base + '/email-settings'}><Icon name="bell" size={17} /> Email settings</a>}
           <nav className="p-mobile-surface-links" aria-label="Other Ankelba pages">
             <a className="p-nav-link" href="/"><Icon name="globe" size={17} /> Ankelba website</a>
             <a className="p-nav-link" href="/app"><Icon name="smartphone" size={17} /> Parent app</a>

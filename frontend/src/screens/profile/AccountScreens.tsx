@@ -474,6 +474,8 @@ export function NotificationsScreen({ navigation }: any) {
   );
 }
 
+import { EmailVerificationCard } from '../../components/EmailVerificationCard';
+
 export function SecurityScreen() {
   const { token } = useAuth();
   const [current, setCurrent] = useState("");
@@ -514,6 +516,7 @@ export function SecurityScreen() {
 
   return (
     <Page title="Security & Password" back>
+      <EmailVerificationCard />
       <Card>
         <Field
           label="Current Password"

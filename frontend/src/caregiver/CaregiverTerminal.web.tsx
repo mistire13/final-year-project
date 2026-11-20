@@ -387,7 +387,7 @@ export default function CaregiverTerminal() {
             <Button type="submit" disabled={loginBusy}>{loginBusy ? "Signing in…" : "Sign in to front desk"}<Icon name="arrow" size={18} /></Button>
           </form>
           <p className="terminal-access-note"><Icon name="lock" size={16} />Need access? Contact your daycare administrator.</p>
-          <footer><a href="/">Back to Ankelba</a><a href="/admin/login">Daycare admin portal</a></footer>
+          <footer><a href="/reset-password">Forgot password?</a><a href="/">Back to Ankelba</a><a href="/admin/login">Daycare admin portal</a></footer>
         </div></section>
       </div>
     );
@@ -401,6 +401,7 @@ export default function CaregiverTerminal() {
           <span className="terminal-staff-profile"><span className="terminal-staff-avatar">{String(actor.name || "Staff").split(" ").map((part: string) => part[0]).slice(0, 2).join("")}</span><span>{actor.name}<small>{actor.role === "admin" ? "Daycare administrator" : "Caregiver"}</small></span></span>
           {actor.role === "admin" && <a className="terminal-admin-link" href="/admin/dashboard"><Icon name="building" size={16} />Admin portal</a>}
           <Button variant="secondary" onClick={handleSignOut} icon="logout">Sign out</Button>
+          <a className="terminal-admin-link" href={actor.role === 'admin' ? '/admin/email-settings' : '/staff/email-settings'}>Email settings</a>
         </div>
       </header>
       <section className="terminal-workspace-intro">

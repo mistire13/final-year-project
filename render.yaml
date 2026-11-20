@@ -40,3 +40,4 @@ services:
         value: "false"
       - key: FRONTEND_URL
         value: "*"
+

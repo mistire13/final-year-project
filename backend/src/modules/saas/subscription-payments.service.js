@@ -177,14 +177,9 @@ function recoveryMailer(options) {
     throw fail('Email delivery is not configured. Contact platform support.',503);
   }
   let base;
-  try { base = new URL(FRONTEND_URL); } catch (_) { throw fail('Email recovery link is not configured.',503); }
-  if (base.username || base.password || (base.protocol !== 'https:' && !(process.env.NODE_ENV !== 'production' && ['localhost','127.0.0.1'].includes(base.hostname)))) {
-    throw fail('Email recovery link is not configured securely.',503);
-  }
-  const nodemailer = require('nodemailer');
-  const secure = process.env.SMTP_SECURE==='true';
-  const transport = nodemailer.createTransport({host:SMTP_HOST,port:Number(SMTP_PORT),secure,requireTLS:!secure,
-    auth:{user:SMTP_USER,pass:SMTP_PASSWORD},connectionTimeout:15000,socketTimeout:30000});
+  try { base = require('../email/portal-url').portalUrl(FRONTEND_URL); } catch (_) { throw fail('Email recovery link is not configured securely.',503); }
+  const transport = require('../email/transport').mailer;
+  if (!transport) throw fail('Email delivery is unavailable. Contact platform support.',503);
   return async ({email,id,token,purpose}) => {
     const url = new URL('/',base);
     url.searchParams.set('subscription_resume',id);

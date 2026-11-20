@@ -6,6 +6,7 @@ const schema = Joi.object({
     activity: Joi.boolean(),
     messages: Joi.boolean(),
     announcements: Joi.boolean(),
+    email: Joi.boolean(),
   }).min(1),
   reminder: Joi.object({
     event_id: Joi.number().integer().positive().required(),

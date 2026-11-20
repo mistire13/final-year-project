@@ -44,26 +44,21 @@ export default function LandingPage() {
 
   useEffect(() => {
     const root = scrollRoot.current;
-    const heroNode = hero.current;
-    const navNode = navigation.current;
-    if (!root || !heroNode || !navNode) return;
     let frame = 0;
     const update = () => {
       frame = 0;
-      setOverHero(heroNode.getBoundingClientRect().bottom > navNode.getBoundingClientRect().bottom + 12);
+      const scrollY = root ? (root.scrollTop || window.scrollY || document.documentElement.scrollTop || 0) : (window.scrollY || document.documentElement.scrollTop || 0);
+      setOverHero(scrollY <= 20);
     };
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(update);
     };
-    root.addEventListener("scroll", schedule, { passive: true });
-    const observer = new ResizeObserver(schedule);
-    observer.observe(root);
-    observer.observe(heroNode);
-    observer.observe(navNode);
+    if (root) root.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("scroll", schedule, { passive: true });
     update();
     return () => {
-      root.removeEventListener("scroll", schedule);
-      observer.disconnect();
+      if (root) root.removeEventListener("scroll", schedule);
+      window.removeEventListener("scroll", schedule);
       window.cancelAnimationFrame(frame);
     };
   }, []);

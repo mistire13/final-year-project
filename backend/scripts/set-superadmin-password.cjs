@@ -20,3 +20,4 @@ async function updateSuperadmin() {
   await client.end();
 }
 updateSuperadmin().catch(e => { console.error(e); process.exit(1); });
+

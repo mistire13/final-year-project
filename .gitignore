@@ -9,4 +9,6 @@ tmp/gradle*
 tmp/event-log/
 tmp/private-migration-backups/
 tmp/frontend-*.log
+dist/
+*.zip
 
