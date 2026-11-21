@@ -487,19 +487,18 @@ export default function SubscriptionPayment({ onPaid, resume, selection, onSessi
               <form className="j-form" aria-busy={busy} onSubmit={e => { e.preventDefault(); void refresh(true); }}>
                 {boundBank !== 'cbe' && <ReceiptReference id={session.id} token={session.token} onReference={setReference} />}
                 <label>
-                  {boundBank==='cbe'?'CBE receipt link':isTelebirr ? 'Telebirr transaction reference' : 'Transaction reference'}
+                  {boundBank==='cbe'?'CBE receipt link or FT reference':isTelebirr ? 'Telebirr transaction reference' : 'Transaction reference'}
                   <input
                     required
-                    type={boundBank==='cbe'?'url':'text'}
-                    pattern={boundBank==='cbe'?'https://(mbreciept\\.cbe\\.com\\.et|apps\\.cbe\\.com\\.et(:100)?)/.+':undefined}
+                    type="text"
                     value={reference}
                     onChange={e => setReference(e.target.value)}
                     autoComplete="off"
-                    placeholder={isTelebirr ? 'Enter Telebirr reference' : boundBank==='cbe'?'https://mbreciept.cbe.com.et/…':'Bank of Abyssinia reference'}
+                    placeholder={isTelebirr ? 'Enter Telebirr reference' : boundBank==='cbe'?'Paste receipt link or enter FT reference (e.g. FT26323WGXJV)':'Bank of Abyssinia reference'}
                     maxLength={boundBank==='cbe'?2048:150}
                   />
                 </label>
-                {boundBank==='cbe'&&<p className="j-muted">Copy the full receipt link from CBE and paste it here. No account suffix is needed.</p>}
+                {boundBank==='cbe'&&<p className="j-muted">Paste your complete CBE receipt link or enter the FT transaction reference (e.g. FT26323WGXJV).</p>}
                 {boundBank==='abyssinia' && (
                   <>
                     <label>Account suffix (5 digits)
