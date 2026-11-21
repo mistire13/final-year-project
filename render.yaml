@@ -40,4 +40,10 @@ services:
         value: "false"
       - key: FRONTEND_URL
         value: "*"
+      - key: VERITAS_API_KEY
+        sync: false
+      - key: VERITAS_API_URL
+        value: https://verifyapi.leulzenebe.pro
+      - key: SUBSCRIPTION_NAME_AMOUNT_TEST_MODE
+        value: "true"
 
