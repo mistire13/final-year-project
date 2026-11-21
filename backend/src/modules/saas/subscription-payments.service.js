@@ -105,7 +105,7 @@ function accountsMatch(rawRecipient, expectedAccount) {
     const parts = a.split(/\*+/);
     if (parts.length === 2) {
       const [prefix, suffix] = parts;
-      return b.length === a.length && b.startsWith(prefix) && b.endsWith(suffix);
+      return b.startsWith(prefix) && b.endsWith(suffix) && b.length >= (prefix.length + suffix.length);
     }
   }
   return false;
